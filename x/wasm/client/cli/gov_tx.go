@@ -14,6 +14,8 @@ import (
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 
+	"github.com/CosmWasm/wasmd/x/wasm/ioutils"
+	"github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -22,9 +24,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-
-	"github.com/CosmWasm/wasmd/x/wasm/ioutils"
-	"github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
 // DefaultGovAuthority is set to the gov module address.
@@ -705,6 +705,78 @@ func ProposalUnpinCodesCmd() *cobra.Command {
 	}
 	// proposal flags
 	addCommonProposalFlags(cmd)
+	return cmd
+}
+
+func ProposalSetGaslessContractsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "set-gasless [contract-addresses]",
+		Short: "Submit a set gasless contracts proposal",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, proposalTitle, proposalDescr, deposit, _, err := getProposalInfo(cmd)
+			if err != nil {
+				return err
+			}
+
+			content := types.SetGasLessContractsProposal{
+				Title:             proposalTitle,
+				Description:       proposalDescr,
+				ContractAddresses: args,
+			}
+
+			msg, err := v1beta1.NewMsgSubmitProposal(&content, deposit, clientCtx.GetFromAddress())
+			if err != nil {
+				return err
+			}
+			if err = msg.GetContent().ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+		SilenceUsage: true,
+	}
+	// proposal flags
+	cmd.Flags().String(cli.FlagTitle, "", "Title of proposal")
+	cmd.Flags().String(cli.FlagDescription, "", "Description of proposal")
+	cmd.Flags().String(cli.FlagDeposit, "", "Deposit of proposal")
+	return cmd
+}
+
+func ProposalUnsetGaslessContractsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "unset-gasless [contract-addresses]",
+		Short: "Submit a unset gasless contracts proposal",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, proposalTitle, proposalDescr, deposit, _, err := getProposalInfo(cmd)
+			if err != nil {
+				return err
+			}
+
+			content := types.UnsetGasLessContractsProposal{
+				Title:             proposalTitle,
+				Description:       proposalDescr,
+				ContractAddresses: args,
+			}
+
+			msg, err := v1beta1.NewMsgSubmitProposal(&content, deposit, clientCtx.GetFromAddress())
+			if err != nil {
+				return err
+			}
+			if err = msg.GetContent().ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+		SilenceUsage: true,
+	}
+	// proposal flags
+	cmd.Flags().String(cli.FlagTitle, "", "Title of proposal")
+	cmd.Flags().String(cli.FlagDescription, "", "Description of proposal")
+	cmd.Flags().String(cli.FlagDeposit, "", "Deposit of proposal")
 	return cmd
 }
 

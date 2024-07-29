@@ -3,9 +3,10 @@
 This document gives an overview of how the various governance
 proposals interact with the CosmWasm contract lifecycle. It is
 a high-level, technical introduction meant to provide context before
-looking into the code, or constructing proposals. 
+looking into the code, or constructing proposals.
 
 ## Proposal Types
+<<<<<<< HEAD
 We have added 15 new wasm specific proposal messages that cover the contract's live cycle and authorization:
  
 * `MsgStoreCode` - upload a wasm binary
@@ -29,10 +30,61 @@ We have added 15 new wasm specific proposal messages that cover the contract's l
 Settings via sdk `params` module: 
 - `code_upload_access` - who can upload a wasm binary: `Nobody`, `Everybody`, `AnyOfAddresses`
 - `instantiate_default_permission` - platform default, who can instantiate a wasm binary when the code owner has not set it 
+=======
+
+We have added 9 new wasm specific proposal types that cover the contract's live cycle and authorization:
+
+- `StoreCodeProposal` - upload a wasm binary
+- `InstantiateContractProposal` - instantiate a wasm contract
+- `MigrateContractProposal` - migrate a wasm contract to a new code version
+- `SudoContractProposal` - call into the protected `sudo` entry point of a contract
+- `ExecuteContractProposal` - execute a wasm contract as an arbitrary user
+- `UpdateAdminProposal` - set a new admin for a contract
+- `ClearAdminProposal` - clear admin for a contract to prevent further migrations
+- `PinCodes` - pin the given code ids in cache. This trades memory for reduced startup time and lowers gas cost
+- `UnpinCodes` - unpin the given code ids from the cache. This frees up memory and returns to standard speed and gas cost
+- `SetGaslessContracts` - set the given gasless contract addresses in cache. This trades memory for reduced startup time and lowers gas cost
+- `UnsetGaslessContracts` - unset the given gasless contract addresses from the cache. This frees up memory and returns to standard speed and gas cost
+- `UpdateInstantiateConfigProposal` - update instantiate permissions to a list of given code ids.
+- `StoreAndInstantiateContractProposal` - upload and instantiate a wasm contract.
+
+For details see the proposal type [implementation](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/types/proposal.go)
+
+### Unit tests
+
+[Proposal type validations](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/types/proposal_test.go)
+
+## Proposal Handler
+
+The [wasmd proposal_handler](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/keeper/proposal_handler.go) implements the `gov.Handler` function
+and executes the wasmd proposal types after a successful tally.
+
+The proposal handler uses a [`GovAuthorizationPolicy`](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/keeper/authz_policy.go#L29) to bypass the existing contract's authorization policy.
+
+### Tests
+
+- [Integration: Submit and execute proposal](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/keeper/proposal_integration_test.go)
+
+## Gov Integration
+
+The wasmd proposal handler can be added to the gov router in the [abci app](https://github.com/CosmWasm/wasmd/blob/master/app/app.go#L306)
+to receive proposal execution calls.
+
+```go
+govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(app.wasmKeeper, enabledProposals))
+```
+
+## Wasmd Authorization Settings
+
+Settings via sdk `params` module:
+
+- `code_upload_access` - who can upload a wasm binary: `Nobody`, `Everybody`, `OnlyAddress`
+- `instantiate_default_permission` - platform default, who can instantiate a wasm binary when the code owner has not set it
+>>>>>>> feat/gasless-contract
 
 See [params.go](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/types/params.go)
 
-### Init Params Via Genesis 
+### Init Params Via Genesis
 
 ```json
     "wasm": {
@@ -42,15 +94,22 @@ See [params.go](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/types/param
         },
         "instantiate_default_permission": "Everybody"
       }
-    },  
+    },
 ```
 
 The values can be updated via gov proposal `MsgUpdateParams`.
 
+<<<<<<< HEAD
 ### Update Params Via [MsgUpdateParams](https://github.com/CosmWasm/wasmd/blob/v0.41.0/proto/cosmwasm/wasm/v1/tx.proto#L263)
 Example to submit a parameter change gov proposal:
 
 - First create a draft proposal using the interactive CLI
+=======
+### Update Params Via [ParamChangeProposal](https://github.com/cosmos/cosmos-sdk/blob/v0.45.3/proto/cosmos/params/v1beta1/params.proto#L10)
+
+Example to submit a parameter change gov proposal:
+
+>>>>>>> feat/gasless-contract
 ```sh
 wasmd tx gov draft-proposal
 ```
@@ -59,8 +118,11 @@ wasmd tx gov draft-proposal
 ```sh
 wasmd tx gov submit-proposal <proposal-json-file> --from validator --chain-id=testing -b block
 ```
+
 #### Content examples
-* Disable wasm code uploads
+
+- Disable wasm code uploads
+
 ```json
 {
   "title": "Foo",
@@ -77,7 +139,9 @@ wasmd tx gov submit-proposal <proposal-json-file> --from validator --chain-id=te
   "deposit": ""
 }
 ```
-* Allow wasm code uploads for everybody
+
+- Allow wasm code uploads for everybody
+
 ```json
 {
   "title": "Foo",
@@ -95,7 +159,8 @@ wasmd tx gov submit-proposal <proposal-json-file> --from validator --chain-id=te
 }
 ```
 
-* Restrict code uploads to a single address
+- Restrict code uploads to a single address
+
 ```json
 {
   "title": "Foo",
@@ -114,6 +179,7 @@ wasmd tx gov submit-proposal <proposal-json-file> --from validator --chain-id=te
 }
 ```
 
+<<<<<<< HEAD
 * Restrict code uploads to two addresses
 ```json
 {
@@ -134,6 +200,10 @@ wasmd tx gov submit-proposal <proposal-json-file> --from validator --chain-id=te
 ```
 
 * Set chain **default** instantiation settings to nobody
+=======
+- Set chain **default** instantiation settings to nobody
+
+>>>>>>> feat/gasless-contract
 ```json
 {
   "title": "Foo",
@@ -148,7 +218,9 @@ wasmd tx gov submit-proposal <proposal-json-file> --from validator --chain-id=te
   "deposit": ""
 }
 ```
-* Set chain **default** instantiation settings to everybody
+
+- Set chain **default** instantiation settings to everybody
+
 ```json
 {
   "title": "Foo",
@@ -164,10 +236,25 @@ wasmd tx gov submit-proposal <proposal-json-file> --from validator --chain-id=te
 }
 ```
 
+<<<<<<< HEAD
+=======
+### Enable gov proposals at **compile time**.
+
+As gov proposals bypass the existing authorization policy they are disabled and require to be enabled at compile time.
+
+```
+-X github.com/CosmWasm/wasmd/app.ProposalsEnabled=true - enable all x/wasm governance proposals (default false)
+-X github.com/CosmWasm/wasmd/app.EnableSpecificProposals=MigrateContract,UpdateAdmin,ClearAdmin - enable a subset of the x/wasm governance proposal types (overrides ProposalsEnabled)
+```
+
+The `ParamChangeProposal` is always enabled.
+
+>>>>>>> feat/gasless-contract
 ### Tests
-* [params validation unit tests](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/types/params_test.go)
-* [genesis validation tests](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/types/genesis_test.go)
-* [policy integration tests](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/keeper/keeper_test.go)
+
+- [params validation unit tests](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/types/params_test.go)
+- [genesis validation tests](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/types/genesis_test.go)
+- [policy integration tests](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/keeper/keeper_test.go)
 
 ## CLI
 
@@ -192,5 +279,34 @@ Available Commands:
 ...
 ```
 
+<<<<<<< HEAD
+=======
+## Rest
 
+New [`ProposalHandlers`](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/client/proposal_handler.go)
 
+- Integration
+
+```shell script
+gov.NewAppModuleBasic(append(wasmclient.ProposalHandlers, paramsclient.ProposalHandler, distr.ProposalHandler, upgradeclient.ProposalHandler)...),
+```
+
+In [abci app](https://github.com/CosmWasm/wasmd/blob/master/app/app.go#L109)
+
+### Tests
+>>>>>>> feat/gasless-contract
+
+- [Rest Unit tests](https://github.com/CosmWasm/wasmd/blob/master/x/wasm/client/proposal_handler_test.go)
+- [Rest smoke LCD test](https://github.com/CosmWasm/wasmd/blob/master/lcd_test/wasm_test.go)
+
+<<<<<<< HEAD
+=======
+## Pull requests
+
+- https://github.com/CosmWasm/wasmd/pull/190
+- https://github.com/CosmWasm/wasmd/pull/186
+- https://github.com/CosmWasm/wasmd/pull/183
+- https://github.com/CosmWasm/wasmd/pull/180
+- https://github.com/CosmWasm/wasmd/pull/179
+- https://github.com/CosmWasm/wasmd/pull/173
+>>>>>>> feat/gasless-contract
