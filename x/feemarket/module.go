@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -103,6 +102,14 @@ func NewAppModule(k keeper.Keeper) AppModule {
 	}
 }
 
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() { // marker
+}
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() { // marker
+}
+
 // Name returns the fee market module's name.
 func (AppModule) Name() string {
 	return types.ModuleName
@@ -124,30 +131,20 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	}
 }
 
-// Route returns the message routing key for the fee market module.
-func (am AppModule) Route() sdk.Route {
-	return sdk.Route{}
-}
-
 // QuerierRoute returns the fee market module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }
 
-// LegacyQuerierHandler returns nil as the fee market module doesn't expose a legacy
-// Querier.
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
+// BeginBlock executes all ABCI BeginBlock logic respective to the tokenfactory module.
+func (am AppModule) BeginBlock(ctx sdk.Context) error {
+	am.keeper.BeginBlock(ctx)
 	return nil
 }
 
-// BeginBlock returns the begin block for the fee market module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	am.keeper.BeginBlock(ctx, req)
-}
-
-// EndBlock returns the end blocker for the fee market module. It returns no validator
-// updates.
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	am.keeper.EndBlock(ctx, req)
-	return []abci.ValidatorUpdate{}
+// EndBlock executes all ABCI EndBlock logic respective to the tokenfactory module. It
+// returns no validator updates.
+func (am AppModule) EndBlock(ctx sdk.Context) error {
+	am.keeper.EndBlock(ctx)
+	return nil
 }
 
 // InitGenesis performs genesis initialization for the fee market module. It returns
@@ -167,16 +164,11 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 	return cdc.MustMarshalJSON(gs)
 }
 
-// RandomizedParams creates randomized fee market param changes for the simulator.
-func (AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
-	return nil
-}
-
 // RegisterStoreDecoder registers a decoder for fee market module's types
-func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {}
+func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {}
 
 // ProposalContents doesn't return any content functions for governance proposals.
-func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent {
+func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalMsg {
 	return nil
 }
 

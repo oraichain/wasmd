@@ -4,13 +4,12 @@ import (
 	"fmt"
 
 	"github.com/CosmWasm/wasmd/x/feemarket/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // BeginBlock updates base fee
-func (k *Keeper) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (k *Keeper) BeginBlock(ctx sdk.Context) {
 	baseFee := k.CalculateBaseFee(ctx)
 
 	// return immediately if base fee is nil
@@ -32,7 +31,7 @@ func (k *Keeper) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock update block gas used.
 // The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
-func (k *Keeper) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) {
+func (k *Keeper) EndBlock(ctx sdk.Context) {
 	if ctx.BlockGasMeter() == nil {
 		k.Logger(ctx).Error("block gas meter is nil when setting block gas used")
 		return

@@ -110,21 +110,21 @@ func NewAppModule(keeper keeper.Keeper, bankKeeper types.BankKeeper) AppModule {
 	}
 }
 
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() { // marker
+}
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() { // marker
+}
+
 // Name returns evmutil module's name.
 func (am AppModule) Name() string {
 	return am.AppModuleBasic.Name()
 }
 
-// Route returns evmutil module's message route.
-func (am AppModule) Route() sdk.Route { return sdk.Route{} }
-
 // QuerierRoute returns evmutil module's query routing key.
 func (AppModule) QuerierRoute() string { return "" }
-
-// LegacyQuerierHandler returns evmutil module's Querier.
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return nil
-}
 
 // RegisterServices registers a GRPC query service to respond to the
 // module-specific GRPC queries.
@@ -158,11 +158,13 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 // ConsensusVersion implements ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
-// BeginBlock executes all ABCI BeginBlock logic respective to evmutil module.
-func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {}
+// BeginBlock executes all ABCI BeginBlock logic respective to the tokenfactory module.
+func (am AppModule) BeginBlock(_ sdk.Context) error {
+	return nil
+}
 
-// EndBlock executes all ABCI EndBlock logic respective to evmutil module. It
+// EndBlock executes all ABCI EndBlock logic respective to the tokenfactory module. It
 // returns no validator updates.
-func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
+func (am AppModule) EndBlock(_ sdk.Context) ([]abci.ValidatorUpdate, error) {
+	return nil, nil
 }
