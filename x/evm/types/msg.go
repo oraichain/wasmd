@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -167,13 +168,13 @@ func (msg MsgEthereumTx) Type() string { return TypeMsgEthereumTx }
 func (msg MsgEthereumTx) ValidateBasic() error {
 	if msg.From != "" {
 		if err := types.ValidateAddress(msg.From); err != nil {
-			return sdkerrors.Wrap(err, "invalid from address")
+			return errorsmod.Wrap(err, "invalid from address")
 		}
 	}
 
 	txData, err := UnpackTxData(msg.Data)
 	if err != nil {
-		return sdkerrors.Wrap(err, "failed to unpack tx data")
+		return errorsmod.Wrap(err, "failed to unpack tx data")
 	}
 
 	return txData.Validate()
@@ -375,7 +376,7 @@ func (msg MsgSetMappingEvmAddress) GetSigners() []sdk.AccAddress {
 func (msg MsgSetMappingEvmAddress) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Signer)
 	if err != nil {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "signer is not a valid bech32 address")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "signer is not a valid bech32 address")
 	}
 
 	cosmosAddress, err := PubkeyToCosmosAddress(msg.Pubkey)
@@ -383,7 +384,7 @@ func (msg MsgSetMappingEvmAddress) ValidateBasic() error {
 		return err
 	}
 	if msg.Signer != cosmosAddress.String() {
-		return sdkerrors.Wrap(
+		return errorsmod.Wrap(
 			sdkerrors.ErrInvalidAddress,
 			"Signer does not match the given pubkey",
 		)
@@ -428,7 +429,7 @@ func (msg MsgSetMappingEvmAddress) Type() string {
 // func (msg MsgDeleteMappingEvmAddress) ValidateBasic() error {
 // 	_, err := sdk.AccAddressFromBech32(msg.Signer)
 // 	if err != nil {
-// 		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "signer is not a valid bech32 address")
+// 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "signer is not a valid bech32 address")
 // 	}
 // 	return nil
 // }

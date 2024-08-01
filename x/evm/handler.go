@@ -1,10 +1,10 @@
 package evm
 
 import (
+	errorsmod "cosmossdk.io/errors"
+	"github.com/CosmWasm/wasmd/x/evm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	"github.com/CosmWasm/wasmd/x/evm/types"
 )
 
 // NewHandler returns a handler for Ethermint type messages.
@@ -19,7 +19,7 @@ func NewHandler(server types.MsgServer) sdk.Handler {
 			return sdk.WrapServiceResult(ctx, res, err)
 
 		default:
-			err := sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s message type: %T", types.ModuleName, msg)
+			err := errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s message type: %T", types.ModuleName, msg)
 			return nil, err
 		}
 	}

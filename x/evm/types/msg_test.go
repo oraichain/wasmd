@@ -21,8 +21,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/CosmWasm/wasmd/app"
-	"github.com/CosmWasm/wasmd/encoding"
 	"github.com/CosmWasm/wasmd/x/evm/types"
 )
 
@@ -57,7 +55,7 @@ func (suite *MsgsTestSuite) SetupTest() {
 	suite.chainID = big.NewInt(1)
 	suite.hundredBigInt = big.NewInt(100)
 
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	encodingConfig := was
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 }
 

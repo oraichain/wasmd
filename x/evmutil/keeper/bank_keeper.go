@@ -221,7 +221,7 @@ func (k EvmBankKeeper) ConvertAkavaToUkava(ctx sdk.Context, addr sdk.AccAddress)
 func (k EvmBankKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
 	addr := k.ak.GetModuleAddress(moduleName)
 	if addr == nil {
-		panic(sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", moduleName))
+		panic(errorsmod.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", moduleName))
 	}
 	return addr
 }
@@ -270,13 +270,13 @@ func ValidateEvmCoins(coins sdk.Coins, evmDenom string) error {
 
 	// validate that coins are non-negative, sorted, and no dup denoms
 	if err := coins.Validate(); err != nil {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, coins.String())
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, coins.String())
 	}
 
 	// validate that coin denom is akava
 	if len(coins) != 1 || coins[0].Denom != evmDenom {
 		errMsg := fmt.Sprintf("invalid evm coin denom, only %s is supported", evmDenom)
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, errMsg)
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, errMsg)
 	}
 
 	return nil

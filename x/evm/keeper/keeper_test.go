@@ -12,6 +12,7 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -30,7 +31,6 @@ import (
 
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
-	"github.com/CosmWasm/wasmd/encoding"
 	"github.com/CosmWasm/wasmd/tests"
 	ethermint "github.com/CosmWasm/wasmd/types"
 	"github.com/CosmWasm/wasmd/x/evm/statedb"
@@ -43,10 +43,10 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
 )
 
@@ -142,7 +142,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	if suite.mintFeeCollector {
 		// mint some coin to fee collector
 		coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(int64(params.TxGas)-1)))
-		genesisState := app.ModuleBasics.DefaultGenesis(suite.app.AppCodec())
+		genesisState := wasmkeeper.ModuleBasics.DefaultGenesis(suite.app.AppCodec())
 		balances := []banktypes.Balance{
 			{
 				Address: suite.app.AccountKeeper.GetModuleAddress(authtypes.FeeCollectorName).String(),
@@ -213,7 +213,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	require.NoError(t, err)
 	suite.app.StakingKeeper.SetValidator(suite.ctx, validator)
 
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	encodingConfig := wasmkeeper.MakeEncodingConfig(suite.T())
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
 	suite.appCodec = encodingConfig.Marshaler

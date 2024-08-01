@@ -5,9 +5,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/CosmWasm/wasmd/app"
-	"github.com/CosmWasm/wasmd/encoding"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -51,7 +50,7 @@ func TestUnwrapEthererumMsg(t *testing.T) {
 	_, err := evmtypes.UnwrapEthereumMsg(nil, common.Hash{})
 	require.NotNil(t, err)
 
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	encodingConfig := wasmkeeper.MakeEncodingConfig(t)
 	clientCtx := client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	builder, _ := clientCtx.TxConfig.NewTxBuilder().(authtx.ExtensionOptionsTxBuilder)
 

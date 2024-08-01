@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	ethermint "github.com/CosmWasm/wasmd/types"
 	"github.com/CosmWasm/wasmd/x/evm/statedb"
 	"github.com/CosmWasm/wasmd/x/evm/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -131,7 +131,7 @@ func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account stated
 				CodeHash:    codeHash.Hex(),
 			}
 		} else {
-			return sdkerrors.Wrapf(types.ErrInvalidAccount, "type %T, address %s", acct, addr)
+			return errorsmod.Wrapf(types.ErrInvalidAccount, "type %T, address %s", acct, addr)
 		}
 	}
 
@@ -201,7 +201,7 @@ func (k *Keeper) DeleteAccount(ctx sdk.Context, addr common.Address) error {
 	// NOTE: only Ethereum accounts (contracts) can be selfdestructed
 	_, ok := acct.(ethermint.EthAccountI)
 	if !ok {
-		return sdkerrors.Wrapf(types.ErrInvalidAccount, "type %T, address %s", acct, addr)
+		return errorsmod.Wrapf(types.ErrInvalidAccount, "type %T, address %s", acct, addr)
 	}
 
 	// clear balance

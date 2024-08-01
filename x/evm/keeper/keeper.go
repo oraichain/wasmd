@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,7 +17,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	ethermint "github.com/CosmWasm/wasmd/types"
@@ -334,7 +335,7 @@ func (k Keeper) SetTransientGasUsed(ctx sdk.Context, gasUsed uint64) {
 func (k Keeper) AddTransientGasUsed(ctx sdk.Context, gasUsed uint64) (uint64, error) {
 	result := k.GetTransientGasUsed(ctx) + gasUsed
 	if result < gasUsed {
-		return 0, sdkerrors.Wrap(types.ErrGasOverflow, "transient gas used")
+		return 0, errorsmod.Wrap(types.ErrGasOverflow, "transient gas used")
 	}
 	k.SetTransientGasUsed(ctx, result)
 	return result, nil
@@ -345,7 +346,7 @@ func (k Keeper) GetEvmAddressMapping(ctx sdk.Context, addr sdk.AccAddress) (*com
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.EvmAddressMappingStoreKey(addr))
 	if bz == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrNotFound, fmt.Sprintf("There is no evm address mapped to %s.", addr.String()))
+		return nil, errorsmod.Wrap(sdkerrors.ErrNotFound, fmt.Sprintf("There is no evm address mapped to %s.", addr.String()))
 	}
 	evmAddress := common.BytesToAddress(bz)
 	return &evmAddress, nil
@@ -356,7 +357,7 @@ func (k Keeper) getCosmosAddressMapping(ctx sdk.Context, evmAddress common.Addre
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.CosmosAddressMappingStoreKey(evmAddress))
 	if bz == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrNotFound, fmt.Sprintf("There is no cosmos address mapped to %s.", evmAddress.String()))
+		return nil, errorsmod.Wrap(sdkerrors.ErrNotFound, fmt.Sprintf("There is no cosmos address mapped to %s.", evmAddress.String()))
 	}
 	cosmosAddress := sdk.AccAddress(bz)
 	return &cosmosAddress, nil
@@ -434,7 +435,7 @@ func (k Keeper) ValidateSignerEIP712Ante(ctx sdk.Context, pk cryptotypes.PubKey,
 	signerFromEvmAddressSigner := k.GetCosmosAddressMapping(ctx, evmAddressFromSigner)
 
 	if !bytes.Equal(accAddressFromPubkey, signerFromEvmAddressSigner.Bytes()) {
-		return sdkerrors.Wrapf(sdkerrors.ErrorInvalidSigner,
+		return errorsmod.Wrapf(sdkerrors.ErrorInvalidSigner,
 			"Signer from pubkey %s does not match signer from GetSigners %s", sdk.AccAddress(accAddressFromPubkey).String(), signerFromEvmAddressSigner.String())
 	}
 	return nil
@@ -448,14 +449,14 @@ func (k Keeper) GetAccAddressBytesFromPubkey(ctx sdk.Context, pk cryptotypes.Pub
 	} else if pk.Type() == ethsecp256k1.KeyType {
 		evmAddressFromPubkey, err := types.PubkeyBytesToEVMAddress(pk.Bytes())
 		if err != nil {
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidPubKey,
+			return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidPubKey,
 				"Pubkey is invalid to convert to evm address: %s", pk.String())
 		}
 		signerFromPubkey := k.GetCosmosAddressMapping(ctx, *evmAddressFromPubkey)
 		addressFromPubkey = signerFromPubkey.Bytes()
 		return addressFromPubkey, nil
 	} else {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidPubKey,
+		return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidPubKey,
 			"Invalid pubkey type: %s", pk.Type())
 	}
 }

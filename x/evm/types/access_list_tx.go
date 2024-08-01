@@ -3,6 +3,7 @@ package types
 import (
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -181,37 +182,37 @@ func (tx *AccessListTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 func (tx AccessListTx) Validate() error {
 	gasPrice := tx.GetGasPrice()
 	if gasPrice == nil {
-		return sdkerrors.Wrap(ErrInvalidGasPrice, "cannot be nil")
+		return errorsmod.Wrap(ErrInvalidGasPrice, "cannot be nil")
 	}
 	if !IsValidInt256(gasPrice) {
-		return sdkerrors.Wrap(ErrInvalidGasPrice, "out of bound")
+		return errorsmod.Wrap(ErrInvalidGasPrice, "out of bound")
 	}
 
 	if gasPrice.Sign() == -1 {
-		return sdkerrors.Wrapf(ErrInvalidGasPrice, "gas price cannot be negative %s", gasPrice)
+		return errorsmod.Wrapf(ErrInvalidGasPrice, "gas price cannot be negative %s", gasPrice)
 	}
 
 	amount := tx.GetValue()
 	// Amount can be 0
 	if amount != nil && amount.Sign() == -1 {
-		return sdkerrors.Wrapf(ErrInvalidAmount, "amount cannot be negative %s", amount)
+		return errorsmod.Wrapf(ErrInvalidAmount, "amount cannot be negative %s", amount)
 	}
 	if !IsValidInt256(amount) {
-		return sdkerrors.Wrap(ErrInvalidAmount, "out of bound")
+		return errorsmod.Wrap(ErrInvalidAmount, "out of bound")
 	}
 
 	if !IsValidInt256(tx.Fee()) {
-		return sdkerrors.Wrap(ErrInvalidGasFee, "out of bound")
+		return errorsmod.Wrap(ErrInvalidGasFee, "out of bound")
 	}
 
 	if tx.To != "" {
 		if err := types.ValidateAddress(tx.To); err != nil {
-			return sdkerrors.Wrap(err, "invalid to address")
+			return errorsmod.Wrap(err, "invalid to address")
 		}
 	}
 
 	if tx.GetChainID() == nil {
-		return sdkerrors.Wrap(
+		return errorsmod.Wrap(
 			sdkerrors.ErrInvalidChainID,
 			"chain ID must be present on AccessList txs",
 		)

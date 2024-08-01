@@ -66,7 +66,7 @@ const ERC20EventTransfer = "Transfer"
 func (k Keeper) PostTxProcessing(ctx sdk.Context, txHash common.Hash, logs []*ethtypes.Log) error {
 	params := k.GetParams(ctx)
 	if !params.EnableEVMHook {
-		return sdkerrors.Wrap(types.ErrInternalTokenPair, "EVM Hook is currently disabled")
+		return errorsmod.Wrap(types.ErrInternalTokenPair, "EVM Hook is currently disabled")
 	}
 
 	erc20 := contracts.ERC20BurnableContract.ABI

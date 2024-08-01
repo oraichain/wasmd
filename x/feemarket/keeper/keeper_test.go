@@ -6,9 +6,16 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/CosmWasm/wasmd/app"
+	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
+	"github.com/CosmWasm/wasmd/tests"
+	ethermint "github.com/CosmWasm/wasmd/types"
+	"github.com/CosmWasm/wasmd/x/feemarket/types"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -17,20 +24,13 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/CosmWasm/wasmd/app"
-	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
-	"github.com/CosmWasm/wasmd/encoding"
-	"github.com/CosmWasm/wasmd/tests"
-	ethermint "github.com/CosmWasm/wasmd/types"
-	"github.com/CosmWasm/wasmd/x/feemarket/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
 )
 
@@ -38,7 +38,7 @@ type KeeperTestSuite struct {
 	suite.Suite
 
 	ctx         sdk.Context
-	app         *app.EthermintApp
+	app         *app.WasmApp
 	queryClient types.QueryClient
 	address     common.Address
 	consAddress sdk.ConsAddress
@@ -66,7 +66,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	require.NoError(t, err)
 	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
 
-	suite.app = app.Setup(checkTx, nil)
+	suite.app = app.Setup(suite.T(), nil)
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, tmproto.Header{
 		Height:          1,
 		ChainID:         "ethermint_9000-1",
@@ -110,10 +110,10 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	require.NoError(t, err)
 	suite.app.StakingKeeper.SetValidator(suite.ctx, validator)
 
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	encodingConfig := wasmkeeper.MakeEncodingConfig(suite.T())
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
-	suite.appCodec = encodingConfig.Marshaler
+	suite.appCodec = encodingConfig.Codec
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
@@ -155,9 +155,9 @@ func (suite *KeeperTestSuite) TestSetGetGasFee() {
 		{
 			"with last block given",
 			func() {
-				suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, sdk.OneDec().BigInt())
+				suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, sdkmath.LegacyOneDec().BigInt())
 			},
-			sdk.OneDec().BigInt(),
+			sdkmath.LegacyOneDec().BigInt(),
 		},
 	}
 

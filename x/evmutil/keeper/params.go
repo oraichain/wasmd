@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/CosmWasm/wasmd/x/evmutil/types"
 )
@@ -32,7 +31,7 @@ func (k Keeper) GetEnabledConversionPairFromERC20Address(
 		}
 	}
 
-	return types.ConversionPair{}, sdkerrors.Wrap(types.ErrConversionNotEnabled, address.String())
+	return types.ConversionPair{}, errorsmod.Wrap(types.ErrConversionNotEnabled, address.String())
 }
 
 // GetEnabledConversionPairFromDenom returns an ConversionPair from the sdk.Coin denom.
@@ -47,5 +46,5 @@ func (k Keeper) GetEnabledConversionPairFromDenom(
 		}
 	}
 
-	return types.ConversionPair{}, sdkerrors.Wrap(types.ErrConversionNotEnabled, denom)
+	return types.ConversionPair{}, errorsmod.Wrap(types.ErrConversionNotEnabled, denom)
 }

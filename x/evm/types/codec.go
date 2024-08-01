@@ -1,6 +1,7 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -45,12 +46,12 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 func PackTxData(txData TxData) (*codectypes.Any, error) {
 	msg, ok := txData.(proto.Message)
 	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrPackAny, "cannot proto marshal %T", txData)
+		return nil, errorsmod.Wrapf(sdkerrors.ErrPackAny, "cannot proto marshal %T", txData)
 	}
 
 	anyTxData, err := codectypes.NewAnyWithValue(msg)
 	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrPackAny, err.Error())
+		return nil, errorsmod.Wrap(sdkerrors.ErrPackAny, err.Error())
 	}
 
 	return anyTxData, nil
@@ -60,12 +61,12 @@ func PackTxData(txData TxData) (*codectypes.Any, error) {
 // client state can't be unpacked into a TxData.
 func UnpackTxData(any *codectypes.Any) (TxData, error) {
 	if any == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnpackAny, "protobuf Any message cannot be nil")
+		return nil, errorsmod.Wrap(sdkerrors.ErrUnpackAny, "protobuf Any message cannot be nil")
 	}
 
 	txData, ok := any.GetCachedValue().(TxData)
 	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnpackAny, "cannot unpack Any into TxData %T", any)
+		return nil, errorsmod.Wrapf(sdkerrors.ErrUnpackAny, "cannot unpack Any into TxData %T", any)
 	}
 
 	return txData, nil

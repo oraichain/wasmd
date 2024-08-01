@@ -3,6 +3,8 @@ package v010
 import (
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	v09types "github.com/CosmWasm/wasmd/x/feemarket/migrations/v09/types"
@@ -15,7 +17,7 @@ var KeyPrefixBaseFeeV1 = []byte{2}
 
 // MigrateStore migrates the BaseFee value from the store to the params for
 // In-Place Store migration logic.
-func MigrateStore(ctx sdk.Context, paramstore *paramtypes.Subspace, storeKey sdk.StoreKey) error {
+func MigrateStore(ctx sdk.Context, paramstore *paramtypes.Subspace, storeKey storetypes.StoreKey) error {
 	baseFee := types.DefaultParams().BaseFee
 
 	store := ctx.KVStore(storeKey)

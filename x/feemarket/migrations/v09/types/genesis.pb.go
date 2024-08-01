@@ -5,7 +5,7 @@ package types
 
 import (
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"	
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
@@ -30,7 +30,7 @@ type GenesisState struct {
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 	// base fee is the exported value from previous software version.
 	// Zero by default.
-	BaseFee github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=base_fee,json=baseFee,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"base_fee"`
+	BaseFee sdkmath.Int `protobuf:"bytes,2,opt,name=base_fee,json=baseFee,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"base_fee"`
 	// block gas is the amount of gas used on the last block before the upgrade.
 	// Zero by default.
 	BlockGas uint64 `protobuf:"varint,3,opt,name=block_gas,json=blockGas,proto3" json:"block_gas,omitempty"`

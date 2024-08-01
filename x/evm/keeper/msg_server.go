@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	errorsmod "cosmossdk.io/errors"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -30,7 +31,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 
 	response, err := k.ApplyTransaction(ctx, tx)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to apply transaction")
+		return nil, errorsmod.Wrap(err, "failed to apply transaction")
 	}
 
 	attrs := []sdk.Attribute{
@@ -61,7 +62,7 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 	for i, log := range response.Logs {
 		value, err := json.Marshal(log)
 		if err != nil {
-			return nil, sdkerrors.Wrap(err, "failed to encode log")
+			return nil, errorsmod.Wrap(err, "failed to encode log")
 		}
 		txLogAttrs[i] = sdk.NewAttribute(types.AttributeKeyTxLog, string(value))
 	}
@@ -95,7 +96,7 @@ func (k *Keeper) SetMappingEvmAddress(
 
 	signer, err := sdk.AccAddressFromBech32(msg.Signer)
 	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrorInvalidSigner, fmt.Sprintf("invalid signer address: %s", err.Error()))
+		return nil, errorsmod.Wrap(sdkerrors.ErrorInvalidSigner, fmt.Sprintf("invalid signer address: %s", err.Error()))
 	}
 
 	_, err = k.GetEvmAddressMapping(ctx, signer)
@@ -110,7 +111,7 @@ func (k *Keeper) SetMappingEvmAddress(
 		return nil, err
 	}
 	if msg.Signer != cosmosAddress.String() {
-		return nil, sdkerrors.Wrap(
+		return nil, errorsmod.Wrap(
 			sdkerrors.ErrInvalidPubKey,
 			"Signer does not match the given pubkey",
 		)

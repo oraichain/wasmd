@@ -3,12 +3,12 @@ package keeper
 import (
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
+	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
-
-	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -30,7 +30,7 @@ func (k Keeper) DeductTxCostsFromUserBalance(
 	signer := k.GetCosmosAddressMapping(ctx, evmAddress)
 	signerAcc, err := authante.GetSignerAcc(ctx, k.accountKeeper, signer)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(err, "account not found for cosmos signer %s and evm address %s", signer, evmAddress)
+		return nil, errorsmod.Wrapf(err, "account not found for cosmos signer %s and evm address %s", signer, evmAddress)
 	}
 
 	gasLimit := txData.GetGas()
@@ -42,7 +42,7 @@ func (k Keeper) DeductTxCostsFromUserBalance(
 
 	intrinsicGas, err := core.IntrinsicGas(txData.GetData(), accessList, isContractCreation, homestead, istanbul)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(
+		return nil, errorsmod.Wrapf(
 			err,
 			"failed to retrieve intrinsic gas, contract creation = %t; homestead = %t, istanbul = %t",
 			isContractCreation, homestead, istanbul,
@@ -51,7 +51,7 @@ func (k Keeper) DeductTxCostsFromUserBalance(
 
 	// intrinsic gas verification during CheckTx
 	if ctx.IsCheckTx() && gasLimit < intrinsicGas {
-		return nil, sdkerrors.Wrapf(
+		return nil, errorsmod.Wrapf(
 			sdkerrors.ErrOutOfGas,
 			"gas limit too low: %d (gas limit) < %d (intrinsic gas)", gasLimit, intrinsicGas,
 		)
@@ -63,7 +63,7 @@ func (k Keeper) DeductTxCostsFromUserBalance(
 	if london && !feeMktParams.NoBaseFee && txData.TxType() == ethtypes.DynamicFeeTxType {
 		baseFee := k.feeMarketKeeper.GetBaseFee(ctx)
 		if txData.GetGasFeeCap().Cmp(baseFee) < 0 {
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "the tx gasfeecap is lower than the tx baseFee: %s (gasfeecap), %s (basefee) ", txData.GetGasFeeCap(), baseFee)
+			return nil, errorsmod.Wrapf(sdkerrors.ErrInsufficientFee, "the tx gasfeecap is lower than the tx baseFee: %s (gasfeecap), %s (basefee) ", txData.GetGasFeeCap(), baseFee)
 		}
 		feeAmt = txData.EffectiveFee(baseFee)
 	} else {
@@ -79,7 +79,7 @@ func (k Keeper) DeductTxCostsFromUserBalance(
 
 	// deduct the full gas cost from the user balance
 	if err := authante.DeductFees(k.bankKeeper, ctx, signerAcc, fees); err != nil {
-		return nil, sdkerrors.Wrapf(
+		return nil, errorsmod.Wrapf(
 			err,
 			"failed to deduct full gas cost %s from the user %s balance",
 			fees, msgEthTx.From,
@@ -97,14 +97,14 @@ func CheckSenderBalance(
 	cost := txData.Cost()
 
 	if cost.Sign() < 0 {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			sdkerrors.ErrInvalidCoins,
 			"tx cost (%s) is negative and invalid", cost,
 		)
 	}
 
 	if balance.IsNegative() || balance.BigInt().Cmp(cost) < 0 {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			sdkerrors.ErrInsufficientFunds,
 			"sender balance < tx cost (%s < %s)", balance, txData.Cost(),
 		)

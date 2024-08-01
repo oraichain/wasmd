@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/gogo/protobuf/proto"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/gogo/protobuf/proto"
 )
 
 const maxBitLen = 256
@@ -33,7 +32,7 @@ func DecodeTxResponse(in []byte) (*MsgEthereumTxResponse, error) {
 
 	err := proto.Unmarshal(data[0].GetData(), &res)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to unmarshal tx response message data")
+		return nil, errorsmod.Wrap(err, "failed to unmarshal tx response message data")
 	}
 
 	return &res, nil

@@ -4,32 +4,29 @@ import (
 	"fmt"
 	"testing"
 
+	storetypes "cosmossdk.io/store/types"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	"github.com/cosmos/cosmos-sdk/testutil"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
-	"github.com/CosmWasm/wasmd/encoding"
-
-	"github.com/CosmWasm/wasmd/app"
 	feemarketkeeper "github.com/CosmWasm/wasmd/x/feemarket/keeper"
 	v010 "github.com/CosmWasm/wasmd/x/feemarket/migrations/v010"
 	v09types "github.com/CosmWasm/wasmd/x/feemarket/migrations/v09/types"
-	"github.com/CosmWasm/wasmd/x/feemarket/types"
+
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
 )
 
 func TestMigrateStore(t *testing.T) {
-	encCfg := encoding.MakeConfig(app.ModuleBasics)
-	feemarketKey := sdk.NewKVStoreKey(feemarkettypes.StoreKey)
-	tFeeMarketKey := sdk.NewTransientStoreKey(fmt.Sprintf("%s_test", feemarkettypes.StoreKey))
+	encCfg := wasmkeeper.MakeEncodingConfig(t)
+	feemarketKey := storetypes.NewKVStoreKey(feemarkettypes.StoreKey)
+	tFeeMarketKey := storetypes.NewTransientStoreKey(fmt.Sprintf("%s_test", feemarkettypes.StoreKey))
 	ctx := testutil.DefaultContext(feemarketKey, tFeeMarketKey)
 	paramstore := paramtypes.NewSubspace(
-		encCfg.Marshaler, encCfg.Amino, feemarketKey, tFeeMarketKey, "feemarket",
+		encCfg.Codec, encCfg.Amino, feemarketKey, tFeeMarketKey, "feemarket",
 	)
-	fmKeeper := feemarketkeeper.NewKeeper(encCfg.Marshaler, feemarketKey, paramstore)
-	fmKeeper.SetParams(ctx, types.DefaultParams())
+	fmKeeper := feemarketkeeper.NewKeeper(encCfg.Codec, feemarketKey, paramstore)
+	fmKeeper.SetParams(ctx, feemarkettypes.DefaultParams())
 	require.True(t, paramstore.HasKeyTable())
 
 	// check that the fee market is not nil
@@ -58,9 +55,9 @@ func TestMigrateJSON(t *testing.T) {
 			"no_base_fee": false
 		}
   }`
-	encCfg := encoding.MakeConfig(app.ModuleBasics)
+	encCfg := wasmkeeper.MakeEncodingConfig(t)
 	var genState v09types.GenesisState
-	err := encCfg.Marshaler.UnmarshalJSON([]byte(rawJson), &genState)
+	err := encCfg.Codec.UnmarshalJSON([]byte(rawJson), &genState)
 	require.NoError(t, err)
 
 	migratedGenState := v010.MigrateJSON(genState)

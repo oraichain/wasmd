@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/base64"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -44,7 +45,7 @@ func PubkeyToCosmosAddress(pub string) (sdk.AccAddress, error) {
 func PubkeyBytesToCosmosAddress(pubKeyBytes []byte) (sdk.AccAddress, error) {
 	pubkey := secp256k1.PubKey{Key: pubKeyBytes}
 	if len(pubkey.Key) != secp256k1.PubKeySize {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidPubKey, "length of pubkey is incorrect")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidPubKey, "length of pubkey is incorrect")
 	}
 	cosmosAddress := sdk.AccAddress(pubkey.Address().Bytes())
 	return cosmosAddress, nil

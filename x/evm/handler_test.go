@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
-
+	sdkmath "cosmossdk.io/math"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/gogo/protobuf/proto"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
@@ -37,9 +38,9 @@ import (
 	"github.com/CosmWasm/wasmd/x/evm/statedb"
 	"github.com/CosmWasm/wasmd/x/evm/types"
 
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 
 	"github.com/tendermint/tendermint/version"
 )
@@ -87,7 +88,7 @@ func (suite *EvmTestSuite) DoSetupTest(t require.TestingT) {
 	})
 
 	coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(100000000000000)))
-	genesisState := app.ModuleBasics.DefaultGenesis(suite.app.AppCodec())
+	genesisState := wasmkeeper.ModuleBasics.DefaultGenesis(suite.app.AppCodec())
 	b32address := sdk.MustBech32ifyAddressBytes(sdk.GetConfig().GetBech32AccountAddrPrefix(), priv.PubKey().Address().Bytes())
 	balances := []banktypes.Balance{
 		{
