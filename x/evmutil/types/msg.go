@@ -85,7 +85,7 @@ func NewMsgConvertERC20ToCoin(
 	initiator InternalEVMAddress,
 	receiver sdk.AccAddress,
 	contractAddr InternalEVMAddress,
-	amount sdk.Int,
+	amount sdkmath.Int,
 ) MsgConvertERC20ToCoin {
 	return MsgConvertERC20ToCoin{
 		Initiator:        initiator.String(),

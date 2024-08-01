@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/CosmWasm/wasmd/server/config"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -100,7 +99,7 @@ func (k Keeper) CallEVMWithData(
 	// apply, tx order is the same, etc.)
 	gasRes, err := k.evmKeeper.EstimateGas(sdk.WrapSDKContext(ethGasContext), &evmtypes.EthCallRequest{
 		Args:   args,
-		GasCap: config.DefaultGasCap,
+		GasCap: types.DefaultGasCap,
 	})
 	if err != nil {
 		return nil, sdkerrors.Wrap(evmtypes.ErrVMExecution, err.Error())

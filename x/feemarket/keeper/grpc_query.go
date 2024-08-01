@@ -28,7 +28,7 @@ func (k Keeper) BaseFee(c context.Context, _ *types.QueryBaseFeeRequest) (*types
 	baseFee := k.GetBaseFee(ctx)
 
 	if baseFee != nil {
-		aux := sdk.NewIntFromBigInt(baseFee)
+		aux := sdkmath.NewIntFromBigInt(baseFee)
 		res.BaseFee = &aux
 	}
 

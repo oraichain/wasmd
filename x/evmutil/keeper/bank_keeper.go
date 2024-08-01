@@ -169,7 +169,7 @@ func (k EvmBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coi
 
 // ConvertOneUkavaToAkavaIfNeeded converts 1 ukava to akava for an address if
 // its akava balance is smaller than the akavaNeeded amount.
-func (k EvmBankKeeper) ConvertOneUkavaToAkavaIfNeeded(ctx sdk.Context, addr sdk.AccAddress, akavaNeeded sdk.Int) error {
+func (k EvmBankKeeper) ConvertOneUkavaToAkavaIfNeeded(ctx sdk.Context, addr sdk.AccAddress, akavaNeeded sdkmath.Int) error {
 	akavaBal := k.akavaKeeper.GetBalance(ctx, addr)
 	if akavaBal.GTE(akavaNeeded) {
 		return nil
@@ -236,7 +236,7 @@ func (k EvmBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.
 
 // SplitAkavaCoins splits akava coins to the equivalent ukava coins and any remaining akava balance.
 // An error will be returned if the coins are not valid or if the coins are not the akava denom.
-func SplitAkavaCoins(coins sdk.Coins, evmDenom, cosmosDenom string) (sdk.Coin, sdk.Int, error) {
+func SplitAkavaCoins(coins sdk.Coins, evmDenom, cosmosDenom string) (sdk.Coin, sdkmath.Int, error) {
 	akava := sdk.ZeroInt()
 	ukava := sdk.NewCoin(cosmosDenom, sdk.ZeroInt())
 

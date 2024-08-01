@@ -9,13 +9,16 @@ import (
 	"reflect"
 	"time"
 
+	"cosmossdk.io/log"
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
-	"github.com/CosmWasm/wasmd/server/config"
 	etherminttests "github.com/CosmWasm/wasmd/tests"
 	etherminttypes "github.com/CosmWasm/wasmd/types"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -28,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
@@ -60,7 +62,14 @@ type Suite struct {
 }
 
 func (suite *Suite) SetupTest() {
-	tApp := app.NewTestApp()
+	t := suite.T()
+	db := dbm.NewMemDB()
+	logger := log.NewTestLogger(t)
+	tApp := app.NewWasmAppWithCustomOptions(t, false, app.SetupOptions{
+		Logger:  logger.With("instance", "first"),
+		DB:      db,
+		AppOpts: simtestutil.NewAppOptionsWithFlagHome(t.TempDir()),
+	})
 
 	suite.Ctx = tApp.NewContext(true, tmproto.Header{Height: 1, Time: tmtime.Now()})
 	suite.App = tApp
@@ -300,7 +309,7 @@ func (suite *Suite) SendTx(
 	}
 	gasRes, err := suite.QueryClientEvm.EstimateGas(ctx, &evmtypes.EthCallRequest{
 		Args:   args,
-		GasCap: config.DefaultGasCap,
+		GasCap: evmtypes.DefaultGasCap,
 	})
 	if err != nil {
 		return nil, err

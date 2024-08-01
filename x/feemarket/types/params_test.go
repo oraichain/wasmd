@@ -1,9 +1,9 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -65,8 +65,8 @@ func (suite *ParamsTestSuite) TestParamsValidatePriv() {
 	suite.Require().NoError(validateElasticityMultiplier(uint32(2)))
 	suite.Require().Error(validateBaseFee(""))
 	suite.Require().Error(validateBaseFee(int64(2000000000)))
-	suite.Require().Error(validateBaseFee(sdk.NewInt(-2000000000)))
-	suite.Require().NoError(validateBaseFee(sdk.NewInt(2000000000)))
+	suite.Require().Error(validateBaseFee(sdkmath.NewInt(-2000000000)))
+	suite.Require().NoError(validateBaseFee(sdkmath.NewInt(2000000000)))
 	suite.Require().Error(validateEnableHeight(""))
 	suite.Require().Error(validateEnableHeight(int64(-544435345345435345)))
 	suite.Require().NoError(validateEnableHeight(int64(544435345345435345)))

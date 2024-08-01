@@ -6,7 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -153,7 +153,7 @@ var xxx_messageInfo_QueryBaseFeeRequest proto.InternalMessageInfo
 
 // BaseFeeResponse returns the EIP1559 base fee.
 type QueryBaseFeeResponse struct {
-	BaseFee *github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,1,opt,name=base_fee,json=baseFee,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"base_fee,omitempty"`
+	BaseFee *sdkmath.Int `protobuf:"bytes,1,opt,name=base_fee,json=baseFee,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"base_fee,omitempty"`
 }
 
 func (m *QueryBaseFeeResponse) Reset()         { *m = QueryBaseFeeResponse{} }
@@ -962,7 +962,7 @@ func (m *QueryBaseFeeResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			var v github_com_cosmos_cosmos_sdk_types.Int
+			var v sdkmath.Int
 			m.BaseFee = &v
 			if err := m.BaseFee.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

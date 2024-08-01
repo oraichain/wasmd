@@ -32,7 +32,7 @@ func (suite *KeeperTestSuite) TestQueryParams() {
 
 func (suite *KeeperTestSuite) TestQueryBaseFee() {
 	var (
-		aux    sdk.Int
+		aux    sdkmath.Int
 		expRes *types.QueryBaseFeeResponse
 	)
 
@@ -55,7 +55,7 @@ func (suite *KeeperTestSuite) TestQueryBaseFee() {
 				baseFee := sdk.OneInt().BigInt()
 				suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, baseFee)
 
-				aux = sdk.NewIntFromBigInt(baseFee)
+				aux = sdkmath.NewIntFromBigInt(baseFee)
 				expRes = &types.QueryBaseFeeResponse{BaseFee: &aux}
 			},
 			true,

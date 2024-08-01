@@ -31,7 +31,7 @@ func (suite *ConversionTestSuite) TestMint() {
 
 	coin, err := suite.Keeper.MintConversionPairCoin(suite.Ctx, pair, amount, recipient)
 	suite.Require().NoError(err)
-	suite.Require().Equal(sdk.NewCoin(pair.Denom, sdk.NewIntFromBigInt(amount)), coin)
+	suite.Require().Equal(sdk.NewCoin(pair.Denom, sdkmath.NewIntFromBigInt(amount)), coin)
 
 	bal := suite.App.GetBankKeeper().GetBalance(suite.Ctx, recipient, pair.Denom)
 	suite.Require().Equal(amount, bal.Amount.BigInt(), "minted amount should increase balance")
@@ -153,7 +153,7 @@ func (suite *ConversionTestSuite) TestConvertCoinToERC20() {
 	// Starting balance of origin account
 	coin, err := suite.Keeper.MintConversionPairCoin(suite.Ctx, pair, amount, originAcc)
 	suite.Require().NoError(err)
-	suite.Require().Equal(sdk.NewCoin(pair.Denom, sdk.NewIntFromBigInt(amount)), coin)
+	suite.Require().Equal(sdk.NewCoin(pair.Denom, sdkmath.NewIntFromBigInt(amount)), coin)
 
 	// Mint same initial balance for module account as backing erc20 supply
 	err = suite.Keeper.MintERC20(
@@ -170,7 +170,7 @@ func (suite *ConversionTestSuite) TestConvertCoinToERC20() {
 		ctx,
 		originAcc,
 		recipientAcc,
-		sdk.NewCoin(pair.Denom, sdk.NewIntFromBigInt(amount)),
+		sdk.NewCoin(pair.Denom, sdkmath.NewIntFromBigInt(amount)),
 	)
 	suite.Require().NoError(err)
 	suite.Require().LessOrEqual(ctx.GasMeter().GasConsumed(), uint64(500000))
@@ -232,7 +232,7 @@ func (suite *ConversionTestSuite) TestConvertCoinToERC20_InsufficientBalance() {
 		suite.Ctx,
 		originAcc,
 		recipientAcc,
-		sdk.NewCoin(pair.Denom, sdk.NewIntFromBigInt(amount)),
+		sdk.NewCoin(pair.Denom, sdkmath.NewIntFromBigInt(amount)),
 	)
 
 	suite.Require().Error(err)
@@ -255,7 +255,7 @@ func (suite *ConversionTestSuite) TestConvertCoinToERC20_NotEnabled() {
 		suite.Ctx,
 		originAcc,
 		recipientAcc,
-		sdk.NewCoin(pair.Denom, sdk.NewIntFromBigInt(amount)),
+		sdk.NewCoin(pair.Denom, sdkmath.NewIntFromBigInt(amount)),
 	)
 
 	suite.Require().Error(err)

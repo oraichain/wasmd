@@ -37,7 +37,7 @@ func (k Keeper) CalculateBaseFee(ctx sdk.Context) *big.Int {
 	parentGasUsed := k.GetBlockGasUsed(ctx)
 
 	gasLimit := new(big.Int).SetUint64(math.MaxUint64)
-	if consParams != nil && consParams.Block.MaxGas > -1 {
+	if consParams.Block.MaxGas > -1 {
 		gasLimit = big.NewInt(consParams.Block.MaxGas)
 	}
 

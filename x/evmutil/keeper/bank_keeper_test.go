@@ -61,7 +61,7 @@ func (suite *evmBankKeeperTestSuite) TestGetBalance() {
 	tests := []struct {
 		name           string
 		startingAmount sdk.Coins
-		expAmount      sdk.Int
+		expAmount      sdkmath.Int
 	}{
 		{
 			"ukava with akava",
@@ -381,10 +381,10 @@ func (suite *evmBankKeeperTestSuite) TestBurnCoins() {
 	tests := []struct {
 		name       string
 		burnCoins  sdk.Coins
-		expUkava   sdk.Int
-		expAkava   sdk.Int
+		expUkava   sdkmath.Int
+		expAkava   sdkmath.Int
 		hasErr     bool
-		akavaStart sdk.Int
+		akavaStart sdkmath.Int
 	}{
 		{
 			"burn more than 1 ukava",
@@ -503,10 +503,10 @@ func (suite *evmBankKeeperTestSuite) TestMintCoins() {
 	tests := []struct {
 		name       string
 		mintCoins  sdk.Coins
-		ukava      sdk.Int
-		akava      sdk.Int
+		ukava      sdkmath.Int
+		akava      sdkmath.Int
 		hasErr     bool
-		akavaStart sdk.Int
+		akavaStart sdkmath.Int
 	}{
 		{
 			"mint more than 1 ukava",

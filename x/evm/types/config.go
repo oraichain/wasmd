@@ -15,3 +15,7 @@ type EVMConfig struct {
 	CoinBase    common.Address
 	BaseFee     *big.Int
 }
+
+const (
+	DefaultGasCap uint64 = 25000000
+)

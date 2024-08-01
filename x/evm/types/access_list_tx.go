@@ -3,8 +3,8 @@ package types
 import (
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -172,7 +172,7 @@ func (tx *AccessListTx) SetSignatureValues(chainID, v, r, s *big.Int) {
 		tx.S = s.Bytes()
 	}
 	if chainID != nil {
-		chainIDInt := sdk.NewIntFromBigInt(chainID)
+		chainIDInt := sdkmath.NewIntFromBigInt(chainID)
 		tx.ChainID = &chainIDInt
 	}
 }

@@ -133,9 +133,9 @@ func (suite *keeperTestSuite) TestSendBalance() {
 	startingRecipientBal := sdk.NewInt(50)
 	tests := []struct {
 		name            string
-		amt             sdk.Int
-		expSenderBal    sdk.Int
-		expRecipientBal sdk.Int
+		amt             sdkmath.Int
+		expSenderBal    sdkmath.Int
+		expRecipientBal sdkmath.Int
 		success         bool
 	}{
 		{
@@ -197,7 +197,7 @@ func (suite *keeperTestSuite) TestSetBalance() {
 	tests := []struct {
 		name    string
 		address sdk.AccAddress
-		balance sdk.Int
+		balance sdkmath.Int
 		success bool
 	}{
 		{
@@ -264,8 +264,8 @@ func (suite *keeperTestSuite) TestRemoveBalance() {
 	}
 	tests := []struct {
 		name    string
-		amt     sdk.Int
-		expBal  sdk.Int
+		amt     sdkmath.Int
+		expBal  sdkmath.Int
 		success bool
 	}{
 		{
@@ -328,7 +328,7 @@ func (suite *keeperTestSuite) TestGetBalance() {
 	tests := []struct {
 		name   string
 		addr   sdk.AccAddress
-		expBal sdk.Int
+		expBal sdkmath.Int
 	}{
 		{
 			"returns 0 balance if account does not exist",

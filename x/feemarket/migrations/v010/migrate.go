@@ -28,7 +28,7 @@ func MigrateStore(ctx sdk.Context, paramstore *paramtypes.Subspace, storeKey sdk
 	switch {
 	case store.Has(KeyPrefixBaseFeeV1):
 		bz := store.Get(KeyPrefixBaseFeeV1)
-		baseFee = sdk.NewIntFromBigInt(new(big.Int).SetBytes(bz))
+		baseFee = sdkmath.NewIntFromBigInt(new(big.Int).SetBytes(bz))
 	case paramstore.Has(ctx, types.ParamStoreKeyNoBaseFee):
 		paramstore.GetIfExists(ctx, types.ParamStoreKeyBaseFee, &baseFee)
 	}

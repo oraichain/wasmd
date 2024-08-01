@@ -44,7 +44,7 @@ func (gs GenesisState) Validate() error {
 	return nil
 }
 
-func NewAccount(addr sdk.AccAddress, balance sdk.Int) *Account {
+func NewAccount(addr sdk.AccAddress, balance sdkmath.Int) *Account {
 	return &Account{
 		Address: addr,
 		Balance: balance,

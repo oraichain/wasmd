@@ -119,7 +119,7 @@ func TestMsgConvertERC20ToCoin(t *testing.T) {
 		receiver     string
 		initiator    string
 		contractAddr string
-		amount       sdk.Int
+		amount       sdkmath.Int
 		errArgs      errArgs
 	}{
 		{

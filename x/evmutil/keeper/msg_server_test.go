@@ -196,7 +196,7 @@ func (suite *MsgServerSuite) TestConvertERC20ToCoin() {
 				invoker,
 				invokerCosmosAddr,
 				contractAddr,
-				sdk.NewIntFromBigInt(pairStartingBal).Add(sdk.OneInt()),
+				sdkmath.NewIntFromBigInt(pairStartingBal).Add(sdk.OneInt()),
 			),
 			math.MaxBig256,
 			errArgs{
@@ -233,7 +233,7 @@ func (suite *MsgServerSuite) TestConvertERC20ToCoin() {
 					pair.GetAddress(),
 					testutil.MustNewInternalEVMAddressFromString(tc.msg.Initiator),
 				)
-				expectedBal := sdk.NewIntFromBigInt(pairStartingBal).Sub(tc.msg.Amount)
+				expectedBal := sdkmath.NewIntFromBigInt(pairStartingBal).Sub(tc.msg.Amount)
 				suite.Require().Equal(expectedBal.BigInt(), bal, "user erc20 balance is invalid")
 
 				// validate user coin balance

@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -21,7 +22,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/CosmWasm/wasmd/encoding"
-	"github.com/CosmWasm/wasmd/server/config"
 	"github.com/CosmWasm/wasmd/tests"
 	"github.com/CosmWasm/wasmd/x/evm/keeper"
 	"github.com/CosmWasm/wasmd/x/evm/types"
@@ -124,7 +124,7 @@ func SimulateEthCreateContract(ak types.AccountKeeper, k *keeper.Keeper) simtype
 		from := common.BytesToAddress(simAccount.Address)
 		nonce := k.GetNonce(ctx, from)
 
-		ctorArgs, err := types.ERC20Contract.ABI.Pack("", from, sdk.NewIntWithDecimal(1000, 18).BigInt())
+		ctorArgs, err := types.ERC20Contract.ABI.Pack("", from, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
 		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgEthereumTx, "can not pack owner and supply"), nil, err
 		}
@@ -236,7 +236,7 @@ func EstimateGas(ctx *simulateContext, from, to *common.Address, data *hexutil.B
 
 	res, err := ctx.keeper.EstimateGas(sdk.WrapSDKContext(ctx.context), &types.EthCallRequest{
 		Args:   args,
-		GasCap: config.DefaultGasCap,
+		GasCap: types.DefaultGasCap,
 	})
 	if err != nil {
 		return 0, err
@@ -257,7 +257,7 @@ func RandomTransferableAmount(ctx *simulateContext, address common.Address, gasL
 		amount = new(big.Int).Set(spendable)
 		return amount, nil
 	}
-	simAmount, err := simtypes.RandPositiveInt(ctx.rand, sdk.NewIntFromBigInt(spendable))
+	simAmount, err := simtypes.RandPositiveInt(ctx.rand, sdkmath.NewIntFromBigInt(spendable))
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func GetSignedTx(ctx *simulateContext, txBuilder client.TxBuilder, msg *types.Ms
 		return nil, err
 	}
 
-	fees := sdk.NewCoins(sdk.NewCoin(ctx.keeper.GetParams(ctx.context).EvmDenom, sdk.NewIntFromBigInt(txData.Fee())))
+	fees := sdk.NewCoins(sdk.NewCoin(ctx.keeper.GetParams(ctx.context).EvmDenom, sdkmath.NewIntFromBigInt(txData.Fee())))
 	builder.SetFeeAmount(fees)
 	builder.SetGasLimit(msg.GetGas())
 

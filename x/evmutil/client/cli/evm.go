@@ -10,8 +10,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 
 	"github.com/CosmWasm/wasmd/crypto/hd"
-	"github.com/CosmWasm/wasmd/server/config"
 	etherminttypes "github.com/CosmWasm/wasmd/types"
+	"github.com/CosmWasm/wasmd/x/evm/types"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -80,7 +80,7 @@ func CreateEthCallContractTx(
 
 	res, err := evmQueryClient.EstimateGas(context.Background(), &evmtypes.EthCallRequest{
 		Args:   args,
-		GasCap: config.DefaultGasCap,
+		GasCap: types.DefaultGasCap,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to estimate gas from EVM: %w", err)

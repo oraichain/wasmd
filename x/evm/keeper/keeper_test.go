@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -30,7 +31,6 @@ import (
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	"github.com/CosmWasm/wasmd/encoding"
-	"github.com/CosmWasm/wasmd/server/config"
 	"github.com/CosmWasm/wasmd/tests"
 	ethermint "github.com/CosmWasm/wasmd/types"
 	"github.com/CosmWasm/wasmd/x/evm/statedb"
@@ -42,15 +42,15 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
 )
 
-var testTokens = sdk.NewIntWithDecimal(1000, 18)
+var testTokens = sdkmath.NewIntWithDecimal(1000, 18)
 
 type KeeperTestSuite struct {
 	suite.Suite
@@ -130,7 +130,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 		genesis[feemarkettypes.ModuleName] = app.AppCodec().MustMarshalJSON(feemarketGenesis)
 		if !suite.enableLondonHF {
 			evmGenesis := types.DefaultGenesisState()
-			maxInt := sdk.NewInt(math.MaxInt64)
+			maxInt := sdkmath.NewInt(math.MaxInt64)
 			evmGenesis.Params.ChainConfig.LondonBlock = &maxInt
 			evmGenesis.Params.ChainConfig.ArrowGlacierBlock = &maxInt
 			evmGenesis.Params.ChainConfig.MergeForkBlock = &maxInt
@@ -141,7 +141,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 
 	if suite.mintFeeCollector {
 		// mint some coin to fee collector
-		coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdk.NewInt(int64(params.TxGas)-1)))
+		coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(int64(params.TxGas)-1)))
 		genesisState := app.ModuleBasics.DefaultGenesis(suite.app.AppCodec())
 		balances := []banktypes.Balance{
 			{
@@ -150,7 +150,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 			},
 		}
 		// update total supply
-		bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdk.NewInt((int64(params.TxGas)-1)))), []banktypes.Metadata{})
+		bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt((int64(params.TxGas)-1)))), []banktypes.Metadata{})
 		bz := suite.app.AppCodec().MustMarshalJSON(bankGenesis)
 		require.NotNil(t, bz)
 		genesisState[banktypes.ModuleName] = suite.app.AppCodec().MustMarshalJSON(bankGenesis)
@@ -271,7 +271,7 @@ func (suite *KeeperTestSuite) DeployTestContract(t require.TestingT, owner commo
 
 	res, err := suite.queryClient.EstimateGas(ctx, &types.EthCallRequest{
 		Args:   args,
-		GasCap: uint64(config.DefaultGasCap),
+		GasCap: uint64(types.DefaultGasCap),
 	})
 	require.NoError(t, err)
 
@@ -377,7 +377,7 @@ func (suite *KeeperTestSuite) DeployTestMessageCall(t require.TestingT) common.A
 
 	res, err := suite.queryClient.EstimateGas(ctx, &types.EthCallRequest{
 		Args:   args,
-		GasCap: uint64(config.DefaultGasCap),
+		GasCap: uint64(types.DefaultGasCap),
 	})
 	require.NoError(t, err)
 
@@ -470,9 +470,9 @@ func (suite *KeeperTestSuite) TestMsgSetMappingEvmAddress() {
 	suite.app.AccountKeeper.SetAccount(suite.ctx, signerAcc)
 
 	// fixture for migrate balance
-	mintCoins := sdk.NewCoins(sdk.NewCoin(suite.EvmDenom(), sdk.NewInt(50)))
+	mintCoins := sdk.NewCoins(sdk.NewCoin(suite.EvmDenom(), sdkmath.NewInt(50)))
 	suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, mintCoins)
-	sentCoins := sdk.NewCoins(sdk.NewCoin(suite.EvmDenom(), sdk.NewInt(5)))
+	sentCoins := sdk.NewCoins(sdk.NewCoin(suite.EvmDenom(), sdkmath.NewInt(5)))
 	moduleAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, types.ModuleName)
 	suite.app.BankKeeper.SendCoins(suite.ctx, moduleAcc.GetAddress(), castAddress, sentCoins)
 	suite.app.BankKeeper.SendCoins(suite.ctx, moduleAcc.GetAddress(), signerAddress, sentCoins)
@@ -547,7 +547,7 @@ func (suite *KeeperTestSuite) TestMsgSetMappingEvmAddress() {
 				expectPass: true,
 			},
 			func() {
-				sentCoins := sdk.NewCoins(sdk.NewCoin(suite.EvmDenom(), sdk.NewInt(20)))
+				sentCoins := sdk.NewCoins(sdk.NewCoin(suite.EvmDenom(), sdkmath.NewInt(20)))
 				suite.app.BankKeeper.SendCoins(suite.ctx, moduleAcc.GetAddress(), castAddress, sentCoins)
 			},
 		},
