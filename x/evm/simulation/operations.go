@@ -66,13 +66,13 @@ func WeightedOperations(
 		weightMsgEthCreateContract int
 	)
 
-	appParams.GetOrGenerate(cdc, OpWeightMsgEthSimpleTransfer, &weightMsgEthSimpleTransfer, nil,
+	appParams.GetOrGenerate(OpWeightMsgEthSimpleTransfer, &weightMsgEthSimpleTransfer, nil,
 		func(_ *rand.Rand) {
 			weightMsgEthSimpleTransfer = WeightMsgEthSimpleTransfer
 		},
 	)
 
-	appParams.GetOrGenerate(cdc, OpWeightMsgEthCreateContract, &weightMsgEthCreateContract, nil,
+	appParams.GetOrGenerate(OpWeightMsgEthCreateContract, &weightMsgEthCreateContract, nil,
 		func(_ *rand.Rand) {
 			weightMsgEthCreateContract = WeightMsgEthCreateContract
 		},
@@ -193,7 +193,7 @@ func SimulateEthTx(
 		return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgEthereumTx, "can not sign ethereum tx"), nil, err
 	}
 
-	_, _, err = ctx.bapp.Deliver(txConfig.TxEncoder(), signedTx)
+	_, _, err = ctx.bapp.SimDeliver(txConfig.TxEncoder(), signedTx)
 	if err != nil {
 		return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgEthereumTx, "failed to deliver tx"), nil, err
 	}

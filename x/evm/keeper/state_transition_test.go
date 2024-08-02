@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/big"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/CosmWasm/wasmd/tests"
 	"github.com/CosmWasm/wasmd/x/evm/keeper"
 	"github.com/CosmWasm/wasmd/x/evm/types"

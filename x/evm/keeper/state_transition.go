@@ -495,6 +495,6 @@ func (k Keeper) GetCoinbaseAddress(ctx sdk.Context) (common.Address, error) {
 		)
 	}
 
-	coinbase := common.BytesToAddress(validator.GetOperator())
+	coinbase := common.BytesToAddress([]byte(validator.GetOperator()))
 	return coinbase, nil
 }
