@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	"github.com/CosmWasm/wasmd/app"
+
 	"github.com/cosmos/cosmos-sdk/testutil"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ import (
 )
 
 func TestMigrateStore(t *testing.T) {
-	encCfg := wasmkeeper.MakeEncodingConfig(t)
+	encCfg := app.MakeEncodingConfig(t)
 	feemarketKey := storetypes.NewKVStoreKey(feemarkettypes.StoreKey)
 	tFeeMarketKey := storetypes.NewTransientStoreKey(fmt.Sprintf("%s_test", feemarkettypes.StoreKey))
 	ctx := testutil.DefaultContext(feemarketKey, tFeeMarketKey)
@@ -55,7 +56,7 @@ func TestMigrateJSON(t *testing.T) {
 			"no_base_fee": false
 		}
   }`
-	encCfg := wasmkeeper.MakeEncodingConfig(t)
+	encCfg := app.MakeEncodingConfig(t)
 	var genState v09types.GenesisState
 	err := encCfg.Codec.UnmarshalJSON([]byte(rawJson), &genState)
 	require.NoError(t, err)

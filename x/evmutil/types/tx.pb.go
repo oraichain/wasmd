@@ -9,9 +9,9 @@ import (
 	_ "github.com/cosmos/cosmos-proto"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
-	_ "github.com/gogo/protobuf/gogoproto"
+	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
-	proto "github.com/gogo/protobuf/proto"
+	proto "github.com/cosmos/gogoproto/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -141,7 +141,7 @@ type MsgConvertERC20ToCoin struct {
 	// EVM 0x hex address of the ERC20 contract.
 	KavaERC20Address string `protobuf:"bytes,3,opt,name=kava_erc20_address,json=kavaErc20Address,proto3" json:"kava_erc20_address,omitempty"`
 	// ERC20 token amount to convert.
-	Amount github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,4,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"amount"`
+	Amount sdkmath.Int `protobuf:"bytes,4,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"amount"`
 }
 
 func (m *MsgConvertERC20ToCoin) Reset()         { *m = MsgConvertERC20ToCoin{} }

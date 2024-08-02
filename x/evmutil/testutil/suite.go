@@ -16,6 +16,7 @@ import (
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	dbm "github.com/cosmos/cosmos-db"
@@ -33,7 +34,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/suite"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmtime "github.com/tendermint/tendermint/types/time"
 	"github.com/tendermint/tendermint/version"
 

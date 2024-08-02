@@ -82,7 +82,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
-var ModuleBasics = module.NewBasicManager(
+var moduleBasics = module.NewBasicManager(
 	auth.AppModuleBasic{},
 	bank.AppModuleBasic{},
 	capability.AppModuleBasic{},
@@ -114,8 +114,8 @@ func MakeEncodingConfig(_ testing.TB) wasmappparams.EncodingConfig {
 	std.RegisterInterfaces(interfaceRegistry)
 	std.RegisterLegacyAminoCodec(amino)
 
-	ModuleBasics.RegisterLegacyAminoCodec(amino)
-	ModuleBasics.RegisterInterfaces(interfaceRegistry)
+	moduleBasics.RegisterLegacyAminoCodec(amino)
+	moduleBasics.RegisterInterfaces(interfaceRegistry)
 	// add wasmd types
 	types.RegisterInterfaces(interfaceRegistry)
 	types.RegisterLegacyAminoCodec(amino)

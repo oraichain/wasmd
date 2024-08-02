@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
+	protov2 "google.golang.org/protobuf/proto"
 )
 
 // Failed returns if the contract execution failed in vm errors
@@ -26,4 +27,8 @@ func (m *MsgEthereumTxResponse) Revert() []byte {
 		return nil
 	}
 	return common.CopyBytes(m.Ret)
+}
+
+func (m *MsgEthereumTx) GetMsgsV2() ([]protov2.Message, error) {
+	return nil, nil
 }

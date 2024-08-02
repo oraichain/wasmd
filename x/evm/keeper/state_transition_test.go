@@ -8,6 +8,7 @@ import (
 	"github.com/CosmWasm/wasmd/tests"
 	"github.com/CosmWasm/wasmd/x/evm/keeper"
 	"github.com/CosmWasm/wasmd/x/evm/types"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 

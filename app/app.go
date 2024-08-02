@@ -149,6 +149,10 @@ import (
 	"github.com/CosmWasm/wasmd/x/tokenfactory/bindings"
 	tokenfactorykeeper "github.com/CosmWasm/wasmd/x/tokenfactory/keeper"
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
+
+	"github.com/CosmWasm/wasmd/x/feemarket"
+	feemarketkeeper "github.com/CosmWasm/wasmd/x/feemarket/keeper"
+	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
 )
 
 const appName = "WasmApp"
@@ -260,6 +264,7 @@ type WasmApp struct {
 	IBCHooksKeeper      ibchookskeeper.Keeper
 	PacketForwardKeeper *packetforwardkeeper.Keeper
 	TokenFactoryKeeper  tokenfactorykeeper.Keeper
+	FeeMarketKeeper     feemarketkeeper.Keeper
 
 	// Middleware wrapper
 	Ics20WasmHooks   *ibchooks.WasmHooks
@@ -345,7 +350,7 @@ func NewWasmApp(
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
-	bApp.SetTxEncoder(txConfig.TxEncoder())
+	// bApp.SetTxEncoder(txConfig.TxEncoder())
 
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,
@@ -355,8 +360,8 @@ func NewWasmApp(
 		authzkeeper.StoreKey, nftkeeper.StoreKey, group.StoreKey,
 		// non sdk store keys
 		capabilitytypes.StoreKey, ibcexported.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
-		wasmtypes.StoreKey, icahosttypes.StoreKey,
-		icacontrollertypes.StoreKey, clocktypes.StoreKey, ibchookstypes.StoreKey, packetforwardtypes.StoreKey, tokenfactorytypes.StoreKey,
+		wasmtypes.StoreKey, icahosttypes.StoreKey, icacontrollertypes.StoreKey,
+		clocktypes.StoreKey, ibchookstypes.StoreKey, packetforwardtypes.StoreKey, tokenfactorytypes.StoreKey, feemarkettypes.StoreKey,
 	)
 
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -552,6 +557,11 @@ func NewWasmApp(
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	// Create Ethermint keepers
+	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
+		appCodec, keys[feemarkettypes.StoreKey], app.GetSubspace(feemarkettypes.ModuleName),
 	)
 
 	// Register the proposal types
@@ -820,6 +830,7 @@ func NewWasmApp(
 		ibchooks.NewAppModule(app.AccountKeeper),
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		tokenfactory.NewAppModule(app.TokenFactoryKeeper, app.AccountKeeper, app.BankKeeper),
+		feemarket.NewAppModule(app.FeeMarketKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -839,6 +850,7 @@ func NewWasmApp(
 			ibchookstypes.ModuleName:      ibchooks.AppModuleBasic{},
 			packetforwardtypes.ModuleName: packetforward.AppModuleBasic{},
 			tokenfactorytypes.ModuleName:  tokenfactory.AppModuleBasic{},
+			feemarkettypes.ModuleName:     feemarket.AppModuleBasic{},
 		})
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
@@ -871,6 +883,7 @@ func NewWasmApp(
 		ibchookstypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		tokenfactorytypes.ModuleName,
+		feemarkettypes.ModuleName,
 	)
 
 	app.ModuleManager.SetOrderEndBlockers(
@@ -891,6 +904,7 @@ func NewWasmApp(
 		ibchookstypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		tokenfactorytypes.ModuleName,
+		feemarkettypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -920,6 +934,7 @@ func NewWasmApp(
 		ibchookstypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		tokenfactorytypes.ModuleName,
+		feemarkettypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
@@ -1046,6 +1061,7 @@ func (app *WasmApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtype
 			IBCKeeper:             app.IBCKeeper,
 			WasmConfig:            &wasmConfig,
 			WasmKeeper:            &app.WasmKeeper,
+			FeeMarketKeeper:       &app.FeeMarketKeeper,
 			TXCounterStoreService: runtime.NewKVStoreService(txCounterStoreKey),
 			CircuitKeeper:         &app.CircuitKeeper,
 		},
@@ -1301,5 +1317,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibchookstypes.ModuleName)
 	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(tokenfactorytypes.ModuleName)
+	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	return paramsKeeper
 }

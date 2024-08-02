@@ -15,7 +15,6 @@ import (
 	"github.com/CosmWasm/wasmd/tests"
 	ethermint "github.com/CosmWasm/wasmd/types"
 	"github.com/CosmWasm/wasmd/x/feemarket/types"
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -29,9 +28,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/version"
+	cmtprotoversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	tmversion "github.com/cometbft/cometbft/version"
+
+	"github.com/cometbft/cometbft/crypto/tmhash"
 )
 
 type KeeperTestSuite struct {
@@ -67,13 +67,13 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
 
 	suite.app = app.Setup(suite.T(), nil)
-	suite.ctx = suite.app.BaseApp.NewContext(checkTx, tmproto.Header{
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(checkTx, tmproto.Header{
 		Height:          1,
 		ChainID:         "ethermint_9000-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: suite.consAddress.Bytes(),
-		Version: tmversion.Consensus{
-			Block: version.BlockProtocol,
+		Version: cmtprotoversion.Consensus{
+			Block: tmversion.BlockProtocol,
 		},
 		LastBlockId: tmproto.BlockID{
 			Hash: tmhash.Sum([]byte("block_id")),
@@ -103,14 +103,14 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
 	valAddr := sdk.ValAddress(suite.address.Bytes())
-	validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
+	validator, err := stakingtypes.NewValidator(valAddr.String(), priv.PubKey(), stakingtypes.Description{})
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 	suite.app.StakingKeeper.SetValidator(suite.ctx, validator)
 
-	encodingConfig := wasmkeeper.MakeEncodingConfig(suite.T())
+	encodingConfig := app.MakeEncodingConfig(suite.T())
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
 	suite.appCodec = encodingConfig.Codec

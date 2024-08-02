@@ -12,7 +12,7 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	"github.com/CosmWasm/wasmd/app"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -29,7 +29,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 
-	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	"github.com/CosmWasm/wasmd/tests"
 	ethermint "github.com/CosmWasm/wasmd/types"
@@ -43,10 +42,10 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 	"github.com/tendermint/tendermint/version"
 )
 
@@ -213,7 +212,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	require.NoError(t, err)
 	suite.app.StakingKeeper.SetValidator(suite.ctx, validator)
 
-	encodingConfig := wasmkeeper.MakeEncodingConfig(suite.T())
+	encodingConfig := app.MakeEncodingConfig(suite.T())
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	suite.ethSigner = ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID())
 	suite.appCodec = encodingConfig.Marshaler

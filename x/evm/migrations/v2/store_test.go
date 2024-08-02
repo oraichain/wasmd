@@ -9,15 +9,15 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
 
+	"github.com/CosmWasm/wasmd/app"
 	v2 "github.com/CosmWasm/wasmd/x/evm/migrations/v2"
 	v2types "github.com/CosmWasm/wasmd/x/evm/migrations/v2/types"
 	"github.com/CosmWasm/wasmd/x/evm/types"
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 )
 
 func TestMigrateStore(t *testing.T) {
 
-	encCfg := wasmkeeper.MakeEncodingConfig(t)
+	encCfg := app.MakeEncodingConfig(t)
 	kvStoreKey := storetypes.NewKVStoreKey(types.StoreKey)
 	tStoreKey := storetypes.NewTransientStoreKey(fmt.Sprintf("%s_test", types.StoreKey))
 	ctx := testutil.DefaultContext(kvStoreKey, tStoreKey)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 func (suite *KeeperTestSuite) TestEndBlock() {
@@ -46,8 +45,7 @@ func (suite *KeeperTestSuite) TestEndBlock() {
 
 			tc.malleate()
 
-			req := abci.RequestEndBlock{Height: 1}
-			suite.app.FeeMarketKeeper.EndBlock(suite.ctx, req)
+			suite.app.FeeMarketKeeper.EndBlock(suite.ctx)
 			gasUsed := suite.app.FeeMarketKeeper.GetBlockGasUsed(suite.ctx)
 			suite.Require().Equal(tc.expGasUsed, gasUsed, tc.name)
 		})

@@ -38,9 +38,9 @@ import (
 	"github.com/CosmWasm/wasmd/x/evm/statedb"
 	"github.com/CosmWasm/wasmd/x/evm/types"
 
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 
 	"github.com/tendermint/tendermint/version"
 )

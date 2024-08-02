@@ -25,6 +25,7 @@ import (
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 
 	storetypes "cosmossdk.io/store/types"
+	feemarketkeeper "github.com/CosmWasm/wasmd/x/feemarket/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -37,6 +38,7 @@ type HandlerOptions struct {
 	WasmKeeper            *wasmkeeper.Keeper
 	TXCounterStoreService corestoretypes.KVStoreService
 	CircuitKeeper         *circuitkeeper.Keeper
+	FeeMarketKeeper       *feemarketkeeper.Keeper
 }
 
 // NewAnteHandler constructor
@@ -58,6 +60,10 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	}
 	if options.CircuitKeeper == nil {
 		return nil, errors.New("circuit keeper is required for ante builder")
+	}
+
+	if options.FeeMarketKeeper == nil {
+		return nil, errors.New("fee market keeper is required for AnteHandler")
 	}
 
 	anteDecorators := []sdk.AnteDecorator{

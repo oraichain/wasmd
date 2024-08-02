@@ -8,8 +8,8 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -70,7 +70,7 @@ var xxx_messageInfo_GenesisState proto.InternalMessageInfo
 type Account struct {
 	Address github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,1,opt,name=address,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"address,omitempty"`
 	// balance indicates the amount of akava owned by the address.
-	Balance github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=balance,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"balance"`
+	Balance sdkmath.Int `protobuf:"bytes,2,opt,name=balance,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"balance"`
 }
 
 func (m *Account) Reset()         { *m = Account{} }
