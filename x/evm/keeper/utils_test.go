@@ -14,8 +14,8 @@ import (
 
 func (suite *KeeperTestSuite) TestCheckSenderBalance() {
 	hundredInt := sdkmath.NewInt(100)
-	zeroInt := sdk.ZeroInt()
-	oneInt := sdk.OneInt()
+	zeroInt := sdkmath.ZeroInt()
+	oneInt := sdkmath.OneInt()
 	fiveInt := sdkmath.NewInt(5)
 	fiftyInt := sdkmath.NewInt(50)
 	negInt := sdkmath.NewInt(-10)
@@ -253,7 +253,7 @@ func (suite *KeeperTestSuite) TestCheckSenderBalance() {
 
 func (suite *KeeperTestSuite) TestDeductTxCostsFromUserBalance() {
 	hundredInt := sdkmath.NewInt(100)
-	zeroInt := sdk.ZeroInt()
+	zeroInt := sdkmath.ZeroInt()
 	oneInt := sdkmath.NewInt(1)
 	fiveInt := sdkmath.NewInt(5)
 	fiftyInt := sdkmath.NewInt(50)

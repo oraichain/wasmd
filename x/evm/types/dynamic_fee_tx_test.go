@@ -6,7 +6,6 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/tests"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/suite"
@@ -31,7 +30,7 @@ func (suite *TxDataTestSuite) SetupTest() {
 	suite.uint64 = suite.sdkInt.Uint64()
 	suite.bigInt = big.NewInt(1)
 	suite.overflowBigInt = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(256), nil)
-	suite.sdkZeroInt = sdk.ZeroInt()
+	suite.sdkZeroInt = sdkmath.ZeroInt()
 	suite.sdkMinusOneInt = sdkmath.NewInt(-1)
 	suite.invalidAddr = "123456"
 	suite.addr = tests.GenerateAddress()

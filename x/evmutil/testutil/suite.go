@@ -45,7 +45,7 @@ import (
 type Suite struct {
 	suite.Suite
 
-	App            app.TestApp
+	App            app.WasmApp
 	Ctx            sdk.Context
 	Address        common.Address
 	BankKeeper     bankkeeper.Keeper
@@ -71,12 +71,12 @@ func (suite *Suite) SetupTest() {
 		AppOpts: simtestutil.NewAppOptionsWithFlagHome(t.TempDir()),
 	})
 
-	suite.Ctx = tApp.NewContext(true, tmproto.Header{Height: 1, Time: tmtime.Now()})
-	suite.App = tApp
+	suite.Ctx = tApp.NewContextLegacy(true, tmproto.Header{Height: 1, Time: tmtime.Now()})
+	suite.App = *tApp
 	suite.BankKeeper = tApp.GetBankKeeper()
 	suite.AccountKeeper = tApp.GetAccountKeeper()
-	suite.Keeper = tApp.GetEvmutilKeeper()
-	suite.EvmBankKeeper = keeper.NewEvmBankKeeper(tApp.GetEvmutilKeeper(), suite.BankKeeper, suite.AccountKeeper)
+	suite.Keeper = tApp.EvmutilKeeper
+	suite.EvmBankKeeper = keeper.NewEvmBankKeeper(tApp.EvmutilKeeper, suite.BankKeeper, suite.AccountKeeper)
 	suite.EvmModuleAddr = suite.AccountKeeper.GetModuleAddress(evmtypes.ModuleName)
 
 	// test evm user keys that have no minting permissions
@@ -116,7 +116,7 @@ func (suite *Suite) SetupTest() {
 	consAddress := sdk.ConsAddress(consPriv.PubKey().Address())
 
 	// InitializeFromGenesisStates commits first block so we start at 2 here
-	suite.Ctx = suite.App.NewContext(false, tmproto.Header{
+	suite.Ctx = suite.App.NewContextLegacy(false, tmproto.Header{
 		Height:          suite.App.LastBlockHeight() + 1,
 		ChainID:         "kavatest_1-1",
 		Time:            time.Now().UTC(),
@@ -167,9 +167,9 @@ func (suite *Suite) SetupTest() {
 	))
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.Ctx, suite.App.InterfaceRegistry())
-	evmtypes.RegisterQueryServer(queryHelper, suite.App.GetEvmKeeper())
+	evmtypes.RegisterQueryServer(queryHelper, suite.App.EvmKeeper)
 	suite.QueryClientEvm = evmtypes.NewQueryClient(queryHelper)
-	types.RegisterQueryServer(queryHelper, keeper.NewQueryServerImpl(suite.App.GetEvmutilKeeper()))
+	types.RegisterQueryServer(queryHelper, keeper.NewQueryServerImpl(suite.App.EvmutilKeeper))
 	suite.QueryClient = types.NewQueryClient(queryHelper)
 
 	// We need to commit so that the ethermint feemarket beginblock runs to set the minfee
@@ -222,7 +222,7 @@ func (suite *Suite) DeployERC20() types.InternalEVMAddress {
 	suite.App.FundModuleAccount(
 		suite.Ctx,
 		types.ModuleName,
-		sdk.NewCoins(sdk.NewCoin("ukava", sdk.NewInt(0))),
+		sdk.NewCoins(sdk.NewCoin("ukava", sdkmath.NewInt(0))),
 	)
 
 	contractAddr, err := suite.Keeper.DeployTestMintableERC20Contract(suite.Ctx, "USDC", "USDC", uint8(18))
@@ -297,7 +297,7 @@ func (suite *Suite) SendTx(
 	transferData []byte,
 ) (*evmtypes.MsgEthereumTxResponse, error) {
 	ctx := sdk.WrapSDKContext(suite.Ctx)
-	chainID := suite.App.GetEvmKeeper().ChainID()
+	chainID := suite.App.EvmKeeper.ChainID()
 
 	args, err := json.Marshal(&evmtypes.TransactionArgs{
 		To:   &contractAddr.Address,
@@ -315,7 +315,7 @@ func (suite *Suite) SendTx(
 		return nil, err
 	}
 
-	nonce := suite.App.GetEvmKeeper().GetNonce(suite.Ctx, suite.Address)
+	nonce := suite.App.EvmKeeper.GetNonce(suite.Ctx, suite.Address)
 
 	baseFee := suite.App.GetFeeMarketKeeper().GetBaseFee(suite.Ctx)
 	suite.Require().NotNil(baseFee, "base fee is nil")
@@ -324,7 +324,7 @@ func (suite *Suite) SendTx(
 	suite.MintFeeCollector(sdk.NewCoins(
 		sdk.NewCoin(
 			"ukava",
-			sdk.NewInt(baseFee.Int64()*int64(gasRes.Gas*2)),
+			sdkmath.NewInt(baseFee.Int64()*int64(gasRes.Gas*2)),
 		)))
 
 	ercTransferTx := evmtypes.NewTx(
@@ -346,7 +346,7 @@ func (suite *Suite) SendTx(
 		return nil, err
 	}
 
-	rsp, err := suite.App.GetEvmKeeper().EthereumTx(ctx, ercTransferTx)
+	rsp, err := suite.App.EvmKeeper.EthereumTx(ctx, ercTransferTx)
 	if err != nil {
 		return nil, err
 	}

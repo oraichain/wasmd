@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
@@ -41,7 +42,7 @@ func (suite *invariantTestSuite) SetupValidState() {
 	suite.FundModuleAccountWithKava(
 		types.ModuleName,
 		sdk.NewCoins(
-			sdk.NewCoin("ukava", sdk.NewInt(2)), // ( sum of all minor balances ) / conversion multiplier
+			sdk.NewCoin("ukava", sdkmath.NewInt(2)), // ( sum of all minor balances ) / conversion multiplier
 		),
 	)
 
@@ -108,7 +109,7 @@ func (suite *invariantTestSuite) TestFullyBackedInvariant() {
 	suite.Equal(false, broken)
 
 	// break invariant by increasing total minor balances above module balance
-	suite.Keeper.AddBalance(suite.Ctx, suite.Addrs[0], sdk.OneInt())
+	suite.Keeper.AddBalance(suite.Ctx, suite.Addrs[0], sdkmath.OneInt())
 
 	message, broken := suite.runInvariant("fully-backed", keeper.FullyBackedInvariant)
 	suite.Equal("evmutil: fully backed broken invariant\nsum of minor balances greater than module account\n", message)

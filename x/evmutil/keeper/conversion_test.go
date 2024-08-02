@@ -4,6 +4,8 @@ import (
 	"math/big"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/suite"
@@ -43,7 +45,7 @@ func (suite *ConversionTestSuite) TestBurn_InsufficientBalance() {
 		"erc20/usdc",
 	)
 
-	amount := sdk.NewInt(100)
+	amount := sdkmath.NewInt(100)
 	recipient := suite.Key1.PubKey().Address().Bytes()
 
 	err := suite.Keeper.BurnConversionPairCoin(suite.Ctx, pair, sdk.NewCoin(pair.Denom, amount), recipient)
@@ -57,7 +59,7 @@ func (suite *ConversionTestSuite) TestBurn() {
 		"erc20/usdc",
 	)
 
-	amount := sdk.NewInt(100)
+	amount := sdkmath.NewInt(100)
 	recipient := suite.Key1.PubKey().Address().Bytes()
 
 	coin, err := suite.Keeper.MintConversionPairCoin(suite.Ctx, pair, amount.BigInt(), recipient)
@@ -71,7 +73,7 @@ func (suite *ConversionTestSuite) TestBurn() {
 	suite.Require().NoError(err)
 
 	bal = suite.App.GetBankKeeper().GetBalance(suite.Ctx, recipient, pair.Denom)
-	suite.Require().Equal(sdk.ZeroInt(), bal.Amount, "balance should be zero after burn")
+	suite.Require().Equal(sdkmath.ZeroInt(), bal.Amount, "balance should be zero after burn")
 }
 
 func (suite *ConversionTestSuite) TestUnlockERC20Tokens() {
@@ -165,7 +167,7 @@ func (suite *ConversionTestSuite) TestConvertCoinToERC20() {
 	suite.Require().NoError(err)
 
 	// convert coin to erc20
-	ctx := suite.Ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
+	ctx := suite.Ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
 	err = suite.Keeper.ConvertCoinToERC20(
 		ctx,
 		originAcc,
@@ -178,7 +180,7 @@ func (suite *ConversionTestSuite) TestConvertCoinToERC20() {
 
 	// Source should decrease
 	bal := suite.App.GetBankKeeper().GetBalance(suite.Ctx, originAcc, pair.Denom)
-	suite.Require().Equal(sdk.ZeroInt(), bal.Amount, "conversion should decrease source balance")
+	suite.Require().Equal(sdkmath.ZeroInt(), bal.Amount, "conversion should decrease source balance")
 
 	// Module bal should also decrease
 	moduleBal := suite.GetERC20BalanceOf(
@@ -283,8 +285,8 @@ func (suite *ConversionTestSuite) TestConvertERC20ToCoin() {
 	)
 	suite.Require().NoError(err)
 
-	ctx := suite.Ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	convertAmt := sdk.NewInt(50)
+	ctx := suite.Ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
+	convertAmt := sdkmath.NewInt(50)
 	err = suite.Keeper.ConvertERC20ToCoin(
 		ctx,
 		userEvmAddr,
@@ -333,7 +335,7 @@ func (suite *ConversionTestSuite) TestConvertERC20ToCoin_EmptyContract() {
 
 	userAddr := sdk.AccAddress(suite.Key1.PubKey().Address().Bytes())
 	userEvmAddr := types.NewInternalEVMAddress(common.BytesToAddress(suite.Key1.PubKey().Address()))
-	convertAmt := sdk.NewInt(100)
+	convertAmt := sdkmath.NewInt(100)
 
 	// Trying to convert erc20 from an empty contract should fail
 	err := suite.Keeper.ConvertERC20ToCoin(
@@ -348,5 +350,5 @@ func (suite *ConversionTestSuite) TestConvertERC20ToCoin_EmptyContract() {
 
 	// bank balance should not change
 	bal := suite.App.GetBankKeeper().GetBalance(suite.Ctx, userAddr, pair.Denom)
-	suite.Require().Equal(sdk.ZeroInt(), bal.Amount)
+	suite.Require().Equal(sdkmath.ZeroInt(), bal.Amount)
 }

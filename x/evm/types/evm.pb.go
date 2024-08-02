@@ -6,6 +6,7 @@ package types
 import (
 	fmt "fmt"
 	sdkmath "cosmossdk.io/math"
+	
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	io "io"

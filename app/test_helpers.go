@@ -255,6 +255,24 @@ func initAccountWithCoins(app *WasmApp, ctx sdk.Context, addr sdk.AccAddress, co
 	}
 }
 
+// FundAccount is a utility function that funds an account by minting and sending the coins to the address.
+func (app *WasmApp) FundAccount(ctx sdk.Context, addr sdk.AccAddress, amounts sdk.Coins) error {
+	if err := app.BankKeeper.MintCoins(ctx, minttypes.ModuleName, amounts); err != nil {
+		return err
+	}
+
+	return app.BankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, addr, amounts)
+}
+
+// FundModuleAccount is a utility function that funds a module account by minting and sending the coins to the address.
+func (app *WasmApp) FundModuleAccount(ctx sdk.Context, recipientMod string, amounts sdk.Coins) error {
+	if err := app.BankKeeper.MintCoins(ctx, minttypes.ModuleName, amounts); err != nil {
+		return err
+	}
+
+	return app.BankKeeper.SendCoinsFromModuleToModule(ctx, minttypes.ModuleName, recipientMod, amounts)
+}
+
 var emptyWasmOptions []wasmkeeper.Option
 
 // NewTestNetworkFixture returns a new WasmApp AppConstructor for network simulation tests
@@ -392,4 +410,20 @@ func GenesisStateWithValSet(
 	genesisState[banktypes.ModuleName] = codec.MustMarshalJSON(bankGenesis)
 	println(string(genesisState[banktypes.ModuleName]))
 	return genesisState, nil
+}
+
+func GeneratePrivKeyAddressPairs(n int) (keys []cryptotypes.PrivKey, addrs []sdk.AccAddress) {
+	r := rand.New(rand.NewSource(12345)) // make the generation deterministic
+	keys = make([]cryptotypes.PrivKey, n)
+	addrs = make([]sdk.AccAddress, n)
+	for i := 0; i < n; i++ {
+		secret := make([]byte, 32)
+		_, err := r.Read(secret)
+		if err != nil {
+			panic("Could not read randomness")
+		}
+		keys[i] = secp256k1.GenPrivKeyFromSecret(secret)
+		addrs[i] = sdk.AccAddress(keys[i].PubKey().Address())
+	}
+	return
 }

@@ -190,6 +190,22 @@ var (
 	Bech32PrefixConsPub = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixConsensus + sdk.PrefixPublic
 )
 
+// SetSDKConfig configures the global config with kava app specific parameters.
+// It does not seal the config to allow modification in tests.
+func SetSDKConfig() *sdk.Config {
+	config := sdk.GetConfig()
+	SetBech32AddressPrefixes(config)
+
+	return config
+}
+
+// SetBech32AddressPrefixes sets the global prefix to be used when serializing addresses to bech32 strings.
+func SetBech32AddressPrefixes(config *sdk.Config) {
+	config.SetBech32PrefixForAccount(Bech32Prefix, Bech32PrefixAccPub)
+	config.SetBech32PrefixForValidator(Bech32PrefixValAddr, Bech32PrefixValPub)
+	config.SetBech32PrefixForConsensusNode(Bech32PrefixConsAddr, Bech32PrefixConsPub)
+}
+
 // module account permissions
 var maccPerms = map[string][]string{
 	authtypes.FeeCollectorName:     nil,

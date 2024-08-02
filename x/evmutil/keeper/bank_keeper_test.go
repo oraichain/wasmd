@@ -6,15 +6,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
-	tmtime "github.com/tendermint/tendermint/types/time"
 
+	sdkmath "cosmossdk.io/math"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	vesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-
 	"github.com/CosmWasm/wasmd/x/evmutil/keeper"
 	"github.com/CosmWasm/wasmd/x/evmutil/testutil"
 	"github.com/CosmWasm/wasmd/x/evmutil/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 )
 
 type evmBankKeeperTestSuite struct {
@@ -27,15 +26,16 @@ func (suite *evmBankKeeperTestSuite) SetupTest() {
 
 func (suite *evmBankKeeperTestSuite) TestGetBalance_ReturnsSpendable() {
 	startingCoins := sdk.NewCoins(sdk.NewInt64Coin("ukava", 10))
-	startingAkava := sdk.NewInt(100)
+	startingAkava := sdkmath.NewInt(100)
 
-	now := tmtime.Now()
+	now := time.Now()
 	endTime := now.Add(24 * time.Hour)
 	bacc := authtypes.NewBaseAccountWithAddress(suite.Addrs[0])
-	vacc := vesting.NewContinuousVestingAccount(bacc, startingCoins, now.Unix(), endTime.Unix())
+	vacc, err := vesting.NewContinuousVestingAccount(bacc, startingCoins, now.Unix(), endTime.Unix())
+	suite.Require().NoError(err)
 	suite.AccountKeeper.SetAccount(suite.Ctx, vacc)
 
-	err := suite.App.FundAccount(suite.Ctx, suite.Addrs[0], startingCoins)
+	err = suite.App.FundAccount(suite.Ctx, suite.Addrs[0], startingCoins)
 	suite.Require().NoError(err)
 	err = suite.Keeper.SetBalance(suite.Ctx, suite.Addrs[0], startingAkava)
 	suite.Require().NoError(err)
@@ -45,7 +45,7 @@ func (suite *evmBankKeeperTestSuite) TestGetBalance_ReturnsSpendable() {
 
 	ctx := suite.Ctx.WithBlockTime(now.Add(12 * time.Hour))
 	coin = suite.EvmBankKeeper.GetBalance(ctx, suite.Addrs[0], "akava")
-	suite.Require().Equal(sdk.NewIntFromUint64(5_000_000_000_100), coin.Amount)
+	suite.Require().Equal(sdkmath.NewIntFromUint64(5_000_000_000_100), coin.Amount)
 }
 
 func (suite *evmBankKeeperTestSuite) TestGetBalance_NotEvmDenom() {
@@ -69,7 +69,7 @@ func (suite *evmBankKeeperTestSuite) TestGetBalance() {
 				sdk.NewInt64Coin("akava", 100),
 				sdk.NewInt64Coin("ukava", 10),
 			),
-			sdk.NewInt(10_000_000_000_100),
+			sdkmath.NewInt(10_000_000_000_100),
 		},
 		{
 			"just akava",
@@ -77,7 +77,7 @@ func (suite *evmBankKeeperTestSuite) TestGetBalance() {
 				sdk.NewInt64Coin("akava", 100),
 				sdk.NewInt64Coin("busd", 100),
 			),
-			sdk.NewInt(100),
+			sdkmath.NewInt(100),
 		},
 		{
 			"just ukava",
@@ -85,12 +85,12 @@ func (suite *evmBankKeeperTestSuite) TestGetBalance() {
 				sdk.NewInt64Coin("ukava", 10),
 				sdk.NewInt64Coin("busd", 100),
 			),
-			sdk.NewInt(10_000_000_000_000),
+			sdkmath.NewInt(10_000_000_000_000),
 		},
 		{
 			"no ukava or akava",
 			sdk.NewCoins(),
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"with avaka that is more than 1 ukava",
@@ -98,7 +98,7 @@ func (suite *evmBankKeeperTestSuite) TestGetBalance() {
 				sdk.NewInt64Coin("akava", 20_000_000_000_220),
 				sdk.NewInt64Coin("ukava", 11),
 			),
-			sdk.NewInt(31_000_000_000_220),
+			sdkmath.NewInt(31_000_000_000_220),
 		},
 	}
 
@@ -377,7 +377,7 @@ func (suite *evmBankKeeperTestSuite) TestSendCoinsFromAccountToModule() {
 }
 
 func (suite *evmBankKeeperTestSuite) TestBurnCoins() {
-	startingUkava := sdk.NewInt(100)
+	startingUkava := sdkmath.NewInt(100)
 	tests := []struct {
 		name       string
 		burnCoins  sdk.Coins
@@ -389,42 +389,42 @@ func (suite *evmBankKeeperTestSuite) TestBurnCoins() {
 		{
 			"burn more than 1 ukava",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 12_021_000_000_002)),
-			sdk.NewInt(88),
-			sdk.NewInt(100_000_000_000),
+			sdkmath.NewInt(88),
+			sdkmath.NewInt(100_000_000_000),
 			false,
-			sdk.NewInt(121_000_000_002),
+			sdkmath.NewInt(121_000_000_002),
 		},
 		{
 			"burn less than 1 ukava",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 122)),
-			sdk.NewInt(100),
-			sdk.NewInt(878),
+			sdkmath.NewInt(100),
+			sdkmath.NewInt(878),
 			false,
-			sdk.NewInt(1000),
+			sdkmath.NewInt(1000),
 		},
 		{
 			"burn an exact amount of ukava",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 98_000_000_000_000)),
-			sdk.NewInt(2),
-			sdk.NewInt(10),
+			sdkmath.NewInt(2),
+			sdkmath.NewInt(10),
 			false,
-			sdk.NewInt(10),
+			sdkmath.NewInt(10),
 		},
 		{
 			"burn no akava",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 0)),
 			startingUkava,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 			false,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"errors if burning other coins",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 500), sdk.NewInt64Coin("busd", 1000)),
 			startingUkava,
-			sdk.NewInt(100),
+			sdkmath.NewInt(100),
 			true,
-			sdk.NewInt(100),
+			sdkmath.NewInt(100),
 		},
 		{
 			"errors if have dup coins",
@@ -433,41 +433,41 @@ func (suite *evmBankKeeperTestSuite) TestBurnCoins() {
 				sdk.NewInt64Coin("akava", 2_000_000_000_000),
 			},
 			startingUkava,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 			true,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"errors if burn amount is negative",
-			sdk.Coins{sdk.Coin{Denom: "akava", Amount: sdk.NewInt(-100)}},
+			sdk.Coins{sdk.Coin{Denom: "akava", Amount: sdkmath.NewInt(-100)}},
 			startingUkava,
-			sdk.NewInt(50),
+			sdkmath.NewInt(50),
 			true,
-			sdk.NewInt(50),
+			sdkmath.NewInt(50),
 		},
 		{
 			"errors if not enough akava to cover burn",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 100_999_000_000_000)),
-			sdk.NewInt(0),
-			sdk.NewInt(99_000_000_000),
+			sdkmath.NewInt(0),
+			sdkmath.NewInt(99_000_000_000),
 			true,
-			sdk.NewInt(99_000_000_000),
+			sdkmath.NewInt(99_000_000_000),
 		},
 		{
 			"errors if not enough ukava to cover burn",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 200_000_000_000_000)),
-			sdk.NewInt(100),
-			sdk.ZeroInt(),
+			sdkmath.NewInt(100),
+			sdkmath.ZeroInt(),
 			true,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"converts 1 ukava to akava if not enough akava to cover",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 12_021_000_000_002)),
-			sdk.NewInt(87),
-			sdk.NewInt(980_000_000_000),
+			sdkmath.NewInt(87),
+			sdkmath.NewInt(980_000_000_000),
 			false,
-			sdk.NewInt(1_000_000_002),
+			sdkmath.NewInt(1_000_000_002),
 		},
 	}
 
@@ -511,42 +511,42 @@ func (suite *evmBankKeeperTestSuite) TestMintCoins() {
 		{
 			"mint more than 1 ukava",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 12_021_000_000_002)),
-			sdk.NewInt(12),
-			sdk.NewInt(21_000_000_002),
+			sdkmath.NewInt(12),
+			sdkmath.NewInt(21_000_000_002),
 			false,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"mint less than 1 ukava",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 901_000_000_001)),
-			sdk.ZeroInt(),
-			sdk.NewInt(901_000_000_001),
+			sdkmath.ZeroInt(),
+			sdkmath.NewInt(901_000_000_001),
 			false,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"mint an exact amount of ukava",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 123_000_000_000_000_000)),
-			sdk.NewInt(123_000),
-			sdk.ZeroInt(),
+			sdkmath.NewInt(123_000),
+			sdkmath.ZeroInt(),
 			false,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"mint no akava",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 0)),
-			sdk.ZeroInt(),
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
+			sdkmath.ZeroInt(),
 			false,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"errors if minting other coins",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 500), sdk.NewInt64Coin("busd", 1000)),
-			sdk.ZeroInt(),
-			sdk.NewInt(100),
+			sdkmath.ZeroInt(),
+			sdkmath.NewInt(100),
 			true,
-			sdk.NewInt(100),
+			sdkmath.NewInt(100),
 		},
 		{
 			"errors if have dup coins",
@@ -554,34 +554,34 @@ func (suite *evmBankKeeperTestSuite) TestMintCoins() {
 				sdk.NewInt64Coin("akava", 12_000_000_000_000),
 				sdk.NewInt64Coin("akava", 2_000_000_000_000),
 			},
-			sdk.ZeroInt(),
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
+			sdkmath.ZeroInt(),
 			true,
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"errors if mint amount is negative",
-			sdk.Coins{sdk.Coin{Denom: "akava", Amount: sdk.NewInt(-100)}},
-			sdk.ZeroInt(),
-			sdk.NewInt(50),
+			sdk.Coins{sdk.Coin{Denom: "akava", Amount: sdkmath.NewInt(-100)}},
+			sdkmath.ZeroInt(),
+			sdkmath.NewInt(50),
 			true,
-			sdk.NewInt(50),
+			sdkmath.NewInt(50),
 		},
 		{
 			"adds to existing akava balance",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 12_021_000_000_002)),
-			sdk.NewInt(12),
-			sdk.NewInt(21_000_000_102),
+			sdkmath.NewInt(12),
+			sdkmath.NewInt(21_000_000_102),
 			false,
-			sdk.NewInt(100),
+			sdkmath.NewInt(100),
 		},
 		{
 			"convert akava balance to ukava if it exceeds 1 ukava",
 			sdk.NewCoins(sdk.NewInt64Coin("akava", 10_999_000_000_000)),
-			sdk.NewInt(12),
-			sdk.NewInt(1_200_000_001),
+			sdkmath.NewInt(12),
+			sdkmath.NewInt(1_200_000_001),
 			false,
-			sdk.NewInt(1_002_200_000_001),
+			sdkmath.NewInt(1_002_200_000_001),
 		},
 	}
 
@@ -633,7 +633,7 @@ func (suite *evmBankKeeperTestSuite) TestValidateEvmCoins() {
 		},
 		{
 			"negative coins",
-			sdk.Coins{sdk.Coin{Denom: "akava", Amount: sdk.NewInt(-500)}},
+			sdk.Coins{sdk.Coin{Denom: "akava", Amount: sdkmath.NewInt(-500)}},
 			true,
 		},
 	}
@@ -650,7 +650,7 @@ func (suite *evmBankKeeperTestSuite) TestValidateEvmCoins() {
 }
 
 func (suite *evmBankKeeperTestSuite) TestConvertOneUkavaToAkavaIfNeeded() {
-	akavaNeeded := sdk.NewInt(200)
+	akavaNeeded := sdkmath.NewInt(200)
 	tests := []struct {
 		name          string
 		startingCoins sdk.Coins
@@ -686,11 +686,11 @@ func (suite *evmBankKeeperTestSuite) TestConvertOneUkavaToAkavaIfNeeded() {
 			if tt.success {
 				suite.Require().NoError(err)
 				if tt.startingCoins.AmountOf("akava").LT(akavaNeeded) {
-					suite.Require().Equal(sdk.OneInt(), moduleKava.Amount)
+					suite.Require().Equal(sdkmath.OneInt(), moduleKava.Amount)
 				}
 			} else {
 				suite.Require().Error(err)
-				suite.Require().Equal(sdk.ZeroInt(), moduleKava.Amount)
+				suite.Require().Equal(sdkmath.ZeroInt(), moduleKava.Amount)
 			}
 
 			akava := suite.Keeper.GetBalance(suite.Ctx, suite.Addrs[0])

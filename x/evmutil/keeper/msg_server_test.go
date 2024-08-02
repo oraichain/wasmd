@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/x/evmutil/keeper"
 	"github.com/CosmWasm/wasmd/x/evmutil/testutil"
 	"github.com/CosmWasm/wasmd/x/evmutil/types"
@@ -20,7 +21,7 @@ type MsgServerSuite struct {
 
 func (suite *MsgServerSuite) SetupTest() {
 	suite.Suite.SetupTest()
-	suite.msgServer = keeper.NewMsgServerImpl(suite.App.GetEvmutilKeeper())
+	suite.msgServer = keeper.NewMsgServerImpl(suite.App.EvmutilKeeper)
 }
 
 func TestMsgServerSuite(t *testing.T) {
@@ -31,7 +32,7 @@ func (suite *MsgServerSuite) TestConvertCoinToERC20() {
 	invoker, err := sdk.AccAddressFromBech32("kava123fxg0l602etulhhcdm0vt7l57qya5wjcrwhzz")
 	suite.Require().NoError(err)
 
-	err = suite.App.FundAccount(suite.Ctx, invoker, sdk.NewCoins(sdk.NewCoin("erc20/usdc", sdk.NewInt(10000))))
+	err = suite.App.FundAccount(suite.Ctx, invoker, sdk.NewCoins(sdk.NewCoin("erc20/usdc", sdkmath.NewInt(10000))))
 	suite.Require().NoError(err)
 
 	contractAddr := suite.DeployERC20()
@@ -66,7 +67,7 @@ func (suite *MsgServerSuite) TestConvertCoinToERC20() {
 			types.NewMsgConvertCoinToERC20(
 				invoker.String(),
 				"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-				sdk.NewCoin("erc20/usdc", sdk.NewInt(1234)),
+				sdk.NewCoin("erc20/usdc", sdkmath.NewInt(1234)),
 			),
 			errArgs{
 				expectPass: true,
@@ -77,7 +78,7 @@ func (suite *MsgServerSuite) TestConvertCoinToERC20() {
 			types.NewMsgConvertCoinToERC20(
 				invoker.String(),
 				"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc",
-				sdk.NewCoin("erc20/usdc", sdk.NewInt(1234)),
+				sdk.NewCoin("erc20/usdc", sdkmath.NewInt(1234)),
 			),
 			errArgs{
 				expectPass: false,
@@ -149,7 +150,7 @@ func (suite *MsgServerSuite) TestConvertERC20ToCoin() {
 	suite.Require().NoError(err)
 
 	// create user account, otherwise `CallEVMWithData` will fail due to failing to get user account when finding its sequence.
-	err = suite.App.FundAccount(suite.Ctx, invokerCosmosAddr, sdk.NewCoins(sdk.NewCoin(pair.Denom, sdk.ZeroInt())))
+	err = suite.App.FundAccount(suite.Ctx, invokerCosmosAddr, sdk.NewCoins(sdk.NewCoin(pair.Denom, sdkmath.ZeroInt())))
 	suite.Require().NoError(err)
 
 	type errArgs struct {
@@ -169,7 +170,7 @@ func (suite *MsgServerSuite) TestConvertERC20ToCoin() {
 				invoker,
 				invokerCosmosAddr,
 				contractAddr,
-				sdk.NewInt(10_000),
+				sdkmath.NewInt(10_000),
 			),
 			math.MaxBig256,
 			errArgs{
@@ -182,7 +183,7 @@ func (suite *MsgServerSuite) TestConvertERC20ToCoin() {
 				Initiator:        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc",
 				Receiver:         invokerCosmosAddr.String(),
 				KavaERC20Address: contractAddr.String(),
-				Amount:           sdk.NewInt(10_000),
+				Amount:           sdkmath.NewInt(10_000),
 			},
 			math.MaxBig256,
 			errArgs{
@@ -196,7 +197,7 @@ func (suite *MsgServerSuite) TestConvertERC20ToCoin() {
 				invoker,
 				invokerCosmosAddr,
 				contractAddr,
-				sdkmath.NewIntFromBigInt(pairStartingBal).Add(sdk.OneInt()),
+				sdkmath.NewIntFromBigInt(pairStartingBal).Add(sdkmath.OneInt()),
 			),
 			math.MaxBig256,
 			errArgs{
@@ -210,7 +211,7 @@ func (suite *MsgServerSuite) TestConvertERC20ToCoin() {
 				invoker,
 				invokerCosmosAddr,
 				testutil.MustNewInternalEVMAddressFromString("0x7Bbf300890857b8c241b219C6a489431669b3aFA"),
-				sdk.NewInt(10_000),
+				sdkmath.NewInt(10_000),
 			),
 			math.MaxBig256,
 			errArgs{

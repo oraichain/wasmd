@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
@@ -30,8 +31,8 @@ func (suite *keeperTestSuite) TestGetAllAccounts() {
 		{
 			"with accounts",
 			[]types.Account{
-				{Address: suite.Addrs[0], Balance: sdk.NewInt(100)},
-				{Address: suite.Addrs[1], Balance: sdk.NewInt(200)},
+				{Address: suite.Addrs[0], Balance: sdkmath.NewInt(100)},
+				{Address: suite.Addrs[1], Balance: sdkmath.NewInt(200)},
 			},
 		},
 	}
@@ -57,17 +58,17 @@ func (suite *keeperTestSuite) TestGetAllAccounts() {
 func (suite *keeperTestSuite) TestSetAccount_ZeroBalance() {
 	existingAccount := types.Account{
 		Address: suite.Addrs[0],
-		Balance: sdk.NewInt(100),
+		Balance: sdkmath.NewInt(100),
 	}
 	err := suite.Keeper.SetAccount(suite.Ctx, existingAccount)
 	suite.Require().NoError(err)
 	err = suite.Keeper.SetAccount(suite.Ctx, types.Account{
 		Address: suite.Addrs[0],
-		Balance: sdk.ZeroInt(),
+		Balance: sdkmath.ZeroInt(),
 	})
 	suite.Require().NoError(err)
 	bal := suite.Keeper.GetBalance(suite.Ctx, suite.Addrs[0])
-	suite.Require().Equal(sdk.ZeroInt(), bal)
+	suite.Require().Equal(sdkmath.ZeroInt(), bal)
 	expAcct := suite.Keeper.GetAccount(suite.Ctx, suite.Addrs[0])
 	suite.Require().Nil(expAcct)
 }
@@ -75,7 +76,7 @@ func (suite *keeperTestSuite) TestSetAccount_ZeroBalance() {
 func (suite *keeperTestSuite) TestSetAccount() {
 	existingAccount := types.Account{
 		Address: suite.Addrs[0],
-		Balance: sdk.NewInt(100),
+		Balance: sdkmath.NewInt(100),
 	}
 	tests := []struct {
 		name    string
@@ -84,12 +85,12 @@ func (suite *keeperTestSuite) TestSetAccount() {
 	}{
 		{
 			"invalid address",
-			types.Account{Address: nil, Balance: sdk.NewInt(100)},
+			types.Account{Address: nil, Balance: sdkmath.NewInt(100)},
 			false,
 		},
 		{
 			"invalid balance",
-			types.Account{Address: suite.Addrs[0], Balance: sdk.NewInt(-100)},
+			types.Account{Address: suite.Addrs[0], Balance: sdkmath.NewInt(-100)},
 			false,
 		},
 		{
@@ -99,12 +100,12 @@ func (suite *keeperTestSuite) TestSetAccount() {
 		},
 		{
 			"valid account",
-			types.Account{Address: suite.Addrs[1], Balance: sdk.NewInt(100)},
+			types.Account{Address: suite.Addrs[1], Balance: sdkmath.NewInt(100)},
 			true,
 		},
 		{
 			"replaces account",
-			types.Account{Address: suite.Addrs[0], Balance: sdk.NewInt(50)},
+			types.Account{Address: suite.Addrs[0], Balance: sdkmath.NewInt(50)},
 			true,
 		},
 	}
@@ -129,8 +130,8 @@ func (suite *keeperTestSuite) TestSetAccount() {
 }
 
 func (suite *keeperTestSuite) TestSendBalance() {
-	startingSenderBal := sdk.NewInt(100)
-	startingRecipientBal := sdk.NewInt(50)
+	startingSenderBal := sdkmath.NewInt(100)
+	startingRecipientBal := sdkmath.NewInt(50)
 	tests := []struct {
 		name            string
 		amt             sdkmath.Int
@@ -140,30 +141,30 @@ func (suite *keeperTestSuite) TestSendBalance() {
 	}{
 		{
 			"fails when sending negative amount",
-			sdk.NewInt(-5),
-			sdk.ZeroInt(),
-			sdk.ZeroInt(),
+			sdkmath.NewInt(-5),
+			sdkmath.ZeroInt(),
+			sdkmath.ZeroInt(),
 			false,
 		},
 		{
 			"send zero amount",
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 			startingSenderBal,
 			startingRecipientBal,
 			true,
 		},
 		{
 			"fails when sender does not have enough balance",
-			sdk.NewInt(101),
-			sdk.ZeroInt(),
-			sdk.ZeroInt(),
+			sdkmath.NewInt(101),
+			sdkmath.ZeroInt(),
+			sdkmath.ZeroInt(),
 			false,
 		},
 		{
 			"send valid amount",
-			sdk.NewInt(80),
-			sdk.NewInt(20),
-			sdk.NewInt(130),
+			sdkmath.NewInt(80),
+			sdkmath.NewInt(20),
+			sdkmath.NewInt(130),
 			true,
 		},
 	}
@@ -192,7 +193,7 @@ func (suite *keeperTestSuite) TestSendBalance() {
 func (suite *keeperTestSuite) TestSetBalance() {
 	existingAccount := types.Account{
 		Address: suite.Addrs[0],
-		Balance: sdk.NewInt(100),
+		Balance: sdkmath.NewInt(100),
 	}
 	tests := []struct {
 		name    string
@@ -203,31 +204,31 @@ func (suite *keeperTestSuite) TestSetBalance() {
 		{
 			"invalid balance",
 			suite.Addrs[0],
-			sdk.NewInt(-100),
+			sdkmath.NewInt(-100),
 			false,
 		},
 		{
 			"set new account balance",
 			suite.Addrs[1],
-			sdk.NewInt(100),
+			sdkmath.NewInt(100),
 			true,
 		},
 		{
 			"replace account balance",
 			suite.Addrs[0],
-			sdk.NewInt(50),
+			sdkmath.NewInt(50),
 			true,
 		},
 		{
 			"invalid address",
 			nil,
-			sdk.NewInt(100),
+			sdkmath.NewInt(100),
 			false,
 		},
 		{
 			"zero balance",
 			suite.Addrs[0],
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 			true,
 		},
 	}
@@ -260,7 +261,7 @@ func (suite *keeperTestSuite) TestSetBalance() {
 func (suite *keeperTestSuite) TestRemoveBalance() {
 	existingAccount := types.Account{
 		Address: suite.Addrs[0],
-		Balance: sdk.NewInt(100),
+		Balance: sdkmath.NewInt(100),
 	}
 	tests := []struct {
 		name    string
@@ -270,32 +271,32 @@ func (suite *keeperTestSuite) TestRemoveBalance() {
 	}{
 		{
 			"fails if amount is negative",
-			sdk.NewInt(-10),
-			sdk.ZeroInt(),
+			sdkmath.NewInt(-10),
+			sdkmath.ZeroInt(),
 			false,
 		},
 		{
 			"remove zero amount",
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 			existingAccount.Balance,
 			true,
 		},
 		{
 			"not enough balance",
-			sdk.NewInt(101),
-			sdk.ZeroInt(),
+			sdkmath.NewInt(101),
+			sdkmath.ZeroInt(),
 			false,
 		},
 		{
 			"remove full balance",
-			sdk.NewInt(100),
-			sdk.ZeroInt(),
+			sdkmath.NewInt(100),
+			sdkmath.ZeroInt(),
 			true,
 		},
 		{
 			"remove some balance",
-			sdk.NewInt(10),
-			sdk.NewInt(90),
+			sdkmath.NewInt(10),
+			sdkmath.NewInt(90),
 			true,
 		},
 	}
@@ -323,7 +324,7 @@ func (suite *keeperTestSuite) TestRemoveBalance() {
 func (suite *keeperTestSuite) TestGetBalance() {
 	existingAccount := types.Account{
 		Address: suite.Addrs[0],
-		Balance: sdk.NewInt(100),
+		Balance: sdkmath.NewInt(100),
 	}
 	tests := []struct {
 		name   string
@@ -333,12 +334,12 @@ func (suite *keeperTestSuite) TestGetBalance() {
 		{
 			"returns 0 balance if account does not exist",
 			suite.Addrs[1],
-			sdk.ZeroInt(),
+			sdkmath.ZeroInt(),
 		},
 		{
 			"returns account balance",
 			suite.Addrs[0],
-			sdk.NewInt(100),
+			sdkmath.NewInt(100),
 		},
 	}
 

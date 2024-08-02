@@ -19,7 +19,7 @@ type GrpcQueryTestSuite struct {
 
 func (suite *GrpcQueryTestSuite) SetupTest() {
 	suite.Suite.SetupTest()
-	suite.msgServer = keeper.NewMsgServerImpl(suite.App.GetEvmutilKeeper())
+	suite.msgServer = keeper.NewMsgServerImpl(suite.App.EvmutilKeeper)
 }
 
 func TestGrpcQueryTestSuite(t *testing.T) {
