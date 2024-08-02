@@ -13,9 +13,6 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/app"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -23,11 +20,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/simapp"
+	simapp "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	"github.com/CosmWasm/wasmd/tests"
@@ -117,31 +116,30 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	priv, err = ethsecp256k1.GenerateKey()
 	require.NoError(t, err)
 	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
+	suite.app = app.Setup(suite.T())
+	genesis := app.GenesisStateWithSingleValidator(suite.T(), suite.app)
 
-	suite.app = app.Setup(checkTx, func(app *app.EthermintApp, genesis simapp.GenesisState) simapp.GenesisState {
-		feemarketGenesis := feemarkettypes.DefaultGenesisState()
-		if suite.enableFeemarket {
-			feemarketGenesis.Params.EnableHeight = 1
-			feemarketGenesis.Params.NoBaseFee = false
-		} else {
-			feemarketGenesis.Params.NoBaseFee = true
-		}
-		genesis[feemarkettypes.ModuleName] = app.AppCodec().MustMarshalJSON(feemarketGenesis)
-		if !suite.enableLondonHF {
-			evmGenesis := types.DefaultGenesisState()
-			maxInt := sdkmath.NewInt(math.MaxInt64)
-			evmGenesis.Params.ChainConfig.LondonBlock = &maxInt
-			evmGenesis.Params.ChainConfig.ArrowGlacierBlock = &maxInt
-			evmGenesis.Params.ChainConfig.MergeForkBlock = &maxInt
-			genesis[types.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
-		}
-		return genesis
-	})
+	feemarketGenesis := feemarkettypes.DefaultGenesisState()
+	if suite.enableFeemarket {
+		feemarketGenesis.Params.EnableHeight = 1
+		feemarketGenesis.Params.NoBaseFee = false
+	} else {
+		feemarketGenesis.Params.NoBaseFee = true
+	}
+	genesis[feemarkettypes.ModuleName] = suite.app.AppCodec().MustMarshalJSON(feemarketGenesis)
+	if !suite.enableLondonHF {
+		evmGenesis := types.DefaultGenesisState()
+		maxInt := sdkmath.NewInt(math.MaxInt64)
+		evmGenesis.Params.ChainConfig.LondonBlock = &maxInt
+		evmGenesis.Params.ChainConfig.ArrowGlacierBlock = &maxInt
+		evmGenesis.Params.ChainConfig.MergeForkBlock = &maxInt
+		genesis[types.ModuleName] = suite.app.AppCodec().MustMarshalJSON(evmGenesis)
+	}
 
 	if suite.mintFeeCollector {
 		// mint some coin to fee collector
 		coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(int64(params.TxGas)-1)))
-		genesisState := wasmkeeper.ModuleBasics.DefaultGenesis(suite.app.AppCodec())
+		genesisState := suite.app.DefaultGenesis()
 		balances := []banktypes.Balance{
 			{
 				Address: suite.app.AccountKeeper.GetModuleAddress(authtypes.FeeCollectorName).String(),
@@ -149,7 +147,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 			},
 		}
 		// update total supply
-		bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt((int64(params.TxGas)-1)))), []banktypes.Metadata{})
+		bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt((int64(params.TxGas)-1)))), []banktypes.Metadata{}, nil)
 		bz := suite.app.AppCodec().MustMarshalJSON(bankGenesis)
 		require.NotNil(t, bz)
 		genesisState[banktypes.ModuleName] = suite.app.AppCodec().MustMarshalJSON(bankGenesis)
@@ -232,12 +230,10 @@ func (suite *KeeperTestSuite) EvmDenom() string {
 
 // Commit and begin new block
 func (suite *KeeperTestSuite) Commit() {
-	_ = suite.app.Commit()
+	_, _ = suite.app.Commit()
 	header := suite.ctx.BlockHeader()
 	header.Height += 1
-	suite.app.BeginBlock(abci.RequestBeginBlock{
-		Header: header,
-	})
+	suite.app.BeginBlocker(suite.ctx)
 
 	// update ctx
 	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)

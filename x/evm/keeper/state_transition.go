@@ -38,7 +38,7 @@ func GasToRefund(availableRefund, gasConsumed, refundQuotient uint64) uint64 {
 }
 
 // EVMConfig creates the EVMConfig based on current state
-func (k *Keeper) EVMConfig(ctx context.Context) (*types.EVMConfig, error) {
+func (k *Keeper) EVMConfig(ctx sdk.Context) (*types.EVMConfig, error) {
 	params := k.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(k.eip155ChainID)
 
@@ -156,7 +156,7 @@ func (k Keeper) GetHashFn(ctx sdk.Context) vm.GetHashFunc {
 			// Case 2: if the chain is not the current height we need to retrieve the hash from the store for the
 			// current chain epoch. This only applies if the current height is greater than the requested height.
 			histInfo, found := k.stakingKeeper.GetHistoricalInfo(ctx, h)
-			if !found {
+			if found != nil {
 				k.Logger(ctx).Debug("historical info not found", "height", h)
 				return common.Hash{}
 			}
@@ -429,12 +429,13 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context, msg core.Message, trace
 
 // ApplyMessage calls ApplyMessageWithConfig with default EVMConfig
 func (k *Keeper) ApplyMessage(ctx context.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*types.MsgEthereumTxResponse, error) {
-	cfg, err := k.EVMConfig(ctx)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	cfg, err := k.EVMConfig(sdkCtx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
 	}
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
-	return k.ApplyMessageWithConfig(ctx, msg, tracer, commit, cfg, txConfig)
+	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(sdkCtx.HeaderHash()))
+	return k.ApplyMessageWithConfig(sdkCtx, msg, tracer, commit, cfg, txConfig)
 }
 
 // GetEthIntrinsicGas returns the intrinsic gas cost for the transaction
@@ -488,7 +489,7 @@ func (k *Keeper) ResetGasMeterAndConsumeGas(ctx sdk.Context, gasUsed uint64) {
 func (k Keeper) GetCoinbaseAddress(ctx sdk.Context) (common.Address, error) {
 	consAddr := sdk.ConsAddress(ctx.BlockHeader().ProposerAddress)
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
-	if !found {
+	if found != nil {
 		return common.Address{}, errorsmod.Wrapf(
 			stakingtypes.ErrNoValidatorFound,
 			"failed to retrieve validator from block proposer address %s",

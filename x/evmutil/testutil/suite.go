@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	etherminttests "github.com/CosmWasm/wasmd/tests"
 	etherminttypes "github.com/CosmWasm/wasmd/types"
@@ -104,11 +105,11 @@ func (suite *Suite) SetupTest() {
 		sdk.AccAddress(suite.Key2.PubKey().Address()),
 	})
 
-	gs := app.GenesisState{
-		evmtypes.ModuleName:       cdc.MustMarshalJSON(evmGenesis),
-		feemarkettypes.ModuleName: cdc.MustMarshalJSON(feemarketGenesis),
-	}
-	suite.App.InitializeFromGenesisStates(authGS, gs)
+	// gs := app.GenesisState{
+	// 	evmtypes.ModuleName:       cdc.MustMarshalJSON(evmGenesis),
+	// 	feemarkettypes.ModuleName: cdc.MustMarshalJSON(feemarketGenesis),
+	// }
+	suite.App.InitializeFromGenesisStates(suite.Ctx, authGS)
 
 	// consensus key - needed to set up evm module
 	consPriv, err := ethsecp256k1.GenerateKey()
@@ -149,7 +150,7 @@ func (suite *Suite) SetupTest() {
 	}
 	suite.AccountKeeper.SetAccount(suite.Ctx, acc)
 	valAddr := sdk.ValAddress(suite.Address.Bytes())
-	validator, err := stakingtypes.NewValidator(valAddr, consPriv.PubKey(), stakingtypes.Description{})
+	validator, err := stakingtypes.NewValidator(valAddr.String(), consPriv.PubKey(), stakingtypes.Description{})
 	suite.Require().NoError(err)
 	err = suite.App.GetStakingKeeper().SetValidatorByConsAddr(suite.Ctx, validator)
 	suite.Require().NoError(err)
@@ -178,15 +179,13 @@ func (suite *Suite) SetupTest() {
 }
 
 func (suite *Suite) Commit() {
-	_ = suite.App.Commit()
+	_, _ = suite.App.Commit()
 	header := suite.Ctx.BlockHeader()
 	header.Height += 1
-	suite.App.BeginBlock(abci.RequestBeginBlock{
-		Header: header,
-	})
+	suite.App.BeginBlocker(suite.Ctx)
 
 	// update ctx
-	suite.Ctx = suite.App.NewContext(false, header)
+	suite.Ctx = suite.App.NewContextLegacy(false, header)
 }
 
 func (suite *Suite) FundAccountWithKava(addr sdk.AccAddress, coins sdk.Coins) {
@@ -317,7 +316,7 @@ func (suite *Suite) SendTx(
 
 	nonce := suite.App.EvmKeeper.GetNonce(suite.Ctx, suite.Address)
 
-	baseFee := suite.App.GetFeeMarketKeeper().GetBaseFee(suite.Ctx)
+	baseFee := suite.App.FeeMarketKeeper.GetBaseFee(suite.Ctx)
 	suite.Require().NotNil(baseFee, "base fee is nil")
 
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
@@ -334,7 +333,7 @@ func (suite *Suite) SendTx(
 		nil,          // amount
 		gasRes.Gas*2, // gasLimit, TODO: runs out of gas with just res.Gas, ex: estimated was 21572 but used 24814
 		nil,          // gasPrice
-		suite.App.GetFeeMarketKeeper().GetBaseFee(suite.Ctx), // gasFeeCap
+		suite.App.FeeMarketKeeper.GetBaseFee(suite.Ctx), // gasFeeCap
 		big.NewInt(1), // gasTipCap
 		transferData,
 		&ethtypes.AccessList{}, // accesses

@@ -145,7 +145,7 @@ func (suite *KeeperTestSuite) TestGetCoinbaseAddress() {
 				suite.ctx = suite.ctx.WithBlockHeader(header)
 
 				_, found := suite.app.StakingKeeper.GetValidatorByConsAddr(suite.ctx, valConsAddr.Bytes())
-				suite.Require().True(found)
+				suite.Require().True(found == nil)
 
 				suite.Require().NotEmpty(suite.ctx.BlockHeader().ProposerAddress)
 			},

@@ -14,7 +14,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
+	simapp "github.com/cosmos/cosmos-sdk/testutil/sims"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
@@ -34,6 +34,7 @@ import (
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	"github.com/CosmWasm/wasmd/tests"
+	apptypes "github.com/CosmWasm/wasmd/types"
 	ethermint "github.com/CosmWasm/wasmd/types"
 	"github.com/CosmWasm/wasmd/x/evm"
 	"github.com/CosmWasm/wasmd/x/evm/statedb"
@@ -50,7 +51,7 @@ type EvmTestSuite struct {
 	suite.Suite
 
 	ctx     sdk.Context
-	handler sdk.Handler
+	handler apptypes.Handler
 	app     *app.WasmApp
 	codec   codec.Codec
 	chainID *big.Int
@@ -78,15 +79,15 @@ func (suite *EvmTestSuite) DoSetupTest(t require.TestingT) {
 	require.NoError(t, err)
 	consAddress := sdk.ConsAddress(priv.PubKey().Address())
 
-	suite.app = app.Setup(checkTx, func(app *app.WasmApp, genesis simapp.GenesisState) simapp.GenesisState {
-		if suite.dynamicTxFee {
-			feemarketGenesis := feemarkettypes.DefaultGenesisState()
-			feemarketGenesis.Params.EnableHeight = 1
-			feemarketGenesis.Params.NoBaseFee = false
-			genesis[feemarkettypes.ModuleName] = app.AppCodec().MustMarshalJSON(feemarketGenesis)
-		}
-		return genesis
-	})
+	suite.app = app.Setup(suite.T())
+	genesis := app.GenesisStateWithSingleValidator(suite.T(), suite.app)
+
+	if suite.dynamicTxFee {
+		feemarketGenesis := feemarkettypes.DefaultGenesisState()
+		feemarketGenesis.Params.EnableHeight = 1
+		feemarketGenesis.Params.NoBaseFee = false
+		genesis[feemarkettypes.ModuleName] = app.AppCodec().MustMarshalJSON(feemarketGenesis)
+	}
 
 	coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(100000000000000)))
 	genesisState := app.ModuleBasics.DefaultGenesis(suite.app.AppCodec())
