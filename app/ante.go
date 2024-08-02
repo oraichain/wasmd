@@ -25,6 +25,7 @@ import (
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 
 	storetypes "cosmossdk.io/store/types"
+	evmkeeper "github.com/CosmWasm/wasmd/x/evm/keeper"
 	feemarketkeeper "github.com/CosmWasm/wasmd/x/feemarket/keeper"
 )
 
@@ -39,6 +40,8 @@ type HandlerOptions struct {
 	TXCounterStoreService corestoretypes.KVStoreService
 	CircuitKeeper         *circuitkeeper.Keeper
 	FeeMarketKeeper       *feemarketkeeper.Keeper
+	EvmKeeper             *evmkeeper.Keeper
+	MaxTxGasWanted        uint64
 }
 
 // NewAnteHandler constructor

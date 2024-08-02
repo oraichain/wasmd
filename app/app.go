@@ -153,6 +153,15 @@ import (
 	"github.com/CosmWasm/wasmd/x/feemarket"
 	feemarketkeeper "github.com/CosmWasm/wasmd/x/feemarket/keeper"
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
+
+	"github.com/CosmWasm/wasmd/x/evm"
+	evmkeeper "github.com/CosmWasm/wasmd/x/evm/keeper"
+	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
+	"github.com/CosmWasm/wasmd/x/evmutil"
+	evmutilkeeper "github.com/CosmWasm/wasmd/x/evmutil/keeper"
+	evmutiltypes "github.com/CosmWasm/wasmd/x/evmutil/types"
+
+	evmrest "github.com/CosmWasm/wasmd/x/evm/client/rest"
 )
 
 const appName = "WasmApp"
@@ -161,12 +170,17 @@ const appName = "WasmApp"
 var (
 	NodeDir      = ".oraid"
 	Bech32Prefix = "orai"
+	CosmosDenom  = Bech32Prefix
+	EvmDenom     = "aorai" // atto orai. This will be converted automatically by evmutil of kava
 
 	EnabledCapabilities = []string{
 		tokenfactorytypes.EnableBurnFrom,
 		tokenfactorytypes.EnableForceTransfer,
 		tokenfactorytypes.EnableSetMetadata,
 	}
+
+	EVMTrace        = ""
+	EVMMaxGasWanted = uint64(500000)
 )
 
 // These constants are derived from the above variables.
@@ -221,6 +235,8 @@ var maccPerms = map[string][]string{
 	icatypes.ModuleName:          nil,
 	wasmtypes.ModuleName:         {authtypes.Burner},
 	tokenfactorytypes.ModuleName: {authtypes.Minter, authtypes.Burner},
+	evmtypes.ModuleName:          {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
+	evmutiltypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
 }
 
 var (
@@ -281,6 +297,9 @@ type WasmApp struct {
 	PacketForwardKeeper *packetforwardkeeper.Keeper
 	TokenFactoryKeeper  tokenfactorykeeper.Keeper
 	FeeMarketKeeper     feemarketkeeper.Keeper
+
+	EvmKeeper     *evmkeeper.Keeper
+	EvmutilKeeper evmutilkeeper.Keeper
 
 	// Middleware wrapper
 	Ics20WasmHooks   *ibchooks.WasmHooks
@@ -378,9 +397,10 @@ func NewWasmApp(
 		capabilitytypes.StoreKey, ibcexported.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		wasmtypes.StoreKey, icahosttypes.StoreKey, icacontrollertypes.StoreKey,
 		clocktypes.StoreKey, ibchookstypes.StoreKey, packetforwardtypes.StoreKey, tokenfactorytypes.StoreKey, feemarkettypes.StoreKey,
+		evmtypes.StoreKey, evmutiltypes.StoreKey,
 	)
 
-	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
+	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	// register streaming services
@@ -579,6 +599,22 @@ func NewWasmApp(
 	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		appCodec, keys[feemarkettypes.StoreKey], app.GetSubspace(feemarkettypes.ModuleName),
 	)
+
+	app.EvmutilKeeper = evmutilkeeper.NewKeeper(
+		appCodec,
+		keys[evmutiltypes.StoreKey],
+		app.GetSubspace(evmutiltypes.ModuleName),
+		app.BankKeeper,
+		app.AccountKeeper,
+	)
+
+	evmBankKeeper := evmutilkeeper.NewEvmBankKeeperWithDenoms(app.EvmutilKeeper, app.BankKeeper, app.AccountKeeper, EvmDenom, CosmosDenom)
+	app.EvmKeeper = evmkeeper.NewKeeper(
+		appCodec, keys[evmtypes.StoreKey], tkeys[evmtypes.TransientKey], app.GetSubspace(evmtypes.ModuleName),
+		app.AccountKeeper, evmBankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
+		EVMTrace,
+	)
+	app.EvmutilKeeper.SetEvmKeeper(app.EvmKeeper)
 
 	// Register the proposal types
 	// Deprecated: Avoid adding new handlers, instead use the new proposal flow
@@ -847,6 +883,8 @@ func NewWasmApp(
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		tokenfactory.NewAppModule(app.TokenFactoryKeeper, app.AccountKeeper, app.BankKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
+		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
+		evmutil.NewAppModule(app.EvmutilKeeper, app.BankKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -900,6 +938,8 @@ func NewWasmApp(
 		packetforwardtypes.ModuleName,
 		tokenfactorytypes.ModuleName,
 		feemarkettypes.ModuleName,
+		evmtypes.ModuleName,
+		evmutiltypes.ModuleName,
 	)
 
 	app.ModuleManager.SetOrderEndBlockers(
@@ -921,6 +961,8 @@ func NewWasmApp(
 		packetforwardtypes.ModuleName,
 		tokenfactorytypes.ModuleName,
 		feemarkettypes.ModuleName,
+		evmtypes.ModuleName,
+		evmutiltypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -951,6 +993,8 @@ func NewWasmApp(
 		packetforwardtypes.ModuleName,
 		tokenfactorytypes.ModuleName,
 		feemarkettypes.ModuleName,
+		evmtypes.ModuleName,
+		evmutiltypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
@@ -1078,6 +1122,8 @@ func (app *WasmApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtype
 			WasmConfig:            &wasmConfig,
 			WasmKeeper:            &app.WasmKeeper,
 			FeeMarketKeeper:       &app.FeeMarketKeeper,
+			EvmKeeper:             app.EvmKeeper,
+			MaxTxGasWanted:        EVMMaxGasWanted,
 			TXCounterStoreService: runtime.NewKVStoreService(txCounterStoreKey),
 			CircuitKeeper:         &app.CircuitKeeper,
 		},
@@ -1247,6 +1293,8 @@ func (app *WasmApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
+	evmrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
+
 	// Register new CometBFT queries routes from grpc-gateway.
 	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
@@ -1334,5 +1382,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(tokenfactorytypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
+
+	paramsKeeper.Subspace(evmtypes.ModuleName)
+	paramsKeeper.Subspace(evmutiltypes.ModuleName)
 	return paramsKeeper
 }

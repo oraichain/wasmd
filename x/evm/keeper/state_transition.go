@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"math"
 	"math/big"
 
@@ -37,7 +38,7 @@ func GasToRefund(availableRefund, gasConsumed, refundQuotient uint64) uint64 {
 }
 
 // EVMConfig creates the EVMConfig based on current state
-func (k *Keeper) EVMConfig(ctx sdk.Context) (*types.EVMConfig, error) {
+func (k *Keeper) EVMConfig(ctx context.Context) (*types.EVMConfig, error) {
 	params := k.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(k.eip155ChainID)
 
@@ -427,7 +428,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context, msg core.Message, trace
 }
 
 // ApplyMessage calls ApplyMessageWithConfig with default EVMConfig
-func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*types.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyMessage(ctx context.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*types.MsgEthereumTxResponse, error) {
 	cfg, err := k.EVMConfig(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")

@@ -12,7 +12,7 @@ import (
 // AccountKeeper defines the expected account keeper interface
 type AccountKeeper interface {
 	GetModuleAddress(moduleName string) sdk.AccAddress
-	GetSequence(sdk.Context, sdk.AccAddress) (uint64, error)
+	GetSequence(context.Context, sdk.AccAddress) (uint64, error)
 }
 
 // BankKeeper defines the expected bank keeper interface
@@ -27,5 +27,5 @@ type BankKeeper interface {
 type EvmKeeper interface {
 	// This is actually a gRPC query method
 	EstimateGas(ctx context.Context, req *evmtypes.EthCallRequest) (*evmtypes.EstimateGasResponse, error)
-	ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*evmtypes.MsgEthereumTxResponse, error)
+	ApplyMessage(ctx context.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*evmtypes.MsgEthereumTxResponse, error)
 }

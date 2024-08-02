@@ -72,6 +72,11 @@ func (k EvmBankKeeper) GetBalance(ctx context.Context, addr sdk.AccAddress, deno
 	return sdk.NewCoin(k.EvmDenom, total)
 }
 
+func (k EvmBankKeeper) IsSendEnabledCoins(ctx context.Context, coins ...sdk.Coin) error {
+
+	return nil
+}
+
 // SendCoinsFromModuleToAccount transfers akava coins from a ModuleAccount to an AccAddress.
 // It will panic if the module account does not exist. An error is returned if the recipient
 // address is black-listed or if sending the tokens fails.
