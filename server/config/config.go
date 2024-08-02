@@ -12,8 +12,8 @@ import (
 	"github.com/cometbft/cometbft/libs/strings"
 
 	"github.com/cosmos/cosmos-sdk/server/config"
-
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	rosetta "github.com/cosmos/rosetta"
 )
 
 const (
@@ -58,10 +58,10 @@ var evmTracers = []string{"json", "markdown", "struct", "access_list"}
 // from the SDK as well as the EVM configuration to enable the JSON-RPC APIs.
 type Config struct {
 	config.Config
-
-	EVM     EVMConfig     `mapstructure:"evm"`
-	JSONRPC JSONRPCConfig `mapstructure:"json-rpc"`
-	TLS     TLSConfig     `mapstructure:"tls"`
+	Rosetta rosetta.Config `mapstructure:"rosetta"`
+	EVM     EVMConfig      `mapstructure:"evm"`
+	JSONRPC JSONRPCConfig  `mapstructure:"json-rpc"`
+	TLS     TLSConfig      `mapstructure:"tls"`
 }
 
 // EVMConfig defines the application configuration values for the EVM.

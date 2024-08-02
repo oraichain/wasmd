@@ -29,8 +29,8 @@ import (
 	rpcfilters "github.com/CosmWasm/wasmd/rpc/ethereum/namespaces/eth/filters"
 	"github.com/CosmWasm/wasmd/rpc/ethereum/pubsub"
 	"github.com/CosmWasm/wasmd/rpc/ethereum/types"
+	"github.com/CosmWasm/wasmd/server/config"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
-	"github.com/cosmos-sdk/wasmd/server/config"
 )
 
 type WebsocketsServer interface {

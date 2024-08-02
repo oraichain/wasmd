@@ -12,6 +12,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
@@ -71,12 +72,9 @@ func EthHeaderFromTendermint(header tmtypes.Header, bloom ethtypes.Bloom, baseFe
 
 // BlockMaxGasFromConsensusParams returns the gas limit for the current block from the chain consensus params.
 func BlockMaxGasFromConsensusParams(goCtx context.Context, clientCtx client.Context, blockHeight int64) (int64, error) {
-	resConsParams, err := clientCtx.Client.ConsensusParams(goCtx, &blockHeight)
-	if err != nil {
-		return int64(^uint32(0)), err
-	}
+	resConsParams := sdk.UnwrapSDKContext(goCtx).ConsensusParams()
 
-	gasLimit := resConsParams.ConsensusParams.Block.MaxGas
+	gasLimit := resConsParams.Block.MaxGas
 	if gasLimit == -1 {
 		// Sets gas limit to max uint32 to not error with javascript dev tooling
 		// This -1 value indicating no block gas limit is set to max uint64 with geth hexutils
@@ -242,7 +240,7 @@ func BaseFeeFromEvents(events []abci.Event) *big.Int {
 		}
 
 		for _, attr := range event.Attributes {
-			if bytes.Equal(attr.Key, []byte(feemarkettypes.AttributeKeyBaseFee)) {
+			if attr.Key == feemarkettypes.AttributeKeyBaseFee {
 				result, success := new(big.Int).SetString(string(attr.Value), 10)
 				if success {
 					return result
@@ -266,7 +264,7 @@ func FindTxAttributes(events []abci.Event, txHash string) (int, map[string]strin
 
 		msgIndex++
 
-		value := FindAttribute(event.Attributes, []byte(evmtypes.AttributeKeyEthereumTxHash))
+		value := FindAttribute(event.Attributes, evmtypes.AttributeKeyEthereumTxHash)
 		if !bytes.Equal(value, []byte(txHash)) {
 			continue
 		}
@@ -286,7 +284,7 @@ func FindTxAttributes(events []abci.Event, txHash string) (int, map[string]strin
 // returns the msgIndex, returns -1 if not found.
 func FindTxAttributesByIndex(events []abci.Event, txIndex uint64) int {
 	strIndex := []byte(strconv.FormatUint(txIndex, 10))
-	txIndexKey := []byte(evmtypes.AttributeKeyTxIndex)
+	txIndexKey := evmtypes.AttributeKeyTxIndex
 	msgIndex := -1
 	for _, event := range events {
 		if event.Type != evmtypes.EventTypeEthereumTx {
@@ -308,12 +306,12 @@ func FindTxAttributesByIndex(events []abci.Event, txIndex uint64) int {
 }
 
 // FindAttribute find event attribute with specified key, if not found returns nil.
-func FindAttribute(attrs []abci.EventAttribute, key []byte) []byte {
+func FindAttribute(attrs []abci.EventAttribute, key string) []byte {
 	for _, attr := range attrs {
-		if !bytes.Equal(attr.Key, key) {
+		if attr.Key != key {
 			continue
 		}
-		return attr.Value
+		return []byte(attr.Value)
 	}
 	return nil
 }
@@ -347,7 +345,7 @@ func AccumulativeGasUsedOfMsg(events []abci.Event, msgIndex int) (gasUsed uint64
 		}
 		msgIndex--
 
-		value := FindAttribute(event.Attributes, []byte(evmtypes.AttributeKeyTxGasUsed))
+		value := FindAttribute(event.Attributes, evmtypes.AttributeKeyTxGasUsed)
 		var result int64
 		result, err := strconv.ParseInt(string(value), 10, 64)
 		if err != nil {

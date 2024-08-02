@@ -160,8 +160,6 @@ import (
 	"github.com/CosmWasm/wasmd/x/evmutil"
 	evmutilkeeper "github.com/CosmWasm/wasmd/x/evmutil/keeper"
 	evmutiltypes "github.com/CosmWasm/wasmd/x/evmutil/types"
-
-	evmrest "github.com/CosmWasm/wasmd/x/evm/client/rest"
 )
 
 const appName = "WasmApp"
@@ -1292,8 +1290,6 @@ func (app *WasmApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 	clientCtx := apiSvr.ClientCtx
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
-
-	evmrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
 
 	// Register new CometBFT queries routes from grpc-gateway.
 	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)

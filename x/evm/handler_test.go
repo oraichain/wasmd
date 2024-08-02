@@ -86,11 +86,11 @@ func (suite *EvmTestSuite) DoSetupTest(t require.TestingT) {
 		feemarketGenesis := feemarkettypes.DefaultGenesisState()
 		feemarketGenesis.Params.EnableHeight = 1
 		feemarketGenesis.Params.NoBaseFee = false
-		genesis[feemarkettypes.ModuleName] = app.AppCodec().MustMarshalJSON(feemarketGenesis)
+		genesis[feemarkettypes.ModuleName] = suite.app.AppCodec().MustMarshalJSON(feemarketGenesis)
 	}
 
 	coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(100000000000000)))
-	genesisState := app.ModuleBasics.DefaultGenesis(suite.app.AppCodec())
+	genesisState := suite.app.DefaultGenesis()
 	b32address := sdk.MustBech32ifyAddressBytes(sdk.GetConfig().GetBech32AccountAddrPrefix(), priv.PubKey().Address().Bytes())
 	balances := []banktypes.Balance{
 		{
@@ -103,7 +103,7 @@ func (suite *EvmTestSuite) DoSetupTest(t require.TestingT) {
 		},
 	}
 	// Update total supply
-	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(200000000000000))), []banktypes.Metadata{})
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(200000000000000))), []banktypes.Metadata{}, nil)
 	genesisState[banktypes.ModuleName] = suite.app.AppCodec().MustMarshalJSON(bankGenesis)
 
 	stateBytes, err := tmjson.MarshalIndent(genesisState, "", " ")
@@ -178,7 +178,7 @@ func (suite *EvmTestSuite) SignTx(tx *types.MsgEthereumTx) {
 }
 
 func (suite *EvmTestSuite) StateDB() *statedb.StateDB {
-	return statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(suite.ctx.HeaderHash().Bytes())))
+	return statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(suite.ctx.HeaderHash())))
 }
 
 func TestEvmTestSuite(t *testing.T) {
