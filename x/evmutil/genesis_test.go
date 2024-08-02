@@ -3,12 +3,12 @@ package evmutil_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/suite"
-
+	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/x/evmutil"
 	"github.com/CosmWasm/wasmd/x/evmutil/testutil"
 	"github.com/CosmWasm/wasmd/x/evmutil/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/suite"
 )
 
 type genesisTestSuite struct {
@@ -22,7 +22,7 @@ func (suite *genesisTestSuite) SetupTest() {
 func (s *genesisTestSuite) TestInitGenesis_SetAccounts() {
 	gs := types.NewGenesisState(
 		[]types.Account{
-			{Address: s.Addrs[0], Balance: sdk.NewInt(100)},
+			{Address: s.Addrs[0], Balance: sdkmath.NewInt(100)},
 		},
 		types.DefaultParams(),
 	)

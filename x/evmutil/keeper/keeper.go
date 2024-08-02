@@ -3,19 +3,21 @@ package keeper
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
+	"github.com/CosmWasm/wasmd/x/evmutil/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
-	"github.com/CosmWasm/wasmd/x/evmutil/types"
 )
 
 // Keeper of the evmutil store.
 // This keeper stores additional data related to evm accounts.
 type Keeper struct {
 	cdc           codec.Codec
-	storeKey      sdk.StoreKey
+	storeKey      storetypes.StoreKey
 	paramSubspace paramtypes.Subspace
 	bankKeeper    types.BankKeeper
 	evmKeeper     types.EvmKeeper
@@ -25,7 +27,7 @@ type Keeper struct {
 // NewKeeper creates an evmutil keeper.
 func NewKeeper(
 	cdc codec.Codec,
-	storeKey sdk.StoreKey,
+	storeKey storetypes.StoreKey,
 	params paramtypes.Subspace,
 	bk types.BankKeeper,
 	ak types.AccountKeeper,
@@ -60,7 +62,7 @@ func (k Keeper) GetAllAccounts(ctx sdk.Context) (accounts []types.Account) {
 // callback, iteration is halted.
 func (k Keeper) IterateAllAccounts(ctx sdk.Context, cb func(types.Account) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.AccountStoreKeyPrefix)
+	iterator := storetypes.KVStorePrefixIterator(store, types.AccountStoreKeyPrefix)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -116,7 +118,7 @@ func (k Keeper) SetAccount(ctx sdk.Context, account types.Account) error {
 func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress) sdkmath.Int {
 	account := k.GetAccount(ctx, addr)
 	if account == nil {
-		return sdk.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
 	return account.Balance
 }

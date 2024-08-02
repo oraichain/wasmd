@@ -1,18 +1,19 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // ensure Msg interface compliance at compile time
 var (
-	_ sdk.Msg            = &MsgConvertCoinToERC20{}
-	_ sdk.Msg            = &MsgConvertERC20ToCoin{}
-	_ legacytx.LegacyMsg = &MsgConvertCoinToERC20{}
-	_ legacytx.LegacyMsg = &MsgConvertERC20ToCoin{}
+	_ sdk.Msg       = &MsgConvertCoinToERC20{}
+	_ sdk.Msg       = &MsgConvertERC20ToCoin{}
+	_ sdk.LegacyMsg = &MsgConvertCoinToERC20{}
+	_ sdk.LegacyMsg = &MsgConvertERC20ToCoin{}
 )
 
 // legacy message types
@@ -123,7 +124,7 @@ func (msg MsgConvertERC20ToCoin) ValidateBasic() error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "receiver is not a valid bech32 address")
 	}
 
-	if msg.Amount.IsNil() || msg.Amount.LTE(sdk.ZeroInt()) {
+	if msg.Amount.IsNil() || msg.Amount.LTE(sdkmath.ZeroInt()) {
 		return errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "amount cannot be zero or less")
 	}
 

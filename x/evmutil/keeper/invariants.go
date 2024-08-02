@@ -1,10 +1,10 @@
 package keeper
 
 import (
+	sdkmath "cosmossdk.io/math"
+	"github.com/CosmWasm/wasmd/x/evmutil/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-
-	"github.com/CosmWasm/wasmd/x/evmutil/types"
 )
 
 // RegisterInvariants registers the swap module invariants
@@ -37,7 +37,7 @@ func FullyBackedInvariant(bankK types.BankKeeper, k Keeper) sdk.Invariant {
 	message := sdk.FormatInvariant(types.ModuleName, "fully backed broken", "sum of minor balances greater than module account")
 
 	return func(ctx sdk.Context) (string, bool) {
-		totalMinorBalances := sdk.ZeroInt()
+		totalMinorBalances := sdkmath.ZeroInt()
 		k.IterateAllAccounts(ctx, func(acc types.Account) bool {
 			totalMinorBalances = totalMinorBalances.Add(acc.Balance)
 			return false

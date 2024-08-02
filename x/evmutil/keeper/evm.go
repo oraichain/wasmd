@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -87,7 +89,7 @@ func (k Keeper) CallEVMWithData(
 		return nil, err
 	}
 
-	ethGasContext := ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
+	ethGasContext := ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
 
 	// EstimateGas applies the transaction against current block state to get
 	// optimal gas value. Since this is done right before the ApplyMessage
@@ -98,7 +100,7 @@ func (k Keeper) CallEVMWithData(
 	// apply, tx order is the same, etc.)
 	gasRes, err := k.evmKeeper.EstimateGas(sdk.WrapSDKContext(ethGasContext), &evmtypes.EthCallRequest{
 		Args:   args,
-		GasCap: types.DefaultGasCap,
+		GasCap: evmtypes.DefaultGasCap,
 	})
 	if err != nil {
 		return nil, errorsmod.Wrap(evmtypes.ErrVMExecution, err.Error())

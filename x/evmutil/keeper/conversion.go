@@ -3,9 +3,10 @@ package keeper
 import (
 	"math/big"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/x/evmutil/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // MintConversionPairCoin mints the given amount of a ConversionPair denom and

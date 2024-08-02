@@ -3,9 +3,9 @@ package keeper
 import (
 	"bytes"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
+	errorsmod "cosmossdk.io/errors"
 	"github.com/CosmWasm/wasmd/x/evmutil/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // GetParams returns the total set of evm parameters.

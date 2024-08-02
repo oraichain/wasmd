@@ -27,7 +27,7 @@ func CanSignEthTx(ctx client.Context) error {
 		return err
 	}
 
-	if keyInfo.GetAlgo() != hd.EthSecp256k1Type {
+	if keyInfo.Name != string(hd.EthSecp256k1Type) {
 		return fmt.Errorf("from address does not support %v", hd.EthSecp256k1Type)
 	}
 

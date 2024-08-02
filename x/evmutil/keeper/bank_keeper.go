@@ -3,11 +3,12 @@ package keeper
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
+	"github.com/CosmWasm/wasmd/x/evmutil/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	"github.com/CosmWasm/wasmd/x/evmutil/types"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 )
 
 // ConversionMultiplier is the conversion multiplier between akava and ukava
-var ConversionMultiplier = sdk.NewInt(1_000_000_000_000)
+var ConversionMultiplier = sdkmath.NewInt(1_000_000_000_000)
 
 var _ evmtypes.BankKeeper = EvmBankKeeper{}
 
@@ -175,7 +176,7 @@ func (k EvmBankKeeper) ConvertOneUkavaToAkavaIfNeeded(ctx sdk.Context, addr sdk.
 		return nil
 	}
 
-	ukavaToStore := sdk.NewCoins(sdk.NewCoin(k.CosmosDenom, sdk.OneInt()))
+	ukavaToStore := sdk.NewCoins(sdk.NewCoin(k.CosmosDenom, sdkmath.OneInt()))
 	if err := k.bk.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, ukavaToStore); err != nil {
 		return err
 	}
@@ -237,8 +238,8 @@ func (k EvmBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.
 // SplitAkavaCoins splits akava coins to the equivalent ukava coins and any remaining akava balance.
 // An error will be returned if the coins are not valid or if the coins are not the akava denom.
 func SplitAkavaCoins(coins sdk.Coins, evmDenom, cosmosDenom string) (sdk.Coin, sdkmath.Int, error) {
-	akava := sdk.ZeroInt()
-	ukava := sdk.NewCoin(cosmosDenom, sdk.ZeroInt())
+	akava := sdkmath.ZeroInt()
+	ukava := sdk.NewCoin(cosmosDenom, sdkmath.ZeroInt())
 
 	if len(coins) == 0 {
 		return ukava, akava, nil

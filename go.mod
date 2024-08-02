@@ -7,6 +7,7 @@ require (
 	github.com/CosmosContracts/juno/v18/x/clock v0.0.0-00010101000000-000000000000
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.7
+	github.com/holiman/uint256 v1.2.0
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/gogoproto v1.5.0
