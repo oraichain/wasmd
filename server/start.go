@@ -41,9 +41,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
-	ethdebug "github.com/tharsis/ethermint/rpc/ethereum/namespaces/debug"
-	"github.com/tharsis/ethermint/server/config"
-	srvflags "github.com/tharsis/ethermint/server/flags"
+	ethdebug "github.com/CosmWasm/wasmd/rpc/ethereum/namespaces/debug"
+	"github.com/CosmWasm/wasmd/server/config"
+	srvflags "github.com/CosmWasm/wasmd/server/flags"
 )
 
 // DBOpener is a function to open `application.db`, potentially with customized options.

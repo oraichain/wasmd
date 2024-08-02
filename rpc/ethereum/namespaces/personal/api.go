@@ -13,7 +13,7 @@ import (
 	"github.com/CosmWasm/wasmd/crypto/hd"
 	ethermint "github.com/CosmWasm/wasmd/types"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 
 	sdkcrypto "github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"

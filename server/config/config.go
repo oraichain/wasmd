@@ -48,6 +48,8 @@ const (
 	DefaultHTTPTimeout = 30 * time.Second
 
 	DefaultHTTPIdleTimeout = 120 * time.Second
+
+	ServerStartTime = 5 * time.Second
 )
 
 var evmTracers = []string{"json", "markdown", "struct", "access_list"}

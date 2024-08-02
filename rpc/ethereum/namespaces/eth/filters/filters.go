@@ -7,7 +7,7 @@ import (
 
 	"github.com/CosmWasm/wasmd/rpc/ethereum/types"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/common"

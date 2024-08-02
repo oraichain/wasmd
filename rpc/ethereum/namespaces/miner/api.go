@@ -18,7 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	"github.com/CosmWasm/wasmd/rpc/ethereum/backend"

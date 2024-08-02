@@ -1,11 +1,7 @@
 [module]
 description = "The evm module executes Ethereum Virtual Machine (EVM) state transitions."
 homepage = "https://github.com/CosmWasm/wasmd"
-keywords = [
-  "evm",
-  "ethereum",
-  "ethermint",
-]
+keywords = ["evm", "ethereum", "ethermint"]
 
 name = "x/evm"
 
@@ -28,7 +24,7 @@ name = "noot"
 name = "araskachoi"
 
 [version]
-documentation = "https://raw.githubusercontent.com/tharsis/ethermint/main/x/evm/atlas/atlas-v0.3.1.md"
+documentation = "https://raw.githubusercontent.com/CosmWasm/wasmd/main/x/evm/atlas/atlas-v0.3.1.md"
 repo = "https://github.com/CosmWasm/wasmd/releases/tag/v0.3.1"
 sdk_compat = "v0.39.x"
 version = "v0.3.1"

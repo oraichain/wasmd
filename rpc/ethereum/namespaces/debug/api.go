@@ -23,9 +23,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/server"
 
+	"cosmossdk.io/log"
 	"github.com/CosmWasm/wasmd/rpc/ethereum/backend"
 	rpctypes "github.com/CosmWasm/wasmd/rpc/ethereum/types"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
