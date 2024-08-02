@@ -9,6 +9,7 @@ import (
 	"github.com/CosmWasm/wasmd/rpc/ethereum/backend"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	"github.com/CosmWasm/wasmd/crypto/hd"
 	ethermint "github.com/CosmWasm/wasmd/types"
@@ -102,7 +103,8 @@ func (api *PrivateAccountAPI) ListAccounts() ([]common.Address, error) {
 	}
 
 	for _, info := range list {
-		addrs = append(addrs, common.BytesToAddress(info.GetPubKey().Address()))
+		pubkey, _ := info.GetPubKey()
+		addrs = append(addrs, common.BytesToAddress(pubkey.Address()))
 	}
 
 	return addrs, nil
@@ -130,8 +132,8 @@ func (api *PrivateAccountAPI) NewAccount(password string) (common.Address, error
 	if err != nil {
 		return common.Address{}, err
 	}
-
-	addr := common.BytesToAddress(info.GetPubKey().Address().Bytes())
+	pubkey, _ := info.GetPubKey()
+	addr := common.BytesToAddress(pubkey.Address().Bytes())
 	api.logger.Info("Your new key was generated", "address", addr.String())
 	api.logger.Info("Please backup your key file!", "path", os.Getenv("HOME")+"/.ethermint/"+name) // TODO: pass the correct binary
 	api.logger.Info("Please remember your password!")
@@ -182,7 +184,7 @@ func (api *PrivateAccountAPI) Sign(_ context.Context, data hexutil.Bytes, addr c
 
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 
-	sig, _, err := api.clientCtx.Keyring.SignByAddress(cosmosAddr, accounts.TextHash(data))
+	sig, _, err := api.clientCtx.Keyring.SignByAddress(cosmosAddr, accounts.TextHash(data), signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 	if err != nil {
 		api.logger.Error("failed to sign with key", "data", data, "address", addr.String(), "error", err.Error())
 		return nil, err

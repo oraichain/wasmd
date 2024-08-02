@@ -7,6 +7,8 @@ import (
 	"math"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/ethereum/eip712"
 
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
@@ -26,7 +28,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -74,6 +77,7 @@ func NewPublicAPI(
 			viper.GetString(flags.FlagKeyringBackend),
 			clientCtx.KeyringDir,
 			clientCtx.Input,
+			clientCtx.Codec,
 			hd.EthSecp256k1Option(),
 		)
 		if err != nil {
@@ -242,7 +246,8 @@ func (e *PublicAPI) Accounts() ([]common.Address, error) {
 	}
 
 	for _, info := range infos {
-		addressBytes := info.GetPubKey().Address().Bytes()
+		pubkey, _ := info.GetPubKey()
+		addressBytes := pubkey.Address().Bytes()
 		addresses = append(addresses, common.BytesToAddress(addressBytes))
 	}
 
@@ -273,7 +278,7 @@ func (e *PublicAPI) GetBalance(address common.Address, blockNrOrHash rpctypes.Bl
 		return nil, err
 	}
 
-	val, ok := sdk.NewIntFromString(res.Balance)
+	val, ok := sdkmath.NewIntFromString(res.Balance)
 	if !ok {
 		return nil, errors.New("invalid balance")
 	}
@@ -426,7 +431,7 @@ func (e *PublicAPI) Sign(address common.Address, data hexutil.Bytes) (hexutil.By
 	}
 
 	// Sign the requested hash with the wallet
-	signature, _, err := e.clientCtx.Keyring.SignByAddress(from, data)
+	signature, _, err := e.clientCtx.Keyring.SignByAddress(from, data, signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 	if err != nil {
 		e.logger.Error("keyring.SignByAddress failed", "address", address.Hex())
 		return nil, err
@@ -453,7 +458,7 @@ func (e *PublicAPI) SignTypedData(address common.Address, typedData apitypes.Typ
 	}
 
 	// Sign the requested hash with the wallet
-	signature, _, err := e.clientCtx.Keyring.SignByAddress(from, sigHash)
+	signature, _, err := e.clientCtx.Keyring.SignByAddress(from, sigHash, signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 	if err != nil {
 		e.logger.Error("keyring.SignByAddress failed", "address", address.Hex())
 		return nil, err
@@ -540,7 +545,7 @@ func (e *PublicAPI) SendRawTransaction(data hexutil.Bytes) (common.Hash, error) 
 	syncCtx := e.clientCtx.WithBroadcastMode(flags.BroadcastSync)
 	rsp, err := syncCtx.BroadcastTx(txBytes)
 	if rsp != nil && rsp.Code != 0 {
-		err = sdkerrors.ABCIError(rsp.Codespace, rsp.Code, rsp.RawLog)
+		err = errorsmod.ABCIError(rsp.Codespace, rsp.Code, rsp.RawLog)
 	}
 	if err != nil {
 		e.logger.Error("failed to broadcast tx", "error", err.Error())
@@ -1068,7 +1073,8 @@ func (e *PublicAPI) GetProof(address common.Address, storageKeys []string, block
 	}
 
 	// query account proofs
-	accountKey := authtypes.AddressStoreKey(sdk.AccAddress(address.Bytes()))
+
+	accountKey := append(authtypes.AddressStoreKeyPrefix, address.Bytes()...)
 	_, proof, err := e.queryClient.GetProof(clientCtx, authtypes.StoreKey, accountKey)
 	if err != nil {
 		return nil, err
@@ -1080,7 +1086,7 @@ func (e *PublicAPI) GetProof(address common.Address, storageKeys []string, block
 		accProofStr = proof.String()
 	}
 
-	balance, ok := sdk.NewIntFromString(res.Balance)
+	balance, ok := sdkmath.NewIntFromString(res.Balance)
 	if !ok {
 		return nil, errors.New("invalid balance")
 	}
