@@ -4,8 +4,8 @@ package ethermint.evm.v1;
 import "gogoproto/gogo.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/api/annotations.proto";
-import "ethermint/evm/v1/evm.proto";
-import "ethermint/evm/v1/tx.proto";
+import "cosmwasm/evm/v1/evm.proto";
+import "cosmwasm/evm/v1/tx.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/tharsis/ethermint/x/evm/types";
@@ -14,13 +14,13 @@ option go_package = "github.com/tharsis/ethermint/x/evm/types";
 service Query {
   // Account queries an Ethereum account.
   rpc Account(QueryAccountRequest) returns (QueryAccountResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/account/{address}";
+    option (google.api.http).get = "/cosmwasm/evm/v1/account/{address}";
   }
 
   // CosmosAccount queries an Ethereum account's Cosmos Address.
   rpc CosmosAccount(QueryCosmosAccountRequest)
       returns (QueryCosmosAccountResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/cosmos_account/{address}";
+    option (google.api.http).get = "/cosmwasm/evm/v1/cosmos_account/{address}";
   }
 
   // ValidatorAccount queries an Ethereum account's from a validator consensus
@@ -28,55 +28,58 @@ service Query {
   rpc ValidatorAccount(QueryValidatorAccountRequest)
       returns (QueryValidatorAccountResponse) {
     option (google.api.http).get =
-        "/ethermint/evm/v1/validator_account/{cons_address}";
+        "/cosmwasm/evm/v1/validator_account/{cons_address}";
   }
 
   // Balance queries the balance of a the EVM denomination for a single
   // EthAccount.
   rpc Balance(QueryBalanceRequest) returns (QueryBalanceResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/balances/{address}";
+    option (google.api.http).get = "/cosmwasm/evm/v1/balances/{address}";
   }
 
   // Storage queries the balance of all coins for a single account.
   rpc Storage(QueryStorageRequest) returns (QueryStorageResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/storage/{address}/{key}";
+    option (google.api.http).get = "/cosmwasm/evm/v1/storage/{address}/{key}";
   }
 
   // Code queries the balance of all coins for a single account.
   rpc Code(QueryCodeRequest) returns (QueryCodeResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/codes/{address}";
+    option (google.api.http).get = "/cosmwasm/evm/v1/codes/{address}";
   }
 
   // Params queries the parameters of x/evm module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/params";
+    option (google.api.http).get = "/cosmwasm/evm/v1/params";
   }
 
   // EthCall implements the `eth_call` rpc api
   rpc EthCall(EthCallRequest) returns (MsgEthereumTxResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/eth_call";
+    option (google.api.http).get = "/cosmwasm/evm/v1/eth_call";
   }
 
   // EstimateGas implements the `eth_estimateGas` rpc api
   rpc EstimateGas(EthCallRequest) returns (EstimateGasResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/estimate_gas";
+    option (google.api.http).get = "/cosmwasm/evm/v1/estimate_gas";
   }
 
   // TraceTx implements the `debug_traceTransaction` rpc api
   rpc TraceTx(QueryTraceTxRequest) returns (QueryTraceTxResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/trace_tx";
+    option (google.api.http).get = "/cosmwasm/evm/v1/trace_tx";
   }
 
-  // TraceBlock implements the `debug_traceBlockByNumber` and `debug_traceBlockByHash` rpc api
+  // TraceBlock implements the `debug_traceBlockByNumber` and
+  // `debug_traceBlockByHash` rpc api
   rpc TraceBlock(QueryTraceBlockRequest) returns (QueryTraceBlockResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/trace_block";
+    option (google.api.http).get = "/cosmwasm/evm/v1/trace_block";
   }
 
-  rpc MappedEvmAddress(QueryMappedEvmAddressRequest) returns (QueryMappedEvmAddressResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/mapped-evm-address";
+  rpc MappedEvmAddress(QueryMappedEvmAddressRequest)
+      returns (QueryMappedEvmAddressResponse) {
+    option (google.api.http).get = "/cosmwasm/evm/v1/mapped-evm-address";
   }
-  rpc MappedCosmosAddress(QueryMappedCosmosAddressRequest) returns (QueryMappedCosmosAddressResponse) {
-    option (google.api.http).get = "/ethermint/evm/v1/mapped-cosmos-address";
+  rpc MappedCosmosAddress(QueryMappedCosmosAddressRequest)
+      returns (QueryMappedCosmosAddressResponse) {
+    option (google.api.http).get = "/cosmwasm/evm/v1/mapped-cosmos-address";
   }
 }
 
@@ -250,7 +253,8 @@ message QueryTraceTxRequest {
   // block hex hash of requested transaction
   string block_hash = 6;
   // block time of requested transaction
-  google.protobuf.Timestamp block_time = 7 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  google.protobuf.Timestamp block_time = 7
+      [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
 }
 
 // QueryTraceTxResponse defines TraceTx response
@@ -270,31 +274,25 @@ message QueryTraceBlockRequest {
   // block hex hash
   string block_hash = 6;
   // block time
-  google.protobuf.Timestamp block_time = 7 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  google.protobuf.Timestamp block_time = 7
+      [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
 }
 
 // QueryTraceBlockResponse defines TraceBlock response
-message QueryTraceBlockResponse {
-  bytes data = 1;
-}
+message QueryTraceBlockResponse { bytes data = 1; }
 
-// QueryParamsRequest defines the request type for querying x/evmutil parameters.
-message QueryMappedEvmAddressRequest {
-  string cosmosAddress = 1;
-}
+// QueryParamsRequest defines the request type for querying x/evmutil
+// parameters.
+message QueryMappedEvmAddressRequest { string cosmosAddress = 1; }
 
-// QueryParamsResponse defines the response type for querying x/evmutil parameters.
-message QueryMappedEvmAddressResponse {
-  string evm_address = 1;
-}
+// QueryParamsResponse defines the response type for querying x/evmutil
+// parameters.
+message QueryMappedEvmAddressResponse { string evm_address = 1; }
 
-// QueryParamsRequest defines the request type for querying x/evmutil parameters.
-message QueryMappedCosmosAddressRequest {
-  string evmAddress = 1;
-}
+// QueryParamsRequest defines the request type for querying x/evmutil
+// parameters.
+message QueryMappedCosmosAddressRequest { string evmAddress = 1; }
 
-// QueryParamsResponse defines the response type for querying x/evmutil parameters.
-message QueryMappedCosmosAddressResponse {
-  string cosmos_address = 1;
-}
-
+// QueryParamsResponse defines the response type for querying x/evmutil
+// parameters.
+message QueryMappedCosmosAddressResponse { string cosmos_address = 1; }

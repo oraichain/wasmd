@@ -2,7 +2,7 @@ syntax = "proto3";
 package ethermint.evm.v1;
 
 import "gogoproto/gogo.proto";
-import "ethermint/evm/v1/evm.proto";
+import "cosmwasm/evm/v1/evm.proto";
 
 option go_package = "github.com/tharsis/ethermint/x/evm/types";
 

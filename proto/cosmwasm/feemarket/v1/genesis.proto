@@ -2,7 +2,7 @@ syntax = "proto3";
 package ethermint.feemarket.v1;
 
 import "gogoproto/gogo.proto";
-import "ethermint/feemarket/v1/feemarket.proto";
+import "cosmwasm/feemarket/v1/feemarket.proto";
 
 option go_package = "github.com/tharsis/ethermint/x/feemarket/types";
 
