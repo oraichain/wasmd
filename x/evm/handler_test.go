@@ -43,7 +43,7 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 
-	"github.com/tendermint/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 )
 
 type EvmTestSuite struct {

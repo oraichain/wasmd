@@ -63,6 +63,7 @@ require (
 require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
+	github.com/rjeczalik/notify v0.9.1 // indirect
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969 // indirect
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect

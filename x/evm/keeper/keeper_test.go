@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
+	tmjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -27,7 +28,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
 
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	"github.com/CosmWasm/wasmd/tests"
@@ -45,8 +45,8 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/tendermint/tendermint/version"
 )
 
 var testTokens = sdkmath.NewIntWithDecimal(1000, 18)
