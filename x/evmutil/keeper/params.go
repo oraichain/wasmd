@@ -26,7 +26,7 @@ func (k Keeper) GetEnabledConversionPairFromERC20Address(
 ) (types.ConversionPair, error) {
 	params := k.GetParams(ctx)
 	for _, pair := range params.EnabledConversionPairs {
-		if bytes.Equal(pair.KavaERC20Address, address.Bytes()) {
+		if bytes.Equal(pair.OraiERC20Address, address.Bytes()) {
 			return pair, nil
 		}
 	}

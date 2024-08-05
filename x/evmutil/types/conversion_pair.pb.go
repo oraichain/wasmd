@@ -28,7 +28,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // allowed to be converted between ERC20 and sdk.Coin
 type ConversionPair struct {
 	// ERC20 address of the token on the Kava EVM
-	KavaERC20Address HexBytes `protobuf:"bytes,1,opt,name=kava_erc20_address,json=kavaErc20Address,proto3,casttype=HexBytes" json:"kava_erc20_address,omitempty"`
+	OraiERC20Address HexBytes `protobuf:"bytes,1,opt,name=orai_erc20_address,json=oraiERC20Address,proto3,casttype=HexBytes" json:"orai_erc20_address,omitempty"`
 	// Denom of the corresponding sdk.Coin
 	Denom string `protobuf:"bytes,2,opt,name=denom,proto3" json:"denom,omitempty"`
 }
@@ -120,8 +120,8 @@ func (this *ConversionPair) VerboseEqual(that interface{}) error {
 	} else if this == nil {
 		return fmt.Errorf("that is type *ConversionPair but is not nil && this == nil")
 	}
-	if !bytes.Equal(this.KavaERC20Address, that1.KavaERC20Address) {
-		return fmt.Errorf("KavaERC20Address this(%v) Not Equal that(%v)", this.KavaERC20Address, that1.KavaERC20Address)
+	if !bytes.Equal(this.OraiERC20Address, that1.OraiERC20Address) {
+		return fmt.Errorf("OraiERC20Address this(%v) Not Equal that(%v)", this.OraiERC20Address, that1.OraiERC20Address)
 	}
 	if this.Denom != that1.Denom {
 		return fmt.Errorf("Denom this(%v) Not Equal that(%v)", this.Denom, that1.Denom)
@@ -147,7 +147,7 @@ func (this *ConversionPair) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !bytes.Equal(this.KavaERC20Address, that1.KavaERC20Address) {
+	if !bytes.Equal(this.OraiERC20Address, that1.OraiERC20Address) {
 		return false
 	}
 	if this.Denom != that1.Denom {
@@ -182,10 +182,10 @@ func (m *ConversionPair) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.KavaERC20Address) > 0 {
-		i -= len(m.KavaERC20Address)
-		copy(dAtA[i:], m.KavaERC20Address)
-		i = encodeVarintConversionPair(dAtA, i, uint64(len(m.KavaERC20Address)))
+	if len(m.OraiERC20Address) > 0 {
+		i -= len(m.OraiERC20Address)
+		copy(dAtA[i:], m.OraiERC20Address)
+		i = encodeVarintConversionPair(dAtA, i, uint64(len(m.OraiERC20Address)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -209,7 +209,7 @@ func (m *ConversionPair) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.KavaERC20Address)
+	l = len(m.OraiERC20Address)
 	if l > 0 {
 		n += 1 + l + sovConversionPair(uint64(l))
 	}
@@ -257,7 +257,7 @@ func (m *ConversionPair) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field KavaERC20Address", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field OraiERC20Address", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -284,9 +284,9 @@ func (m *ConversionPair) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.KavaERC20Address = append(m.KavaERC20Address[:0], dAtA[iNdEx:postIndex]...)
-			if m.KavaERC20Address == nil {
-				m.KavaERC20Address = []byte{}
+			m.OraiERC20Address = append(m.OraiERC20Address[:0], dAtA[iNdEx:postIndex]...)
+			if m.OraiERC20Address == nil {
+				m.OraiERC20Address = []byte{}
 			}
 			iNdEx = postIndex
 		case 2:

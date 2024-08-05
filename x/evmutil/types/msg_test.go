@@ -184,7 +184,7 @@ func TestMsgConvertERC20ToCoin(t *testing.T) {
 			msg := types.MsgConvertERC20ToCoin{
 				Initiator:        tc.initiator,
 				Receiver:         tc.receiver,
-				KavaERC20Address: tc.contractAddr,
+				OraiERC20Address: tc.contractAddr,
 				Amount:           tc.amount,
 			}
 			err := msg.ValidateBasic()

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package ethermint.evm.v1;
+package cosmwasm.evm.v1;
 import "cosmos/msg/v1/msg.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
@@ -7,7 +7,7 @@ import "google/protobuf/any.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmwasm/evm/v1/evm.proto";
 
-option go_package = "github.com/tharsis/ethermint/x/evm/types";
+option go_package = "github.com/CosmWasm/wasmd/x/evm/types";
 
 // Msg defines the evm Msg service.
 service Msg {

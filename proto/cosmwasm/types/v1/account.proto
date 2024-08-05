@@ -1,11 +1,11 @@
 syntax = "proto3";
-package ethermint.types.v1;
+package cosmwasm.types.v1;
 
 import "cosmos/auth/v1beta1/auth.proto";
 import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/tharsis/ethermint/types";
+option go_package = "github.com/CosmWasm/wasmd/types";
 
 // EthAccount implements the authtypes.AccountI interface and embeds an
 // authtypes.BaseAccount type. It is compatible with the auth AccountKeeper.

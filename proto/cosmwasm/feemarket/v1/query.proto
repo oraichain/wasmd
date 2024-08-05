@@ -1,12 +1,12 @@
 syntax = "proto3";
-package ethermint.feemarket.v1;
+package cosmwasm.feemarket.v1;
 
 import "gogoproto/gogo.proto";
 // import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/api/annotations.proto";
 import "cosmwasm/feemarket/v1/feemarket.proto";
 
-option go_package = "github.com/tharsis/ethermint/x/feemarket/types";
+option go_package = "github.com/CosmWasm/wasmd/x/feemarket/types";
 
 // Query defines the gRPC querier service.
 service Query {

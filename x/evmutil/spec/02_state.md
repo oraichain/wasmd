@@ -20,7 +20,7 @@ message Params {
 // allowed to be converted between ERC20 and sdk.Coin
 message ConversionPair {
   // ERC20 address of the token on the Kava EVM
-  bytes kava_erc20_address = 1;
+  bytes orai_erc20_address = 1;
   // Denom of the corresponding sdk.Coin
   string denom = 2;
 }

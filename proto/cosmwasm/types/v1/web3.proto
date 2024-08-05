@@ -1,9 +1,9 @@
 syntax = "proto3";
-package ethermint.types.v1;
+package cosmwasm.types.v1;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/tharsis/ethermint/types";
+option go_package = "github.com/CosmWasm/wasmd/types";
 
 message ExtensionOptionsWeb3Tx {
   option (gogoproto.goproto_getters) = false;

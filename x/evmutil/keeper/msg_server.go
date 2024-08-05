@@ -77,7 +77,7 @@ func (s msgServer) ConvertERC20ToCoin(
 		return nil, fmt.Errorf("invalid receiver address: %w", err)
 	}
 
-	contractAddr, err := types.NewInternalEVMAddressFromString(msg.KavaERC20Address)
+	contractAddr, err := types.NewInternalEVMAddressFromString(msg.OraiERC20Address)
 	if err != nil {
 		return nil, fmt.Errorf("invalid contract address: %w", err)
 	}

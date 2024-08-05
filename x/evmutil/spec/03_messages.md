@@ -23,7 +23,7 @@ message MsgConvertERC20ToCoin {
   // Kava bech32 address that will receive the converted sdk.Coin.
   string receiver = 2;
   // EVM 0x hex address of the ERC20 contract.
-  string kava_erc20_address = 3;
+  string orai_erc20_address = 3;
   // ERC20 token amount to convert.
   string amount = 4 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
@@ -34,8 +34,8 @@ message MsgConvertERC20ToCoin {
 ### State Changes
 
 - The `EnabledConversionPairs` param from `x/evmutil` is checked to ensure the conversion pair is enabled.
-- The initiator's ERC20 token from `kava_erc20_address` is locked by transferring it from the initiator's 0x address to the `x/evmutil` module account's 0x address.
-- The same amount of sdk.Coin are minted for the corresponding denom of the `kava_erc20_address` in the `EnabledConversionPairs` param. The coins are then transferred to the receiver's Kava address.
+- The initiator's ERC20 token from `orai_erc20_address` is locked by transferring it from the initiator's 0x address to the `x/evmutil` module account's 0x address.
+- The same amount of sdk.Coin are minted for the corresponding denom of the `orai_erc20_address` in the `EnabledConversionPairs` param. The coins are then transferred to the receiver's Kava address.
 
 ## MsgConvertCoinToERC20
 

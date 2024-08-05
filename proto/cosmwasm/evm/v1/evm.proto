@@ -1,9 +1,9 @@
 syntax = "proto3";
-package ethermint.evm.v1;
+package cosmwasm.evm.v1;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/tharsis/ethermint/x/evm/types";
+option go_package = "github.com/CosmWasm/wasmd/x/evm/types";
 
 // Params defines the EVM module parameters
 message Params {
@@ -117,7 +117,8 @@ message ChainConfig {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.moretags) = "yaml:\"arrow_glacier_block\""
   ];
-  // EIP-3675 (TheMerge) switch block (nil = no fork, 0 = already in merge proceedings)
+  // EIP-3675 (TheMerge) switch block (nil = no fork, 0 = already in merge
+  // proceedings)
   string merge_fork_block = 19 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.moretags) = "yaml:\"merge_fork_block\""
@@ -245,10 +246,11 @@ message EIP712AllowedMsg {
   string msg_value_type_name = 2;
 
   // types of the msg value
-  repeated EIP712MsgAttrType value_types = 3 [(gogoproto.nullable) = false];
+  repeated EIP712MsgAttrType value_types = 3 [ (gogoproto.nullable) = false ];
 
   // nested types of the msg value
-  repeated EIP712NestedMsgType nested_types = 4 [(gogoproto.nullable) = false];
+  repeated EIP712NestedMsgType nested_types = 4
+      [ (gogoproto.nullable) = false ];
 }
 
 // EIP712MsgType is the eip712 type of a single message.
@@ -257,7 +259,7 @@ message EIP712NestedMsgType {
   string name = 1;
 
   // attrs of the nested type
-  repeated EIP712MsgAttrType attrs = 2 [(gogoproto.nullable) = false];
+  repeated EIP712MsgAttrType attrs = 2 [ (gogoproto.nullable) = false ];
 }
 
 // EIP712MsgAttrType is the eip712 type of a single message attribute.

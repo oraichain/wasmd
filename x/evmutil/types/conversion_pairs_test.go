@@ -76,7 +76,7 @@ func TestConversionPairValidate_Direct(t *testing.T) {
 		{
 			"valid",
 			types.ConversionPair{
-				KavaERC20Address: testutil.MustNewInternalEVMAddressFromString("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2").Bytes(),
+				OraiERC20Address: testutil.MustNewInternalEVMAddressFromString("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2").Bytes(),
 				Denom:            "weth",
 			},
 			errArgs{
@@ -87,7 +87,7 @@ func TestConversionPairValidate_Direct(t *testing.T) {
 		{
 			"invalid - length",
 			types.ConversionPair{
-				KavaERC20Address: []byte{1},
+				OraiERC20Address: []byte{1},
 				Denom:            "weth",
 			},
 			errArgs{
@@ -119,7 +119,7 @@ func TestConversionPair_GetAddress(t *testing.T) {
 		"weth",
 	)
 
-	require.Equal(t, types.HexBytes(addr.Bytes()), pair.KavaERC20Address, "struct address should match input bytes")
+	require.Equal(t, types.HexBytes(addr.Bytes()), pair.OraiERC20Address, "struct address should match input bytes")
 	require.Equal(t, addr, pair.GetAddress(), "get internal address should match input bytes")
 }
 

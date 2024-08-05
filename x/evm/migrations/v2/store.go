@@ -15,7 +15,7 @@ var (
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "initiator", Type: "string"},
 				{Name: "receiver", Type: "string"},
-				{Name: "kava_erc20_address", Type: "string"},
+				{Name: "orai_erc20_address", Type: "string"},
 				{Name: "amount", Type: "string"},
 			},
 		},

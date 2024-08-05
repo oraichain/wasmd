@@ -5,13 +5,15 @@ import (
 	"strings"
 	"testing"
 
-	"cosmossdk.io/log"
-	"github.com/CosmWasm/wasmd/app"
+	"cosmossdk.io/x/tx/signing"
 	cryptocodec "github.com/CosmWasm/wasmd/crypto/codec"
-	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/proto"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 )
@@ -34,16 +36,21 @@ func TestKeyring(t *testing.T) {
 	dir := t.TempDir()
 	mockIn := strings.NewReader("")
 
-	db := dbm.NewMemDB()
-	logger := log.NewTestLogger(t)
-
-	gapp := app.NewWasmAppWithCustomOptions(t, false, app.SetupOptions{
-		Logger:  logger.With("instance", "first"),
-		DB:      db,
-		AppOpts: simtestutil.NewAppOptionsWithFlagHome(t.TempDir()),
+	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
+		ProtoFiles: proto.HybridResolver,
+		SigningOptions: signing.Options{
+			AddressCodec: address.Bech32Codec{
+				Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+			},
+			ValidatorAddressCodec: address.Bech32Codec{
+				Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+			},
+		},
 	})
-
-	signingCodec := gapp.AppCodec()
+	if err != nil {
+		panic(err)
+	}
+	signingCodec := codec.NewProtoCodec(interfaceRegistry)
 
 	kr, err := keyring.New("ethermint", keyring.BackendTest, dir, mockIn, signingCodec, EthSecp256k1Option())
 	kr.SupportedAlgorithms()
