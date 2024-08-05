@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"time"
 
-	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	etherminttests "github.com/CosmWasm/wasmd/tests"
@@ -22,9 +21,7 @@ import (
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	tmtime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
-	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -46,7 +43,7 @@ import (
 type Suite struct {
 	suite.Suite
 
-	App            app.WasmApp
+	App            *app.WasmApp
 	Ctx            sdk.Context
 	Address        common.Address
 	BankKeeper     bankkeeper.Keeper
@@ -63,21 +60,13 @@ type Suite struct {
 }
 
 func (suite *Suite) SetupTest() {
-	t := suite.T()
-	db := dbm.NewMemDB()
-	logger := log.NewTestLogger(t)
-	tApp := app.NewWasmAppWithCustomOptions(t, false, app.SetupOptions{
-		Logger:  logger.With("instance", "first"),
-		DB:      db,
-		AppOpts: simtestutil.NewAppOptionsWithFlagHome(t.TempDir()),
-	})
 
-	suite.Ctx = tApp.NewContextLegacy(true, tmproto.Header{Height: 1, Time: tmtime.Now()})
-	suite.App = *tApp
-	suite.BankKeeper = tApp.GetBankKeeper()
-	suite.AccountKeeper = tApp.GetAccountKeeper()
-	suite.Keeper = tApp.EvmutilKeeper
-	suite.EvmBankKeeper = keeper.NewEvmBankKeeper(tApp.EvmutilKeeper, suite.BankKeeper, suite.AccountKeeper)
+	suite.App = app.Setup(suite.T())
+	suite.Ctx = suite.App.NewContextLegacy(true, tmproto.Header{Height: 1, Time: tmtime.Now()})
+	suite.BankKeeper = suite.App.GetBankKeeper()
+	suite.AccountKeeper = suite.App.GetAccountKeeper()
+	suite.Keeper = suite.App.EvmutilKeeper
+	suite.EvmBankKeeper = keeper.NewEvmBankKeeper(suite.App.EvmutilKeeper, suite.BankKeeper, suite.AccountKeeper)
 	suite.EvmModuleAddr = suite.AccountKeeper.GetModuleAddress(evmtypes.ModuleName)
 
 	// test evm user keys that have no minting permissions
