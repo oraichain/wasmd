@@ -35,6 +35,8 @@ import (
 	ethermint "github.com/CosmWasm/wasmd/types"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
+
+	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
 )
 
 // Backend implements the functionality shared within namespaces.
@@ -540,7 +542,11 @@ func (e *EVMBackend) HeaderByHash(blockHash common.Hash) (*ethtypes.Header, erro
 // PendingTransactions returns the transactions that are in the transaction pool
 // and have a from address that is one of the accounts this node manages.
 func (e *EVMBackend) PendingTransactions() ([]*sdk.Tx, error) {
-	res, err := e.clientCtx.Client.UnconfirmedTxs(e.ctx, nil)
+	mc, ok := e.clientCtx.Client.(cmtrpcclient.MempoolClient)
+	if !ok {
+		return nil, errors.New("invalid rpc client")
+	}
+	res, err := mc.UnconfirmedTxs(e.ctx, nil)
 	if err != nil {
 		return nil, err
 	}

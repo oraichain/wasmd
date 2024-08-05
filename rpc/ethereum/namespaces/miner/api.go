@@ -61,11 +61,6 @@ func (api *API) SetEtherbase(etherbase common.Address) bool {
 	withdrawAddr := sdk.AccAddress(etherbase.Bytes())
 	msg := distributiontypes.NewMsgSetWithdrawAddress(delAddr, withdrawAddr)
 
-	if err := msg.ValidateBasic(); err != nil {
-		api.logger.Debug("tx failed basic validation", "error", err.Error())
-		return false
-	}
-
 	// Assemble transaction from fields
 	builder, ok := api.clientCtx.TxConfig.NewTxBuilder().(authtx.ExtensionOptionsTxBuilder)
 	if !ok {

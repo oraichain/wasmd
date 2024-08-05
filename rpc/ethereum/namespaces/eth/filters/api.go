@@ -268,15 +268,15 @@ func (api *PublicFilterAPI) NewBlockFilter() rpc.ID {
 					return
 				}
 
-				data, ok := ev.Data.(tmtypes.EventDataNewBlockHeader)
+				data, ok := ev.Data.(tmtypes.EventDataNewBlock)
 				if !ok {
 					api.logger.Debug("event data type mismatch", "type", fmt.Sprintf("%T", ev.Data))
 					continue
 				}
 
-				baseFee := types.BaseFeeFromEvents(ev.Events)
+				baseFee := types.BaseFeeFromEvents(data.ResultFinalizeBlock.Events)
 
-				header := types.EthHeaderFromTendermint(data.Header, ethtypes.Bloom{}, baseFee)
+				header := types.EthHeaderFromTendermint(data.Block.Header, ethtypes.Bloom{}, baseFee)
 				api.filtersMu.Lock()
 				if f, found := api.filters[headerSub.ID()]; found {
 					f.hashes = append(f.hashes, header.Hash())
@@ -320,16 +320,16 @@ func (api *PublicFilterAPI) NewHeads(ctx context.Context) (*rpc.Subscription, er
 					return
 				}
 
-				data, ok := ev.Data.(tmtypes.EventDataNewBlockHeader)
+				data, ok := ev.Data.(tmtypes.EventDataNewBlock)
 				if !ok {
 					api.logger.Debug("event data type mismatch", "type", fmt.Sprintf("%T", ev.Data))
 					continue
 				}
 
-				baseFee := types.BaseFeeFromEvents(ev.Events)
+				baseFee := types.BaseFeeFromEvents(data.ResultFinalizeBlock.Events)
 
 				// TODO: fetch bloom from events
-				header := types.EthHeaderFromTendermint(data.Header, ethtypes.Bloom{}, baseFee)
+				header := types.EthHeaderFromTendermint(data.Block.Header, ethtypes.Bloom{}, baseFee)
 				_ = notifier.Notify(rpcSub.ID, header)
 			case <-rpcSub.Err():
 				headersSub.Unsubscribe(api.events)

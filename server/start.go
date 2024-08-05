@@ -12,16 +12,17 @@ import (
 	"time"
 
 	pruningtypes "cosmossdk.io/store/pruning/types"
+	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
-
-	"google.golang.org/grpc"
+	"golang.org/x/sync/errgroup"
 
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	tcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
-	tmos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	pvm "github.com/cometbft/cometbft/privval"
@@ -30,7 +31,6 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 
 	"github.com/cosmos/rosetta"
-	crgserver "github.com/cosmos/rosetta/lib/server"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -138,12 +138,12 @@ which accepts a path for the resulting pprof file.
 
 			// amino is needed here for backwards compatibility of REST routes
 			err = startInProcess(serverCtx, clientCtx, opts)
-			errCode, ok := err.(server.ErrorCode)
-			if !ok {
+
+			if err != nil {
+				serverCtx.Logger.Debug(fmt.Sprintf("received quit signal: %s", err))
 				return err
 			}
 
-			serverCtx.Logger.Debug(fmt.Sprintf("received quit signal: %d", errCode.Code))
 			return nil
 		},
 	}
@@ -224,27 +224,30 @@ func startStandAlone(ctx *server.Context, opts StartOptions) error {
 	}
 
 	app := opts.AppCreator(ctx.Logger, db, traceWriter, ctx.Viper)
-
-	svr, err := abciserver.NewServer(addr, transport, app)
+	cmtApp := server.NewCometABCIWrapper(app)
+	svr, err := abciserver.NewServer(addr, transport, cmtApp)
 	if err != nil {
 		return fmt.Errorf("error creating listener: %v", err)
 	}
 
-	svr.SetLogger(ctx.Logger.With("server", "abci"))
+	svr.SetLogger(servercmtlog.CometLoggerWrapper{Logger: ctx.Logger.With("server", "abci")})
 
-	err = svr.Start()
-	if err != nil {
-		tmos.Exit(err.Error())
-	}
+	g, wrapCtx := getCtx(ctx, false)
 
-	defer func() {
-		if err = svr.Stop(); err != nil {
-			tmos.Exit(err.Error())
+	g.Go(func() error {
+		if err := svr.Start(); err != nil {
+			ctx.Logger.Error("failed to start out-of-process ABCI server", "err", err)
+			return err
 		}
-	}()
 
-	// Wait for SIGINT or SIGTERM signal
-	return server.WaitForQuitSignals()
+		// Wait for the calling process to be canceled or close the provided context,
+		// so we can gracefully stop the ABCI server.
+		<-wrapCtx.Done()
+		ctx.Logger.Info("stopping the ABCI server...")
+		return svr.Stop()
+	})
+
+	return g.Wait()
 }
 
 // legacyAminoCdc is used for the legacy REST API
@@ -252,6 +255,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, opts StartOpt
 	cfg := ctx.Config
 	home := cfg.RootDir
 	logger := ctx.Logger
+	g, wrapCtx := getCtx(ctx, false)
 	var cpuProfileCleanup func() error
 
 	if cpuProfile := ctx.Viper.GetString(srvflags.CPUProfile); cpuProfile != "" {
@@ -337,17 +341,17 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, opts StartOpt
 		logger.Error("failed load or gen node key", "error", err.Error())
 		return err
 	}
-
+	cmtApp := server.NewCometABCIWrapper(app)
 	genDocProvider := node.DefaultGenesisDocProviderFunc(cfg)
 	tmNode, err := node.NewNode(
 		cfg,
 		pvm.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 		nodeKey,
-		proxy.NewLocalClientCreator(app),
+		proxy.NewLocalClientCreator(cmtApp),
 		genDocProvider,
-		node.DefaultDBProvider,
+		cmtcfg.DefaultDBProvider,
 		node.DefaultMetricsProvider(cfg.Instrumentation),
-		ctx.Logger.With("server", "node"),
+		servercmtlog.CometLoggerWrapper{Logger: ctx.Logger.With("server", "node")},
 	)
 	if err != nil {
 		logger.Error("failed init node", "error", err.Error())
@@ -368,7 +372,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, opts StartOpt
 		app.RegisterTxService(clientCtx)
 		app.RegisterTendermintService(clientCtx)
 	}
-
+	grpcSrv, err := servergrpc.NewGRPCServer(clientCtx, app, appConfig.GRPC)
 	var apiSrv *api.Server
 	if appConfig.API.Enable {
 		genDoc, err := genDocProvider()
@@ -380,12 +384,12 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, opts StartOpt
 			WithHomeDir(home).
 			WithChainID(genDoc.ChainID)
 
-		apiSrv = api.New(clientCtx, ctx.Logger.With("server", "api"))
+		apiSrv = api.New(clientCtx, ctx.Logger.With("server", "api"), grpcSrv)
 		app.RegisterAPIRoutes(apiSrv, appConfig.API)
 		errCh := make(chan error)
 
 		go func() {
-			if err := apiSrv.Start(appConfig.Config); err != nil {
+			if err := apiSrv.Start(clientCtx.CmdContext, appConfig.Config); err != nil {
 				errCh <- err
 			}
 		}()
@@ -393,62 +397,20 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, opts StartOpt
 		select {
 		case err := <-errCh:
 			return err
-		case <-time.After(types.ServerStartTime): // assume server started successfully
+		case <-time.After(5 * time.Second): // assume server started successfully
 		}
 	}
 
-	var (
-		grpcSrv    *grpc.Server
-		grpcWebSrv *http.Server
-	)
 	if appConfig.GRPC.Enable {
-		grpcSrv, err = servergrpc.StartGRPCServer(clientCtx, app, appConfig.GRPC.Address)
+
+		err = servergrpc.StartGRPCServer(wrapCtx, ctx.Logger.With("module", "grpc-server"), appConfig.GRPC, grpcSrv)
 		if err != nil {
 			return err
-		}
-		if appConfig.GRPCWeb.Enable {
-			grpcWebSrv, err = servergrpc.StartGRPCWeb(grpcSrv, appConfig.Config)
-			if err != nil {
-				ctx.Logger.Error("failed to start grpc-web http server", "error", err)
-				return err
-			}
 		}
 	}
 
-	var rosettaSrv crgserver.Server
-	if appConfig.Rosetta.Enable {
-		offlineMode := appConfig.Rosetta.Offline
-		if !appConfig.GRPC.Enable { // If GRPC is not enabled rosetta cannot work in online mode, so it works in offline mode.
-			offlineMode = true
-		}
-
-		conf := &rosetta.Config{
-			Blockchain:    appConfig.Rosetta.Blockchain,
-			Network:       appConfig.Rosetta.Network,
-			TendermintRPC: ctx.Config.RPC.ListenAddress,
-			GRPCEndpoint:  appConfig.GRPC.Address,
-			Addr:          appConfig.Rosetta.Address,
-			Retries:       appConfig.Rosetta.Retries,
-			Offline:       offlineMode,
-		}
-		conf.WithCodec(clientCtx.InterfaceRegistry, clientCtx.Codec.(*codec.ProtoCodec))
-
-		rosettaSrv, err = rosetta.ServerFromConfig(conf)
-		if err != nil {
-			return err
-		}
-		errCh := make(chan error)
-		go func() {
-			if err := rosettaSrv.Start(); err != nil {
-				errCh <- err
-			}
-		}()
-
-		select {
-		case err := <-errCh:
-			return err
-		case <-time.After(types.ServerStartTime): // assume server started successfully
-		}
+	if err := startRosettaServer(ctx, clientCtx, g, appConfig); err != nil {
+		return err
 	}
 
 	var (
@@ -485,15 +447,6 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, opts StartOpt
 			_ = apiSrv.Close()
 		}
 
-		if grpcSrv != nil {
-			grpcSrv.Stop()
-			if grpcWebSrv != nil {
-				if err := grpcWebSrv.Close(); err != nil {
-					logger.Error("failed to close the grpcWebSrc", "error", err.Error())
-				}
-			}
-		}
-
 		if httpSrv != nil {
 			shutdownCtx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancelFn()
@@ -513,7 +466,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, opts StartOpt
 	}()
 
 	// Wait for SIGINT or SIGTERM signal
-	return server.WaitForQuitSignals()
+	return g.Wait()
 }
 
 func openDB(_ types.AppOptions, rootDir string, backendType dbm.BackendType) (dbm.DB, error) {
@@ -546,4 +499,57 @@ func getAppDBBackend(opts types.AppOptions) dbm.BackendType {
 	}
 
 	return dbm.GoLevelDBBackend
+}
+
+func getCtx(svrCtx *server.Context, block bool) (*errgroup.Group, context.Context) {
+	ctx, cancelFn := context.WithCancel(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
+	// listen for quit signals so the calling parent process can gracefully exit
+	server.ListenForQuitSignals(g, block, cancelFn, svrCtx.Logger)
+	return g, ctx
+}
+
+func startRosettaServer(
+	svrCtx *server.Context,
+	clientCtx client.Context,
+	g *errgroup.Group,
+	config config.Config,
+) error {
+
+	offlineMode := config.Rosetta.Offline
+
+	// If GRPC is not enabled rosetta cannot work in online mode, so it works in
+	// offline mode.
+	if !config.GRPC.Enable {
+		offlineMode = true
+	}
+
+	minGasPrices, err := sdk.ParseDecCoins(config.MinGasPrices)
+	if err != nil {
+		svrCtx.Logger.Error("failed to parse minimum-gas-prices", "error", err.Error())
+		return err
+	}
+
+	conf := &rosetta.Config{
+		Blockchain:          config.Rosetta.Blockchain,
+		Network:             config.Rosetta.Network,
+		TendermintRPC:       svrCtx.Config.RPC.ListenAddress,
+		GRPCEndpoint:        config.GRPC.Address,
+		Addr:                config.Rosetta.Addr,
+		Retries:             config.Rosetta.Retries,
+		Offline:             offlineMode,
+		GasToSuggest:        config.Rosetta.GasToSuggest,
+		EnableFeeSuggestion: config.Rosetta.EnableFeeSuggestion,
+		GasPrices:           minGasPrices.Sort(),
+		Codec:               clientCtx.Codec.(*codec.ProtoCodec),
+		InterfaceRegistry:   clientCtx.InterfaceRegistry,
+	}
+
+	rosettaSrv, err := rosetta.ServerFromConfig(conf)
+	if err != nil {
+		return err
+	}
+
+	g.Go(rosettaSrv.Start)
+	return nil
 }
