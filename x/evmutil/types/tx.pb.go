@@ -237,10 +237,10 @@ func (m *MsgConvertERC20ToCoinResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgConvertERC20ToCoinResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgConvertCoinToERC20)(nil), "kava.evmutil.v1beta1.MsgConvertCoinToERC20")
-	proto.RegisterType((*MsgConvertCoinToERC20Response)(nil), "kava.evmutil.v1beta1.MsgConvertCoinToERC20Response")
-	proto.RegisterType((*MsgConvertERC20ToCoin)(nil), "kava.evmutil.v1beta1.MsgConvertERC20ToCoin")
-	proto.RegisterType((*MsgConvertERC20ToCoinResponse)(nil), "kava.evmutil.v1beta1.MsgConvertERC20ToCoinResponse")
+	proto.RegisterType((*MsgConvertCoinToERC20)(nil), "cosmwasm.evmutil.v1beta1.MsgConvertCoinToERC20")
+	proto.RegisterType((*MsgConvertCoinToERC20Response)(nil), "cosmwasm.evmutil.v1beta1.MsgConvertCoinToERC20Response")
+	proto.RegisterType((*MsgConvertERC20ToCoin)(nil), "cosmwasm.evmutil.v1beta1.MsgConvertERC20ToCoin")
+	proto.RegisterType((*MsgConvertERC20ToCoinResponse)(nil), "cosmwasm.evmutil.v1beta1.MsgConvertERC20ToCoinResponse")
 }
 
 func init() { proto.RegisterFile("kava/evmutil/v1beta1/tx.proto", fileDescriptor_6e82783c6c58f89c) }
@@ -542,7 +542,7 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 
 func (c *msgClient) ConvertCoinToERC20(ctx context.Context, in *MsgConvertCoinToERC20, opts ...grpc.CallOption) (*MsgConvertCoinToERC20Response, error) {
 	out := new(MsgConvertCoinToERC20Response)
-	err := c.cc.Invoke(ctx, "/kava.evmutil.v1beta1.Msg/ConvertCoinToERC20", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/cosmwasm.evmutil.v1beta1.Msg/ConvertCoinToERC20", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -551,7 +551,7 @@ func (c *msgClient) ConvertCoinToERC20(ctx context.Context, in *MsgConvertCoinTo
 
 func (c *msgClient) ConvertERC20ToCoin(ctx context.Context, in *MsgConvertERC20ToCoin, opts ...grpc.CallOption) (*MsgConvertERC20ToCoinResponse, error) {
 	out := new(MsgConvertERC20ToCoinResponse)
-	err := c.cc.Invoke(ctx, "/kava.evmutil.v1beta1.Msg/ConvertERC20ToCoin", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/cosmwasm.evmutil.v1beta1.Msg/ConvertERC20ToCoin", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -591,7 +591,7 @@ func _Msg_ConvertCoinToERC20_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/kava.evmutil.v1beta1.Msg/ConvertCoinToERC20",
+		FullMethod: "/cosmwasm.evmutil.v1beta1.Msg/ConvertCoinToERC20",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).ConvertCoinToERC20(ctx, req.(*MsgConvertCoinToERC20))
@@ -609,7 +609,7 @@ func _Msg_ConvertERC20ToCoin_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/kava.evmutil.v1beta1.Msg/ConvertERC20ToCoin",
+		FullMethod: "/cosmwasm.evmutil.v1beta1.Msg/ConvertERC20ToCoin",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).ConvertERC20ToCoin(ctx, req.(*MsgConvertERC20ToCoin))
@@ -618,7 +618,7 @@ func _Msg_ConvertERC20ToCoin_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 var _Msg_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "kava.evmutil.v1beta1.Msg",
+	ServiceName: "cosmwasm.evmutil.v1beta1.Msg",
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

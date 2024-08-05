@@ -53,6 +53,9 @@ var (
 	defaultInitialHeight int64 = 1
 )
 
+// SimAppChainID hardcoded chainID for simulation
+const SimAppChainID = "simulation-app"
+
 // SetupOptions defines arguments that are passed into `WasmApp` constructor.
 type SetupOptions struct {
 	Logger   log.Logger
@@ -114,6 +117,7 @@ func NewWasmAppWithCustomOptions(t *testing.T, isCheckTx bool, options SetupOpti
 		// Initialize the chain
 		_, err = app.InitChain(
 			&abci.RequestInitChain{
+				ChainId:         SimAppChainID,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: simtestutil.DefaultConsensusParams,
 				AppStateBytes:   stateBytes,

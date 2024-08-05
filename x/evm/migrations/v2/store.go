@@ -10,7 +10,7 @@ var (
 	NewAllowedMsgs = []types.EIP712AllowedMsg{
 		// x/evmutil
 		{
-			MsgTypeUrl:       "/kava.evmutil.v1beta1.MsgConvertERC20ToCoin",
+			MsgTypeUrl:       "/cosmwasm.evmutil.v1beta1.MsgConvertERC20ToCoin",
 			MsgValueTypeName: "MsgValueEVMConvertERC20ToCoin",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "initiator", Type: "string"},
@@ -20,7 +20,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.evmutil.v1beta1.MsgConvertCoinToERC20",
+			MsgTypeUrl:       "/cosmwasm.evmutil.v1beta1.MsgConvertCoinToERC20",
 			MsgValueTypeName: "MsgValueEVMConvertCoinToERC20",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "initiator", Type: "string"},
@@ -30,7 +30,7 @@ var (
 		},
 		// x/earn
 		{
-			MsgTypeUrl:       "/kava.earn.v1beta1.MsgDeposit",
+			MsgTypeUrl:       "/cosmwasm.earn.v1beta1.MsgDeposit",
 			MsgValueTypeName: "MsgValueEarnDeposit",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "depositor", Type: "string"},
@@ -39,7 +39,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.earn.v1beta1.MsgWithdraw",
+			MsgTypeUrl:       "/cosmwasm.earn.v1beta1.MsgWithdraw",
 			MsgValueTypeName: "MsgValueEarnWithdraw",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "from", Type: "string"},
@@ -78,7 +78,7 @@ var (
 		},
 		// x/incentive
 		{
-			MsgTypeUrl:       "/kava.incentive.v1beta1.MsgClaimUSDXMintingReward",
+			MsgTypeUrl:       "/cosmwasm.incentive.v1beta1.MsgClaimUSDXMintingReward",
 			MsgValueTypeName: "MsgValueIncentiveClaimUSDXMintingReward",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "sender", Type: "string"},
@@ -86,7 +86,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.incentive.v1beta1.MsgClaimHardReward",
+			MsgTypeUrl:       "/cosmwasm.incentive.v1beta1.MsgClaimHardReward",
 			MsgValueTypeName: "MsgValueIncentiveClaimHardReward",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "sender", Type: "string"},
@@ -103,7 +103,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.incentive.v1beta1.MsgClaimDelegatorReward",
+			MsgTypeUrl:       "/cosmwasm.incentive.v1beta1.MsgClaimDelegatorReward",
 			MsgValueTypeName: "MsgValueIncentiveClaimDelegatorReward",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "sender", Type: "string"},
@@ -120,7 +120,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.incentive.v1beta1.MsgClaimSwapReward",
+			MsgTypeUrl:       "/cosmwasm.incentive.v1beta1.MsgClaimSwapReward",
 			MsgValueTypeName: "MsgValueIncentiveClaimSwapReward",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "sender", Type: "string"},
@@ -137,7 +137,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.incentive.v1beta1.MsgClaimSavingsReward",
+			MsgTypeUrl:       "/cosmwasm.incentive.v1beta1.MsgClaimSavingsReward",
 			MsgValueTypeName: "MsgValueIncentiveClaimSavingsReward",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "sender", Type: "string"},
@@ -154,7 +154,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.incentive.v1beta1.MsgClaimEarnReward",
+			MsgTypeUrl:       "/cosmwasm.incentive.v1beta1.MsgClaimEarnReward",
 			MsgValueTypeName: "MsgValueIncentiveClaimEarnReward",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "sender", Type: "string"},
@@ -172,7 +172,7 @@ var (
 		},
 		// x/router
 		{
-			MsgTypeUrl:       "/kava.router.v1beta1.MsgMintDeposit",
+			MsgTypeUrl:       "/cosmwasm.router.v1beta1.MsgMintDeposit",
 			MsgValueTypeName: "MsgValueRouterMintDeposit",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "depositor", Type: "string"},
@@ -181,7 +181,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.router.v1beta1.MsgDelegateMintDeposit",
+			MsgTypeUrl:       "/cosmwasm.router.v1beta1.MsgDelegateMintDeposit",
 			MsgValueTypeName: "MsgValueRouterDelegateMintDeposit",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "depositor", Type: "string"},
@@ -190,7 +190,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.router.v1beta1.MsgWithdrawBurn",
+			MsgTypeUrl:       "/cosmwasm.router.v1beta1.MsgWithdrawBurn",
 			MsgValueTypeName: "MsgValueRouterWithdrawBurn",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "from", Type: "string"},
@@ -199,7 +199,7 @@ var (
 			},
 		},
 		{
-			MsgTypeUrl:       "/kava.router.v1beta1.MsgWithdrawBurnUndelegate",
+			MsgTypeUrl:       "/cosmwasm.router.v1beta1.MsgWithdrawBurnUndelegate",
 			MsgValueTypeName: "MsgValueRouterWithdrawBurnUndelegate",
 			ValueTypes: []types.EIP712MsgAttrType{
 				{Name: "from", Type: "string"},

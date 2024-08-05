@@ -195,7 +195,7 @@ func (suite *Suite) FundAccountWithKava(addr sdk.AccAddress, coins sdk.Coins) {
 		suite.Require().NoError(err)
 	}
 	akava := coins.AmountOf("akava")
-	if akava.IsPositive() {
+	if ukava.IsPositive() {
 		err := suite.Keeper.SetBalance(suite.Ctx, addr, akava)
 		suite.Require().NoError(err)
 	}
@@ -208,7 +208,7 @@ func (suite *Suite) FundModuleAccountWithKava(moduleName string, coins sdk.Coins
 		suite.Require().NoError(err)
 	}
 	akava := coins.AmountOf("akava")
-	if akava.IsPositive() {
+	if ukava.IsPositive() {
 		addr := suite.AccountKeeper.GetModuleAddress(moduleName)
 		err := suite.Keeper.SetBalance(suite.Ctx, addr, akava)
 		suite.Require().NoError(err)

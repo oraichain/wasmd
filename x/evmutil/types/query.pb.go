@@ -112,8 +112,8 @@ func (m *QueryParamsResponse) GetParams() Params {
 }
 
 func init() {
-	proto.RegisterType((*QueryParamsRequest)(nil), "kava.evmutil.v1beta1.QueryParamsRequest")
-	proto.RegisterType((*QueryParamsResponse)(nil), "kava.evmutil.v1beta1.QueryParamsResponse")
+	proto.RegisterType((*QueryParamsRequest)(nil), "cosmwasm.evmutil.v1beta1.QueryParamsRequest")
+	proto.RegisterType((*QueryParamsResponse)(nil), "cosmwasm.evmutil.v1beta1.QueryParamsResponse")
 }
 
 func init() { proto.RegisterFile("kava/evmutil/v1beta1/query.proto", fileDescriptor_4a8d0512331709e7) }
@@ -270,7 +270,7 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 
 func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
 	out := new(QueryParamsResponse)
-	err := c.cc.Invoke(ctx, "/kava.evmutil.v1beta1.Query/Params", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/cosmwasm.evmutil.v1beta1.Query/Params", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +305,7 @@ func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/kava.evmutil.v1beta1.Query/Params",
+		FullMethod: "/cosmwasm.evmutil.v1beta1.Query/Params",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).Params(ctx, req.(*QueryParamsRequest))
@@ -314,7 +314,7 @@ func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interf
 }
 
 var _Query_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "kava.evmutil.v1beta1.Query",
+	ServiceName: "cosmwasm.evmutil.v1beta1.Query",
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

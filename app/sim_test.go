@@ -35,9 +35,6 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
-// SimAppChainID hardcoded chainID for simulation
-const SimAppChainID = "simulation-app"
-
 var FlagEnableStreamingValue bool
 
 // Get flags every time the simulator is run

@@ -67,7 +67,7 @@ func (m *ConversionPair) XXX_DiscardUnknown() {
 var xxx_messageInfo_ConversionPair proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*ConversionPair)(nil), "kava.evmutil.v1beta1.ConversionPair")
+	proto.RegisterType((*ConversionPair)(nil), "cosmwasm.evmutil.v1beta1.ConversionPair")
 }
 
 func init() {

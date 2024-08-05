@@ -155,9 +155,9 @@ func (m *Params) GetEnabledConversionPairs() ConversionPairs {
 }
 
 func init() {
-	proto.RegisterType((*GenesisState)(nil), "kava.evmutil.v1beta1.GenesisState")
-	proto.RegisterType((*Account)(nil), "kava.evmutil.v1beta1.Account")
-	proto.RegisterType((*Params)(nil), "kava.evmutil.v1beta1.Params")
+	proto.RegisterType((*GenesisState)(nil), "cosmwasm.evmutil.v1beta1.GenesisState")
+	proto.RegisterType((*Account)(nil), "cosmwasm.evmutil.v1beta1.Account")
+	proto.RegisterType((*Params)(nil), "cosmwasm.evmutil.v1beta1.Params")
 }
 
 func init() {
