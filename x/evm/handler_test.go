@@ -11,7 +11,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/gogo/protobuf/proto"
+	"github.com/cosmos/gogoproto/proto"
 
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
 	simapp "github.com/cosmos/cosmos-sdk/testutil/sims"
