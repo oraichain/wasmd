@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-
 	ethermint "github.com/CosmWasm/wasmd/types"
 	"github.com/CosmWasm/wasmd/x/evm/keeper"
 	"github.com/CosmWasm/wasmd/x/evm/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // InitGenesis initializes genesis state based on exported genesis
@@ -38,18 +38,25 @@ func InitGenesis(
 		if acc == nil {
 			panic(fmt.Errorf("account not found for address %s", account.Address))
 		}
-
-		ethAcct, ok := acc.(ethermint.EthAccountI)
-		if !ok {
-			panic(
-				fmt.Errorf("account %s must be an EthAccount interface, got %T",
-					account.Address, acc,
-				),
-			)
-		}
-
 		code := common.Hex2Bytes(account.Code)
 		codeHash := crypto.Keccak256Hash(code)
+		ethAcct, ok := acc.(ethermint.EthAccountI)
+		if !ok {
+			baseAcct, ok := acc.(*authtypes.BaseAccount)
+			if !ok {
+				panic(
+					fmt.Errorf("account %s must be an EthAccount interface, got %T",
+						account.Address, acc,
+					),
+				)
+			}
+			// fallback converting BaseAccount to EthAccount
+			ethAcct = &ethermint.EthAccount{
+				BaseAccount: baseAcct,
+				CodeHash:    codeHash.Hex(),
+			}
+		}
+
 		if !bytes.Equal(ethAcct.GetCodeHash().Bytes(), codeHash.Bytes()) {
 			panic("code don't match codeHash")
 		}

@@ -3,13 +3,12 @@ package evm_test
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	"github.com/CosmWasm/wasmd/x/evm"
 	"github.com/CosmWasm/wasmd/x/evm/statedb"
 	"github.com/CosmWasm/wasmd/x/evm/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func (suite *EvmTestSuite) TestInitGenesis() {
@@ -67,6 +66,7 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 			"invalid account type",
 			func() {
 				acc := authtypes.NewBaseAccountWithAddress(address.Bytes())
+				acc.AccountNumber = suite.app.AccountKeeper.NextAccountNumber(suite.ctx)
 				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 			},
 			&types.GenesisState{
@@ -77,7 +77,7 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 					},
 				},
 			},
-			true,
+			false,
 		},
 		{
 			"invalid code hash",
@@ -94,7 +94,7 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 					},
 				},
 			},
-			true,
+			false,
 		},
 	}
 

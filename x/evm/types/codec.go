@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	proto "github.com/cosmos/gogoproto/proto"
 )
 
@@ -40,7 +41,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&LegacyTx{},
 	)
 
-	registry.RegisterInterface("cosmwasm.types.v1.EthAccount", (*types.EthAccountI)(nil), &types.EthAccount{})
+	registry.RegisterInterface("cosmwasm.types.v1.EthAccount", (*sdk.AccountI)(nil), &types.EthAccount{}, &authtypes.BaseAccount{})
 	registry.RegisterInterface("cosmwasm.crypto.v1.ethsecp256k1.PubKey", (*cryptotypes.PubKey)(nil), &ethsecp256k1.PubKey{})
 	registry.RegisterInterface("cosmwasm.crypto.v1.ethsecp256k1.PrivKey", (*cryptotypes.PrivKey)(nil), &ethsecp256k1.PrivKey{})
 
