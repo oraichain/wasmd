@@ -12,7 +12,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
 	etherminttests "github.com/CosmWasm/wasmd/tests"
-	etherminttypes "github.com/CosmWasm/wasmd/types"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -32,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/CosmWasm/wasmd/app"
@@ -106,7 +104,7 @@ func (suite *Suite) SetupTest() {
 	consAddress := sdk.ConsAddress(consPriv.PubKey().Address())
 
 	// InitializeFromGenesisStates commits first block so we start at 2 here
-	suite.Ctx = suite.App.NewContextLegacy(false, tmproto.Header{
+	suite.Ctx = suite.App.NewContextLegacy(true, tmproto.Header{
 		Height:          suite.App.LastBlockHeight() + 1,
 		ChainID:         "kavatest_1-1",
 		Time:            time.Now().UTC(),
@@ -133,10 +131,13 @@ func (suite *Suite) SetupTest() {
 	// We need to set the validator as calling the EVM looks up the validator address
 	// https://github.com/CosmWasm/wasmd/blob/f21592ebfe74da7590eb42ed926dae970b2a9a3f/x/evm/keeper/state_transition.go#L487
 	// evmkeeper.EVMConfig() will return error "failed to load evm config" if not set
-	acc := &etherminttypes.EthAccount{
-		BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.Address.Bytes()), nil, 0, 0),
-		CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
-	}
+	// acc := &etherminttypes.EthAccount{
+	// 	BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.Address.Bytes()), nil, 1, 1),
+	// 	CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
+	// }
+	acc := suite.AccountKeeper.NewAccountWithAddress(suite.Ctx, suite.Address.Bytes())
+	suite.Require().NoError(acc.SetSequence(1))
+
 	suite.AccountKeeper.SetAccount(suite.Ctx, acc)
 	valAddr := sdk.ValAddress(suite.Address.Bytes())
 	validator, err := stakingtypes.NewValidator(valAddr.String(), consPriv.PubKey(), stakingtypes.Description{})
@@ -168,13 +169,15 @@ func (suite *Suite) SetupTest() {
 }
 
 func (suite *Suite) Commit() {
-	_, _ = suite.App.Commit()
+
+	// finalize block so we have CheckTx state set
+	// _, _ = suite.App.Commit()
 	header := suite.Ctx.BlockHeader()
 	header.Height += 1
 	suite.App.BeginBlocker(suite.Ctx)
 
 	// update ctx
-	suite.Ctx = suite.App.NewContextLegacy(false, header)
+	suite.Ctx = suite.App.NewContextLegacy(true, header)
 }
 
 func (suite *Suite) FundAccountWithKava(addr sdk.AccAddress, coins sdk.Coins) {
