@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	storetypes "cosmossdk.io/store/types"
+	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/tests"
 	"github.com/CosmWasm/wasmd/x/evm/keeper"
 	"github.com/CosmWasm/wasmd/x/evm/types"
@@ -426,7 +427,7 @@ func (suite *KeeperTestSuite) TestRefundGas() {
 			refund := keeper.GasToRefund(vmdb.GetRefund(), gasUsed, tc.refundQuotient)
 			suite.Require().Equal(tc.expGasRefund, refund)
 
-			err = suite.app.EvmKeeper.RefundGas(suite.ctx, m, refund, "aphoton")
+			err = suite.app.EvmKeeper.RefundGas(suite.ctx, m, refund, app.EvmDenom)
 			if tc.noError {
 				suite.Require().NoError(err)
 			} else {

@@ -2,8 +2,11 @@ package types
 
 import (
 	errorsmod "cosmossdk.io/errors"
+	"github.com/CosmWasm/wasmd/crypto/ethsecp256k1"
+	"github.com/CosmWasm/wasmd/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
@@ -36,6 +39,10 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&AccessListTx{},
 		&LegacyTx{},
 	)
+
+	registry.RegisterInterface("cosmwasm.types.v1.EthAccount", (*types.EthAccountI)(nil), &types.EthAccount{})
+	registry.RegisterInterface("cosmwasm.crypto.v1.ethsecp256k1.PubKey", (*cryptotypes.PubKey)(nil), &ethsecp256k1.PubKey{})
+	registry.RegisterInterface("cosmwasm.crypto.v1.ethsecp256k1.PrivKey", (*cryptotypes.PrivKey)(nil), &ethsecp256k1.PrivKey{})
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }

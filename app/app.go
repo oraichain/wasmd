@@ -150,16 +150,16 @@ import (
 	tokenfactorykeeper "github.com/CosmWasm/wasmd/x/tokenfactory/keeper"
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 
-	"github.com/CosmWasm/wasmd/x/feemarket"
-	feemarketkeeper "github.com/CosmWasm/wasmd/x/feemarket/keeper"
-	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
-
+	apptypes "github.com/CosmWasm/wasmd/types"
 	"github.com/CosmWasm/wasmd/x/evm"
 	evmkeeper "github.com/CosmWasm/wasmd/x/evm/keeper"
 	evmtypes "github.com/CosmWasm/wasmd/x/evm/types"
 	"github.com/CosmWasm/wasmd/x/evmutil"
 	evmutilkeeper "github.com/CosmWasm/wasmd/x/evmutil/keeper"
 	evmutiltypes "github.com/CosmWasm/wasmd/x/evmutil/types"
+	"github.com/CosmWasm/wasmd/x/feemarket"
+	feemarketkeeper "github.com/CosmWasm/wasmd/x/feemarket/keeper"
+	feemarkettypes "github.com/CosmWasm/wasmd/x/feemarket/types"
 )
 
 const appName = "WasmApp"
@@ -169,7 +169,7 @@ var (
 	NodeDir      = ".oraid"
 	Bech32Prefix = "orai"
 	CosmosDenom  = Bech32Prefix
-	EvmDenom     = "aorai" // atto orai. This will be converted automatically by evmutil of kava
+	EvmDenom     = apptypes.AttoPhoton // atto orai. This will be converted automatically by evmutil of kava
 
 	EnabledCapabilities = []string{
 		tokenfactorytypes.EnableBurnFrom,

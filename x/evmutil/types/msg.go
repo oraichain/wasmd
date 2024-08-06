@@ -68,7 +68,7 @@ func (msg MsgConvertCoinToERC20) ValidateBasic() error {
 
 // GetSignBytes implements the LegacyMsg.GetSignBytes method.
 func (msg MsgConvertCoinToERC20) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(Amino.MustMarshalJSON(&msg))
 }
 
 // Route implements the LegacyMsg.Route method.
@@ -133,7 +133,7 @@ func (msg MsgConvertERC20ToCoin) ValidateBasic() error {
 
 // GetSignBytes implements the LegacyMsg.GetSignBytes method.
 func (msg MsgConvertERC20ToCoin) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(Amino.MustMarshalJSON(&msg))
 }
 
 // Route implements the LegacyMsg.Route method.

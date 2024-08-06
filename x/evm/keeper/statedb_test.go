@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -227,7 +228,7 @@ func (suite *KeeperTestSuite) TestSetAccount() {
 	ethAddr := tests.GenerateAddress()
 	ethAcc := &etherminttypes.EthAccount{BaseAccount: &authtypes.BaseAccount{Address: sdk.AccAddress(ethAddr.Bytes()).String()}, CodeHash: common.BytesToHash(types.EmptyCodeHash).String()}
 	vestingAddr := tests.GenerateAddress()
-	vestingAcc, err := vestingtypes.NewBaseVestingAccount(&authtypes.BaseAccount{Address: sdk.AccAddress(vestingAddr.Bytes()).String()}, sdk.NewCoins(), time.Now().Unix())
+	vestingAcc, err := vestingtypes.NewBaseVestingAccount(&authtypes.BaseAccount{Address: sdk.AccAddress(vestingAddr.Bytes()).String()}, sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(100000000000000))), time.Now().Unix())
 	suite.Require().NoError(err)
 
 	testCases := []struct {
@@ -239,49 +240,49 @@ func (suite *KeeperTestSuite) TestSetAccount() {
 		{
 			"new account, non-contract account",
 			tests.GenerateAddress(),
-			statedb.Account{10, big.NewInt(100), types.EmptyCodeHash},
+			statedb.Account{Nonce: 10, Balance: big.NewInt(100), CodeHash: types.EmptyCodeHash},
 			nil,
 		},
 		{
 			"new account, contract account",
 			tests.GenerateAddress(),
-			statedb.Account{10, big.NewInt(100), crypto.Keccak256Hash([]byte("some code hash")).Bytes()},
+			statedb.Account{Nonce: 10, Balance: big.NewInt(100), CodeHash: crypto.Keccak256Hash([]byte("some code hash")).Bytes()},
 			nil,
 		},
 		{
 			"existing eth account, non-contract account",
 			ethAddr,
-			statedb.Account{10, big.NewInt(1), types.EmptyCodeHash},
+			statedb.Account{Nonce: 10, Balance: big.NewInt(1), CodeHash: types.EmptyCodeHash},
 			nil,
 		},
 		{
 			"existing eth account, contract account",
 			ethAddr,
-			statedb.Account{10, big.NewInt(0), crypto.Keccak256Hash([]byte("some code hash")).Bytes()},
+			statedb.Account{Nonce: 10, Balance: big.NewInt(0), CodeHash: crypto.Keccak256Hash([]byte("some code hash")).Bytes()},
 			nil,
 		},
 		{
 			"existing base account, non-contract account",
 			baseAddr,
-			statedb.Account{10, big.NewInt(10), types.EmptyCodeHash},
+			statedb.Account{Nonce: 10, Balance: big.NewInt(10), CodeHash: types.EmptyCodeHash},
 			nil,
 		},
 		{
 			"existing base account, contract account",
 			baseAddr,
-			statedb.Account{10, big.NewInt(99), crypto.Keccak256Hash([]byte("some code hash")).Bytes()},
+			statedb.Account{Nonce: 10, Balance: big.NewInt(99), CodeHash: crypto.Keccak256Hash([]byte("some code hash")).Bytes()},
 			nil,
 		},
 		{
 			"existing vesting account, non-contract account",
 			vestingAddr,
-			statedb.Account{10, big.NewInt(1000), types.EmptyCodeHash},
+			statedb.Account{Nonce: 10, Balance: big.NewInt(1000), CodeHash: types.EmptyCodeHash},
 			nil,
 		},
 		{
 			"existing vesting account, contract account",
 			vestingAddr,
-			statedb.Account{10, big.NewInt(1001), crypto.Keccak256Hash([]byte("some code hash")).Bytes()},
+			statedb.Account{Nonce: 10, Balance: big.NewInt(1001), CodeHash: crypto.Keccak256Hash([]byte("some code hash")).Bytes()},
 			types.ErrInvalidAccount,
 		},
 	}
