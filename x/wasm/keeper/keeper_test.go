@@ -2454,6 +2454,49 @@ func TestSetContractAdmin(t *testing.T) {
 	}
 }
 
+func TestGaslessContract(t *testing.T) {
+	ctx, keepers := CreateTestInput(t, false, AvailableCapabilities)
+
+	deposit := sdk.NewCoins(sdk.NewInt64Coin("denom", 100000))
+	topUp := sdk.NewCoins(sdk.NewInt64Coin("denom", 5000))
+	creator := DeterministicAccountAddress(t, 1)
+	keepers.Faucet.Fund(ctx, creator, deposit.Add(deposit...)...)
+	fred := keepers.Faucet.NewFundedRandomAccount(ctx, topUp...)
+	bob := RandomAccountAddress(t)
+
+	contractID, _, err := keepers.ContractKeeper.Create(ctx, creator, hackatomWasm, nil)
+	require.NoError(t, err)
+
+	initMsg := HackatomExampleInitMsg{
+		Verifier:    fred,
+		Beneficiary: bob,
+	}
+	initMsgBz, err := json.Marshal(initMsg)
+	require.NoError(t, err)
+
+	addr, _, err := keepers.ContractKeeper.Instantiate(ctx, contractID, creator, nil, initMsgBz, "demo contract 3", deposit)
+	require.NoError(t, err)
+	require.Equal(t, "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr", addr.String())
+
+	gasBefore := ctx.GasMeter().GasConsumed()
+	_, err = keepers.ContractKeeper.Execute(ctx, addr, fred, []byte(`{"release":{}}`), nil)
+	gasAfter := ctx.GasMeter().GasConsumed()
+	require.NoError(t, err)
+	gasUsed := gasAfter - gasBefore
+
+	err = keepers.ContractKeeper.SetGasless(ctx, addr)
+	require.NoError(t, err)
+
+	ctx = ctx.WithGasMeter(sdk.NewGasMeter(1000))
+	gasBefore = ctx.GasMeter().GasConsumed()
+	_, err = keepers.ContractKeeper.Execute(ctx, addr, fred, []byte(`{"release":{}}`), nil)
+	require.NoError(t, err)
+	gasAfter = ctx.GasMeter().GasConsumed()
+
+	require.Less(t, gasAfter-gasBefore, gasUsed)
+
+}
+
 func attrsToStringMap(attrs []abci.EventAttribute) map[string]string {
 	r := make(map[string]string, len(attrs))
 	for _, v := range attrs {
