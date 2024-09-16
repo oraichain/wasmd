@@ -176,6 +176,8 @@ import (
 	"github.com/Gravity-Bridge/Gravity-Bridge/module/x/gravity/exported"
 	gravitykeeper "github.com/Gravity-Bridge/Gravity-Bridge/module/x/gravity/keeper"
 	gravitytypes "github.com/Gravity-Bridge/Gravity-Bridge/module/x/gravity/types"
+
+	"github.com/CosmWasm/wasmd/precompile/registry"
 )
 
 const appName = "WasmApp"
@@ -1166,6 +1168,9 @@ func NewWasmApp(
 			panic(fmt.Sprintf("failed initialize pinned codes %s", err))
 		}
 	}
+
+	// register wasm keeper
+	registry.InitializePrecompiles(app.ContractKeeper, app.WasmKeeper, app.EvmKeeper)
 
 	return app
 }
