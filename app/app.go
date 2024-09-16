@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -166,6 +167,15 @@ import (
 	"github.com/evmos/ethermint/x/erc20"
 	erc20keeper "github.com/evmos/ethermint/x/erc20/keeper"
 	erc20types "github.com/evmos/ethermint/x/erc20/types"
+
+	"github.com/Gravity-Bridge/Gravity-Bridge/module/x/bech32ibc"
+	bech32ibckeeper "github.com/Gravity-Bridge/Gravity-Bridge/module/x/bech32ibc/keeper"
+	bech32ibctypes "github.com/Gravity-Bridge/Gravity-Bridge/module/x/bech32ibc/types"
+
+	"github.com/Gravity-Bridge/Gravity-Bridge/module/x/gravity"
+	"github.com/Gravity-Bridge/Gravity-Bridge/module/x/gravity/exported"
+	gravitykeeper "github.com/Gravity-Bridge/Gravity-Bridge/module/x/gravity/keeper"
+	gravitytypes "github.com/Gravity-Bridge/Gravity-Bridge/module/x/gravity/types"
 )
 
 const appName = "WasmApp"
@@ -222,11 +232,14 @@ var maccPerms = map[string][]string{
 	tokenfactorytypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 	evmtypes.ModuleName:          {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 	erc20types.ModuleName:        {authtypes.Minter, authtypes.Burner},
+	gravitytypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
 }
 
 var (
 	_ runtime.AppI            = (*WasmApp)(nil)
 	_ servertypes.Application = (*WasmApp)(nil)
+	// enable checks that run on the first BeginBlocker execution after an upgrade/genesis init/node restart
+	firstBlock sync.Once
 )
 
 // WasmApp extended ABCI application
@@ -281,6 +294,9 @@ type WasmApp struct {
 	IBCHooksKeeper      ibchookskeeper.Keeper
 	PacketForwardKeeper *packetforwardkeeper.Keeper
 	TokenFactoryKeeper  tokenfactorykeeper.Keeper
+
+	Bech32IbcKeeper *bech32ibckeeper.Keeper
+	GravityKeeper   gravitykeeper.Keeper
 
 	EvmKeeper       *evmkeeper.Keeper
 	Erc20Keeper     erc20keeper.Keeper
@@ -400,7 +416,7 @@ func NewWasmApp(
 		capabilitytypes.StoreKey, ibcexported.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		wasmtypes.StoreKey, icahosttypes.StoreKey,
 		icacontrollertypes.StoreKey, clocktypes.StoreKey, ibchookstypes.StoreKey, packetforwardtypes.StoreKey, tokenfactorytypes.StoreKey,
-		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey,
+		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, bech32ibctypes.StoreKey, gravitytypes.StoreKey,
 	)
 
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
@@ -541,7 +557,7 @@ func NewWasmApp(
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	app.StakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks()),
+		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks(), app.GravityKeeper.Hooks()),
 	)
 
 	app.CircuitKeeper = circuitkeeper.NewKeeper(
@@ -627,7 +643,10 @@ func NewWasmApp(
 	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(clocktypes.RouterKey, clockkeeper.NewClockProposalHandler(app.ClockKeeper)).
-		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
+		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper)).
+		AddRoute(gravitytypes.RouterKey, gravitykeeper.NewGravityProposalHandler(app.GravityKeeper)).
+		AddRoute(bech32ibctypes.RouterKey, bech32ibc.NewBech32IBCProposalHandler(*app.Bech32IbcKeeper))
+
 	govConfig := govtypes.DefaultConfig()
 	/*
 		Example of setting gov params:
@@ -794,6 +813,25 @@ func NewWasmApp(
 		EnabledCapabilities,
 	)
 
+	app.Bech32IbcKeeper = bech32ibckeeper.NewKeeper(
+		app.IBCKeeper.ChannelKeeper, appCodec, keys[bech32ibctypes.StoreKey],
+		app.TransferKeeper,
+	)
+
+	app.GravityKeeper = gravitykeeper.NewKeeper(
+		keys[gravitytypes.StoreKey],
+		app.GetSubspace(gravitytypes.DefaultParamspace),
+		appCodec,
+		&app.BankKeeper,
+		app.StakingKeeper,
+		&app.SlashingKeeper,
+		&app.DistrKeeper,
+		&app.AccountKeeper,
+		&app.TransferKeeper,
+		app.Bech32IbcKeeper,
+		app.IBCKeeper.ChannelKeeper, // interface default is reference
+	)
+
 	// Create fee enabled wasm ibc Stack
 	var wasmStack porttypes.IBCModule
 	wasmStack = wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCFeeKeeper)
@@ -820,7 +858,7 @@ func NewWasmApp(
 	// Create Transfer Stack
 	var transferStack porttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-
+	transferStack = gravity.NewIBCMiddleware(transferStack, app.GravityKeeper)
 	transferStack = packetforward.NewIBCMiddleware(
 		transferStack,
 		app.PacketForwardKeeper,
@@ -889,6 +927,15 @@ func NewWasmApp(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, evmSs),
 		feemarket.NewAppModule(app.FeeMarketKeeper, feeMarketSs),
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
+		gravity.NewAppModule(
+			app.GravityKeeper,
+			app.BankKeeper,
+			app.GetSubspace(exported.DefaultParamspace),
+		),
+		bech32ibc.NewAppModule(
+			appCodec,
+			*app.Bech32IbcKeeper,
+		),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -912,6 +959,8 @@ func NewWasmApp(
 			evmtypes.ModuleName:           evm.AppModuleBasic{},
 			feemarkettypes.ModuleName:     feemarket.AppModuleBasic{},
 			erc20types.ModuleName:         erc20.AppModuleBasic{},
+			gravitytypes.ModuleName:       gravity.AppModuleBasic{},
+			bech32ibctypes.ModuleName:     bech32ibc.AppModuleBasic{},
 		})
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
@@ -947,6 +996,8 @@ func NewWasmApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
+		bech32ibctypes.ModuleName,
+		gravitytypes.ModuleName,
 	)
 
 	app.ModuleManager.SetOrderEndBlockers(
@@ -970,6 +1021,8 @@ func NewWasmApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
+		bech32ibctypes.ModuleName,
+		gravitytypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -1002,6 +1055,8 @@ func NewWasmApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
+		bech32ibctypes.ModuleName,
+		gravitytypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
@@ -1163,7 +1218,32 @@ func (app *WasmApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*
 
 // BeginBlocker application updates every begin block
 func (app *WasmApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	return app.ModuleManager.BeginBlock(ctx)
+	out, err := app.ModuleManager.BeginBlock(ctx)
+	if err != nil {
+		return out, err
+	}
+	firstBlock.Do(func() { // Run the startup firstBeginBlocker assertions only once
+		app.firstBeginBlocker(ctx)
+	})
+
+	return out, nil
+}
+
+// Perform necessary checks at the start of this node's first BeginBlocker execution
+// Note: This should ONLY be called once, it should be called at the top of BeginBlocker guarded by firstBlock
+func (app *WasmApp) firstBeginBlocker(ctx sdk.Context) {
+	app.assertBech32PrefixMatches(ctx)
+
+	// The following call should panic if any invalid ERC20 addresses exist in types/const.go
+	monitoredErc20s := app.GravityKeeper.MonitoredERC20Tokens(ctx)
+	if len(monitoredErc20s) > 0 {
+		ctx.Logger().Info(
+			"Loaded Monitored ERC20 Tokens, your orchestrator is required to monitor the Gravity.sol balance of the following tokens: %v",
+			monitoredErc20s,
+		)
+	} else {
+		ctx.Logger().Info("Monitored ERC20 Tokens not yet set, your orchestrator is currently not required to monitor any Gravity.sol balances")
+	}
 }
 
 // EndBlocker application updates every end block
@@ -1388,6 +1468,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())
 	paramsKeeper.Subspace(erc20types.ModuleName)
+	paramsKeeper.Subspace(gravitytypes.DefaultParamspace)
 
 	return paramsKeeper
 }
