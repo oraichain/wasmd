@@ -131,19 +131,10 @@ func TestExecute(t *testing.T) {
 	}
 	suppliedGas := uint64(10_000_000)
 
-	instantiateMethod := wasmd.ABI.Methods["instantiate"]
-
-	args, err := instantiateMethod.Inputs.Pack(codeID, mockAddr.String(), []byte("{}"), "test", []byte("foo"))
+	res, _, err := tApp.ContractKeeper.Instantiate(ctx, codeID, mockAddr, mockAddr, []byte("{}"), "test", nil)
 	require.Nil(t, err)
-	res, suppliedGas, err := p.Contract.Run(&evm, registry.WasmdContractAddress, registry.WasmdContractAddress,
-		append(instantiateMethod.ID, args...),
-		suppliedGas,
-		false,
-		nil,
-	)
-	require.Nil(t, err)
-	rets, _ := instantiateMethod.Outputs.Unpack(res)
-	cosmwasmAddr := rets[0].(string)
+	cosmwasmAddr := res.String()
+	println("cosmwasm addr", cosmwasmAddr)
 
 	executeMethod := wasmd.ABI.Methods["execute"]
 	funds := sdk.NewCoins(sdk.NewCoin("ukava", sdkmath.NewInt(10)))
@@ -151,7 +142,7 @@ func TestExecute(t *testing.T) {
 	require.Nil(t, err)
 
 	fundsBz, _ := json.Marshal(funds)
-	args, err = executeMethod.Inputs.Pack(cosmwasmAddr, []byte("{\"echo\":{\"message\":\"test msg\"}}"), fundsBz)
+	args, err := executeMethod.Inputs.Pack(cosmwasmAddr, []byte("{\"echo\":{\"message\":\"test msg\"}}"), fundsBz)
 	require.Nil(t, err)
 
 	res, suppliedGas, err = p.Contract.Run(&evm, mockEVMAddr, registry.WasmdContractAddress,
@@ -161,7 +152,7 @@ func TestExecute(t *testing.T) {
 		nil,
 	)
 	require.Nil(t, err)
-	rets, _ = executeMethod.Outputs.Unpack(res)
+	rets, _ := executeMethod.Outputs.Unpack(res)
 	response := rets[0].([]byte)
 	t.Logf("res %s, gas remained %v", response, suppliedGas)
 

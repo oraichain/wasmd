@@ -354,7 +354,9 @@ func createTestInput(
 	// https://github.com/cosmos/cosmos-sdk/blob/fea231556aee4d549d7551a6190389c4328194eb/x/distribution/keeper/keeper_test.go#L50-L57
 	distrAcc := distKeeper.GetDistributionAccount(ctx)
 	faucet.Fund(ctx, distrAcc.GetAddress(), sdk.NewCoin("stake", sdkmath.NewInt(2000000)))
-	accountKeeper.SetModuleAccount(ctx, distrAcc)
+	if accountKeeper.GetModuleAccount(ctx, distrAcc.GetName()) == nil {
+		accountKeeper.SetModuleAccount(ctx, distrAcc)
+	}
 
 	capabilityKeeper := capabilitykeeper.NewKeeper(
 		appCodec,
