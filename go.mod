@@ -260,7 +260,7 @@ replace (
 
 	github.com/CosmosContracts/juno/v18/x/clock => github.com/oraichain/juno/x/clock v0.0.0-20240730044630-b70856e973de
 
-	github.com/Gravity-Bridge/Gravity-Bridge/module => github.com/oraichain/Gravity-Bridge/module v0.0.0-20240918093600-c22cd97dc774
+	github.com/Gravity-Bridge/Gravity-Bridge/module => github.com/oraichain/Gravity-Bridge/module v0.0.0-20240918101743-834506856f8f
 
 	// indexer and timestamp added
 	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20240729034548-028d4fcc0fa4

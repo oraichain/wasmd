@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	bech32ibctypes "github.com/Gravity-Bridge/Gravity-Bridge/module/x/bech32ibc/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-
 	cmttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
@@ -367,6 +367,13 @@ func GenesisStateWithValSet(
 	// update total supply
 	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = codec.MustMarshalJSON(bankGenesis)
+
+	// change nativeHRP
+	bech32ibcGenesis := &bech32ibctypes.GenesisState{
+		NativeHRP: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+	}
+	genesisState[bech32ibctypes.ModuleName] = codec.MustMarshalJSON(bech32ibcGenesis)
+
 	return genesisState, nil
 }
 
