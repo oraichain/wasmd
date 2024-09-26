@@ -4,10 +4,10 @@ set -eu
 
 # setup the network using the old binary
 
-OLD_VERSION=${OLD_VERSION:-"v0.42.2"}
+OLD_VERSION=${OLD_VERSION:-"v0.42.3"}
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/swapmap.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
-NEW_VERSION=${NEW_VERSION:-"v0.42.3"}
+NEW_VERSION=${NEW_VERSION:-"v0.50.0"}
 VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
 MIGRATE_MSG=${MIGRATE_MSG:-'{}'}
 EXECUTE_MSG=${EXECUTE_MSG:-'{"ping":{}}'}
@@ -19,15 +19,15 @@ pkill oraid && sleep 2
 
 # download current production binary
 current_dir=$PWD
-rm -rf ../orai-old/ && git clone https://github.com/oraichain/orai.git ../../orai-old && cd ../orai-old/orai && git checkout $OLD_VERSION && go mod tidy && GOTOOLCHAIN=$GO_VERSION make install
+rm -rf $current_dir/../orai-old/ && git clone https://github.com/oraichain/orai.git $current_dir/../orai-old && cd $current_dir/../orai-old && git checkout $OLD_VERSION && cd orai && go mod tidy && GOTOOLCHAIN=$GO_VERSION make install
 
 cd $current_dir
 
 # setup local network
-sh $PWD/scripts/multinode-local-testnet.sh
+sh $PWD/scripts/multinode-local-testnet_v0.42.3.sh
 
 # deploy new contract
-store_ret=$(oraid tx wasm store $WASM_PATH --from validator1 --home $VALIDATOR_HOME $ARGS --output json)
+store_ret=$(oraid tx wasm store $WASM_PATH --from validator1 --home $VALIDATOR_HOME $ARGS -b block --output json)
 code_id=$(echo $store_ret | jq -r '.logs[0].events[1].attributes[] | select(.key | contains("code_id")).value')
 oraid tx wasm instantiate $code_id '{}' --label 'testing' --from validator1 --home $VALIDATOR_HOME -b block --admin $(oraid keys show validator1 --keyring-backend test --home $VALIDATOR_HOME -a) $ARGS > $HIDE_LOGS
 contract_address=$(oraid query wasm list-contract-by-code $code_id --output json | jq -r '.contracts[0]')
@@ -36,7 +36,7 @@ echo "contract address: $contract_address"
 
 # create new upgrade proposal
 UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-35}
-oraid tx gov submit-proposal software-upgrade $NEW_VERSION --title "foobar" --description "foobar"  --from validator1 --upgrade-height $UPGRADE_HEIGHT --upgrade-info "x" --deposit 10000000orai $ARGS --home $VALIDATOR_HOME > $HIDE_LOGS
+oraid tx gov submit-proposal software-upgrade $NEW_VERSION --title "foobar" --description "foobar" --from validator1 --upgrade-height $UPGRADE_HEIGHT --upgrade-info "x" --deposit 10000000orai $ARGS --home $VALIDATOR_HOME -b block > $HIDE_LOGS
 oraid tx gov vote 1 yes --from validator1 --home $VALIDATOR_HOME $ARGS > $HIDE_LOGS && oraid tx gov vote 1 yes --from validator2 --home "$HOME/.oraid/validator2" $ARGS > $HIDE_LOGS
 
 # sleep to wait til the proposal passes
@@ -61,12 +61,17 @@ GOTOOLCHAIN=$GO_VERSION make build
 # Back to current folder
 cd $current_dir
 
+# set min gas price
+sed -i 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator1/config/app.toml
+sed -i 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator2/config/app.toml
+sed -i 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator3/config/app.toml
+
 # re-run all validators. All should run
 screen -S validator1 -d -m oraid start --home=$HOME/.oraid/validator1
 screen -S validator2 -d -m oraid start --home=$HOME/.oraid/validator2
 screen -S validator3 -d -m oraid start --home=$HOME/.oraid/validator3
 
-# sleep a bit for the network to start 
+# sleep a bit for the network to start
 echo "Sleep to wait for the network to start..."
 sleep 3
 
