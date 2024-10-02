@@ -62,9 +62,9 @@ GOTOOLCHAIN=$GO_VERSION make build
 cd $current_dir
 
 # set min gas price
-sed -i 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator1/config/app.toml
-sed -i 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator2/config/app.toml
-sed -i 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator3/config/app.toml
+sed -i -e 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator1/config/app.toml
+sed -i -e 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator2/config/app.toml
+sed -i -e 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator3/config/app.toml
 
 # re-run all validators. All should run
 screen -S validator1 -d -m oraid start --home=$HOME/.oraid/validator1
