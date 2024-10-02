@@ -54,12 +54,4 @@ fi
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-cw20-erc20.sh
 # NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-globalfee.sh
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 echo "Tests Passed!!"
-=======
-echo "Tests Passed!!"
->>>>>>> Stashed changes
-=======
-echo "Tests Passed!!"
->>>>>>> Stashed changes
