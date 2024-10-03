@@ -38,7 +38,6 @@ else
   cd ../evm-bridge-proxy
 fi
 
-
 # prepare env and chain
 yarn && yarn compile;
 echo "PRIVATE_KEY=$PRIVATE_KEY_ETH" > .env
