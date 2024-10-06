@@ -1,7 +1,7 @@
 #!/bin/bash
 # Before running this script, you must setup local network:
 
-set -eux
+set -eu
 
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync"
 VALIDATOR1_ARGS=${VALIDATOR1_ARGS:-"--from validator1 --home $HOME/.oraid/validator1"}
