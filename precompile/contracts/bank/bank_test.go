@@ -73,8 +73,7 @@ func TestSend(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p, err := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
-	require.Nil(t, err)
+	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
 	method := bank.ABI.Methods[bank.SendMethod]
 	suppliedGas := uint64(10_000_000)
 
@@ -115,8 +114,7 @@ func TestBalance(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p, err := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
-	require.Nil(t, err)
+	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
 	method := bank.ABI.Methods[bank.BalanceMethod]
 	suppliedGas := uint64(10_000_000)
 
@@ -150,8 +148,7 @@ func TestSupply(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p, err := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
-	require.Nil(t, err)
+	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
 	method := bank.ABI.Methods[bank.SupplyMethod]
 	suppliedGas := uint64(10_000_000)
 

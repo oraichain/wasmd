@@ -99,8 +99,7 @@ func TestUnmarshalCosmWasmDeposit(t *testing.T) {
 // if we attempt to define invalid or duplicate function selectors.
 func TestContractConstructor(t *testing.T) {
 	wasmer := &MockWasmer{}
-	precompile, err := wasmd.NewContract(wasmer, wasmer, nil)
-	require.NoError(t, err, "expected precompile not error when created")
+	precompile := wasmd.NewContract(wasmer, wasmer, nil)
 	assert.NotNil(t, precompile, "expected precompile contract to be defined")
 }
 

@@ -36,35 +36,33 @@ type PrecompileExecutor struct {
 //	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
 //	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
 //	still to be determined.
-func NewContract() (contract.StatefulPrecompiledContract, error) {
+func NewContract() contract.StatefulPrecompiledContract {
 
 	executor := &PrecompileExecutor{}
 
-	var functions []*contract.StatefulPrecompileFunction
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[ExtractAsBytesMethod].ID,
-		executor.extractAsBytes,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[ExtractAsBytesListMethod].ID,
-		executor.extractAsBytesList,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[ExtractAsUint256Method].ID,
-		executor.ExtractAsUint256,
-	))
+	functions := []*contract.StatefulPrecompileFunction{
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[ExtractAsBytesMethod].ID,
+			executor.extractAsBytes,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[ExtractAsBytesListMethod].ID,
+			executor.extractAsBytesList,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[ExtractAsUint256Method].ID,
+			executor.ExtractAsUint256,
+		),
+	}
 
 	// Construct the contract with functions.
 	precompile, err := contract.NewStatefulPrecompileContract(functions)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate json precompile: %w", err)
+		panic(fmt.Sprintf("failed to instantiate json precompile: %s", err.Error()))
 	}
 
-	return precompile, nil
+	return precompile
 }
 
 func (p PrecompileExecutor) extractAsBytes(accessibleState contract.AccessibleState,

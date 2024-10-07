@@ -51,58 +51,52 @@ type PrecompileExecutor struct {
 //	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
 //	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
 //	still to be determined.
-func NewContract(evmKeeper pcommon.EVMKeeper, bankKeeper pcommon.BankKeeper, accountKeeper pcommon.AccountKeeper) (contract.StatefulPrecompiledContract, error) {
+func NewContract(evmKeeper pcommon.EVMKeeper, bankKeeper pcommon.BankKeeper, accountKeeper pcommon.AccountKeeper) contract.StatefulPrecompiledContract {
 
 	executor := &PrecompileExecutor{
 		evmKeeper:  evmKeeper,
 		bankKeeper: bankKeeper,
 	}
 
-	var functions []*contract.StatefulPrecompileFunction
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[SendMethod].ID,
-		executor.send,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[BalanceMethod].ID,
-		executor.balance,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[AllBalancesMethod].ID,
-		executor.allBalances,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[NameMethod].ID,
-		executor.name,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[SymbolMethod].ID,
-		executor.symbol,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[DecimalsMethod].ID,
-		executor.decimals,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[SupplyMethod].ID,
-		executor.supply,
-	))
+	functions := []*contract.StatefulPrecompileFunction{
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[SendMethod].ID,
+			executor.send,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[BalanceMethod].ID,
+			executor.balance,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[AllBalancesMethod].ID,
+			executor.allBalances,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[NameMethod].ID,
+			executor.name,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[SymbolMethod].ID,
+			executor.symbol,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[DecimalsMethod].ID,
+			executor.decimals,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[SupplyMethod].ID,
+			executor.supply,
+		),
+	}
 
 	// Construct the contract with functions.
 	precompile, err := contract.NewStatefulPrecompileContract(functions)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate json precompile: %w", err)
+		panic(fmt.Sprintf("failed to instantiate json precompile: %s", err.Error()))
 	}
 
-	return precompile, nil
+	return precompile
 }
 
 func (p PrecompileExecutor) send(accessibleState contract.AccessibleState,

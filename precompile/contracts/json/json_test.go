@@ -20,8 +20,7 @@ func TestExtractAsBytes(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p, err := json.NewContract()
-	require.Nil(t, err)
+	p := json.NewContract()
 	method := json.ABI.Methods[json.ExtractAsBytesMethod]
 	suppliedGas := uint64(10_000_000)
 
@@ -66,8 +65,7 @@ func TestExtractAsBytesList(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p, err := json.NewContract()
-	require.Nil(t, err)
+	p := json.NewContract()
 	method := json.ABI.Methods[json.ExtractAsBytesListMethod]
 	suppliedGas := uint64(10_000_000)
 
@@ -112,8 +110,7 @@ func TestExtractAsUint256(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p, err := json.NewContract()
-	require.Nil(t, err)
+	p := json.NewContract()
 	method := json.ABI.Methods[json.ExtractAsUint256Method]
 	suppliedGas := uint64(10_000_000)
 	n := new(big.Int)

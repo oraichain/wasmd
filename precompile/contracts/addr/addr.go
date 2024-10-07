@@ -45,40 +45,37 @@ type PrecompileExecutor struct {
 //	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
 //	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
 //	still to be determined.
-func NewContract(evmKeeper pcommon.EVMKeeper) (contract.StatefulPrecompiledContract, error) {
+func NewContract(evmKeeper pcommon.EVMKeeper) contract.StatefulPrecompiledContract {
 
 	executor := &PrecompileExecutor{evmKeeper: evmKeeper}
 
-	var functions []*contract.StatefulPrecompileFunction
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[GetCosmosAddressMethod].ID,
-		executor.getCosmosAddr,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[GetEvmAddressMethod].ID,
-		executor.getEvmAddr,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[AssociateMethod].ID,
-		executor.associate,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods[AssociatePubKeyMethod].ID,
-		executor.associatePublicKey,
-	))
+	functions := []*contract.StatefulPrecompileFunction{
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[GetCosmosAddressMethod].ID,
+			executor.getCosmosAddr,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[GetEvmAddressMethod].ID,
+			executor.getEvmAddr,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[AssociateMethod].ID,
+			executor.associate,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[AssociatePubKeyMethod].ID,
+			executor.associatePublicKey,
+		),
+	}
 
 	// Construct the contract with functions.
 	precompile, err := contract.NewStatefulPrecompileContract(functions)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate addr precompile: %w", err)
+		panic(fmt.Sprintf("failed to instantiate addr precompile: %s", err.Error()))
 	}
 
-	return precompile, nil
+	return precompile
 }
 
 func (p PrecompileExecutor) getCosmosAddr(accessibleState contract.AccessibleState,

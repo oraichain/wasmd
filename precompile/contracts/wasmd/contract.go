@@ -244,7 +244,7 @@ func (p PrecompileExecutor) queryCosmWasm(
 //	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
 //	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
 //	still to be determined.
-func NewContract(wasmdKeeper pcommon.WasmdKeeper, wasmdViewKeeper pcommon.WasmdViewKeeper, evmKeeper pcommon.EVMKeeper) (contract.StatefulPrecompiledContract, error) {
+func NewContract(wasmdKeeper pcommon.WasmdKeeper, wasmdViewKeeper pcommon.WasmdViewKeeper, evmKeeper pcommon.EVMKeeper) contract.StatefulPrecompiledContract {
 
 	executor := &PrecompileExecutor{
 		wasmdKeeper:     wasmdKeeper,
@@ -252,31 +252,29 @@ func NewContract(wasmdKeeper pcommon.WasmdKeeper, wasmdViewKeeper pcommon.WasmdV
 		evmKeeper:       evmKeeper,
 	}
 
-	var functions []*contract.StatefulPrecompileFunction
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods["instantiate"].ID,
-		executor.instantiateCosmWasm,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods["execute"].ID,
-		executor.executeCosmWasm,
-	))
-
-	functions = append(functions, contract.NewStatefulPrecompileFunction(
-		ABI.Methods["query"].ID,
-		executor.queryCosmWasm,
-	))
+	functions := []*contract.StatefulPrecompileFunction{
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods["instantiate"].ID,
+			executor.instantiateCosmWasm,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods["execute"].ID,
+			executor.executeCosmWasm,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods["query"].ID,
+			executor.queryCosmWasm,
+		),
+	}
 
 	// Construct the contract with functions.
 	precompile, err := contract.NewStatefulPrecompileContract(functions)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate wasmd precompile: %w", err)
+		panic(fmt.Sprintf("failed to instantiate wasmd precompile: %s", err.Error()))
 	}
 
-	return precompile, nil
+	return precompile
 }
 
 func UnmarshalCosmWasmDeposit(coins []byte) sdk.Coins {

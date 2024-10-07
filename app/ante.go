@@ -20,7 +20,6 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
-	wasmdante "github.com/CosmWasm/wasmd/app/ante"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
@@ -210,7 +209,6 @@ func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		evmante.NewEthGasConsumeDecorator(options.EvmKeeper, options.MaxTxGasWanted),
 		evmante.NewCanTransferDecorator(options.EvmKeeper),
 		evmante.NewEthIncrementSenderSequenceDecorator(options.AccountKeeper, options.EvmKeeper), // innermost AnteDecorator.
-		wasmdante.NewPrecompileDecorator(options.AccountKeeper, options.BankKeeper, options.EvmKeeper, options.ContractKeeper, options.WasmKeeper),
 	)
 }
 

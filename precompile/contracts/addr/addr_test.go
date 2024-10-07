@@ -114,8 +114,7 @@ func TestGetCosmosAddr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create the precompile and inputs
-			p, err := addr.NewContract(tApp.EvmKeeper)
-			require.Nil(t, err)
+			p := addr.NewContract(tApp.EvmKeeper)
 			inputs, err := method.Inputs.Pack(tt.args.caller)
 			require.Nil(t, err)
 
@@ -205,8 +204,7 @@ func TestGetEvmAddr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create the precompile and inputs
-			p, err := addr.NewContract(tApp.EvmKeeper)
-			require.Nil(t, err)
+			p := addr.NewContract(tApp.EvmKeeper)
 			inputs, err := method.Inputs.Pack(targetCosmosAddress.String())
 			require.Nil(t, err)
 
@@ -335,8 +333,7 @@ func TestAssociatePubKey(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create the precompile and inputs
-			p, err := addr.NewContract(tApp.EvmKeeper)
-			require.Nil(t, err)
+			p := addr.NewContract(tApp.EvmKeeper)
 			inputs, err := method.Inputs.Pack(tt.args.pubKey)
 			require.Nil(t, err)
 
@@ -496,7 +493,7 @@ func TestAssociate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create the precompile and inputs
-			p, _ := addr.NewContract(tApp.EvmKeeper)
+			p := addr.NewContract(tApp.EvmKeeper)
 			require.Nil(t, err)
 			inputs, err := method.Inputs.Pack(tt.args.v, tt.args.r, tt.args.s, tt.args.msg)
 			require.Nil(t, err)
