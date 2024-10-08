@@ -20,6 +20,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
+	"github.com/CosmWasm/wasmd/precompile/registry"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
@@ -104,6 +105,9 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	return func(
 		ctx sdk.Context, tx sdk.Tx, sim bool,
 	) (newCtx sdk.Context, err error) {
+
+		registry.InitializePrecompiles(options.ContractKeeper, options.WasmKeeper, options.EvmKeeper, options.BankKeeper, options.AccountKeeper)
+
 		var anteHandler sdk.AnteHandler
 
 		defer Recover(ctx.Logger(), &err)
