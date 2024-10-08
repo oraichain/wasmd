@@ -3,7 +3,7 @@
 # sh $PWD/scripts/multinode-local-testnet.sh
 # cw-clock-example.wasm source code: https://github.com/oraichain/cw-plus.git
 
-set -eux
+set -eu
 
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/cw-clock-example.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync"
