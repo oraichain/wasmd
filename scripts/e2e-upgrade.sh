@@ -83,10 +83,10 @@ echo "Sleep to wait for the network to start..."
 sleep 7
 
 # test contract migration
-echo "Migrate the contract..."
+echo "Upload the new contract code id..."
 upload_wasm_txhash=$(oraid tx wasm store $WASM_PATH --from validator1 --home $VALIDATOR_HOME $ARGS --output json | jq -r '.txhash')
 sleep 2
-new_code_id=$(oraid q wasm list-code --reverse --limit 1 --output json | jq -r .code_infos[0].code_id)
+new_code_id=$(oraid q wasm list-code --reverse --limit 1 --output json | jq -r '.code_infos[0].code_id')
 
 echo "Migrate the contract..."
 oraid tx wasm migrate $contract_address $new_code_id $MIGRATE_MSG --from validator1 $ARGS --home $VALIDATOR_HOME
@@ -101,7 +101,7 @@ if [[ $oraid_version =~ $OLD_VERSION ]] ; then
    echo "The chain has not upgraded yet. There's something wrong!"; exit 1
 fi
 
-height_before=$(curl --no-progress-meter http://localhost:1317/blocks/latest | jq '.block.header.height | tonumber')
+height_before=$(curl --no-progress-meter http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest | jq '.block.header.height | tonumber')
 
 re='^[0-9]+([.][0-9]+)?$'
 if ! [[ $height_before =~ $re ]] ; then
@@ -110,7 +110,7 @@ fi
 
 sleep 5
 
-height_after=$(curl --no-progress-meter http://localhost:1317/blocks/latest | jq '.block.header.height | tonumber')
+height_after=$(curl --no-progress-meter http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest | jq '.block.header.height | tonumber')
 
 if ! [[ $height_after =~ $re ]] ; then
    echo "error: Not a number" >&2; exit 1
