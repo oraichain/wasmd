@@ -4,7 +4,11 @@ set -eu
 
 # setup the network using the old binary
 
-WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/swapmap.wasm"}
+BASEDIR=$(dirname $0)
+PROJECT_DIR=$(realpath "$BASEDIR/..")
+cd $PROJECT_DIR
+
+WASM_PATH=${WASM_PATH:-"scripts/wasm_file/swapmap.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
 NEW_VERSION=${NEW_VERSION:-"v0.42.3"}
 VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
@@ -14,11 +18,15 @@ re='^[0-9]+([.][0-9]+)?$'
 make build
 
 # setup local network
-sh $PWD/scripts/multinode-local-testnet.sh
+bash scripts/multinode-local-testnet.sh
 
 # sleep about 5 secs to wait for the rest & json rpc server to be u
 echo "Waiting for the REST & JSONRPC servers to be up ..."
-sleep 5
+{
+  while ! echo -n > /dev/tcp/localhost/1317; do
+    sleep 1
+  done
+} 2>/dev/null
 
 oraid_version=$(oraid version)
 if [[ $oraid_version =~ $NEW_VERSION ]] ; then
@@ -37,18 +45,20 @@ if ! [[ $evm_denom =~ "aorai" ]] ; then
    echo "Tests Failed"; exit 1
 fi
 
-sh $PWD/scripts/test_clock_counter_contract.sh
+bash scripts/test_clock_counter_contract.sh
 
 # test gasless
-USER=validator1 USER2=validator2 WASM_PATH="$PWD/scripts/wasm_file/counter_high_gas_cost.wasm" sh $PWD/scripts/tests-0.42.1/test-gasless.sh
-NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory.sh
-NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory-bindings.sh
-NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-evm-cosmos-mapping.sh
-NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-evm-cosmos-mapping-complex.sh
-NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.2/test-multi-sig.sh
-NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.3/test-commit-timeout.sh
-NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.4/test-cw-stargate-staking-query.sh
-NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-cw20-erc20.sh
-NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-globalfee.sh
+USER=validator1 USER2=validator2 WASM_PATH="$PROJECT_DIR/scripts/wasm_file/counter_high_gas_cost.wasm" bash scripts/tests-0.42.1/test-gasless.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.1/test-tokenfactory.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.1/test-tokenfactory-bindings.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.1/test-evm-cosmos-mapping.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.1/test-evm-cosmos-mapping-complex.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.2/test-multi-sig.sh
+NODE_HOME=$VALIDATOR_HOME bash scripts/tests-0.42.3/test-commit-timeout.sh
+NODE_HOME=$VALIDATOR_HOME bash scripts/tests-0.42.4/test-cw-stargate-staking-query.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.4/test-cw20-erc20.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.4/test-globalfee.sh
 
+
+bash scripts/clean-multinode-local-testnet.sh
 echo "Tests Passed!!"
