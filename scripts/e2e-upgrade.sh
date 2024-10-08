@@ -5,7 +5,7 @@ set -eu
 # setup the network using the old binary
 
 OLD_VERSION=${OLD_VERSION:-"v0.42.4"}
-WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/swapmap.wasm"}
+WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/oraiswap-token.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
 NEW_VERSION=${NEW_VERSION:-"v0.50.0"}
 VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
@@ -39,7 +39,8 @@ sh $PWD/scripts/multinode-local-testnet-v0.42.4.sh
 # deploy new contract
 store_ret=$(oraid tx wasm store $WASM_PATH --from validator1 --home $VALIDATOR_HOME $ARGS -b block --output json)
 code_id=$(echo $store_ret | jq -r '.logs[0].events[1].attributes[] | select(.key | contains("code_id")).value')
-oraid tx wasm instantiate $code_id '{}' --label 'testing' --from validator1 --home $VALIDATOR_HOME -b block --admin $(oraid keys show validator1 --keyring-backend test --home $VALIDATOR_HOME -a) $ARGS > $HIDE_LOGS
+INSTANTIATE_MSG='{"name":"OraichainToken","symbol":"ORAI","decimals":6,"initial_balances":[{"amount":"1000000000","address":"orai1kzkf6gttxqar9yrkxfe34ye4vg5v4m588ew7c9"},{"amount":"1000000000","address":"orai1hgscrqcd2kmju4t5akujeugwrfev7uxv66lnuu"}]}'
+oraid tx wasm instantiate $code_id $INSTANTIATE_MSG --label 'testing' --from validator1 --home $VALIDATOR_HOME -b block --admin $(oraid keys show validator1 --keyring-backend test --home $VALIDATOR_HOME -a) $ARGS > $HIDE_LOGS
 contract_address=$(oraid query wasm list-contract-by-code $code_id --output json | jq -r '.contracts[0]')
 
 echo "contract address: $contract_address"
@@ -71,11 +72,6 @@ GOTOOLCHAIN=$GO_VERSION make build
 # Back to current folder
 cd $current_dir
 
-# set min gas price
-sed -i -e 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator1/config/app.toml
-sed -i -e 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator2/config/app.toml
-sed -i -e 's/^minimum-gas-prices *= .*/minimum-gas-prices = "0orai"/g' $HOME/.oraid/validator3/config/app.toml
-
 # re-run all validators. All should run
 screen -S validator1 -d -m oraid start --home=$HOME/.oraid/validator1
 screen -S validator2 -d -m oraid start --home=$HOME/.oraid/validator2
@@ -83,16 +79,18 @@ screen -S validator3 -d -m oraid start --home=$HOME/.oraid/validator3
 
 # sleep a bit for the network to start
 echo "Sleep to wait for the network to start..."
-sleep 3
+# sleep longer than usual for module migration
+sleep 7
 
 # test contract migration
 echo "Migrate the contract..."
-store_ret=$(oraid tx wasm store $WASM_PATH --from validator1 --home $VALIDATOR_HOME $ARGS --output json)
-echo "Execute the contract..."
-new_code_id=$(echo $store_ret | jq -r '.logs[0].events[1].attributes[] | select(.key | contains("code_id")).value')
+upload_wasm_txhash=$(oraid tx wasm store $WASM_PATH --from validator1 --home $VALIDATOR_HOME $ARGS --output json | jq -r '.txhash')
+sleep 2
+new_code_id=$(oraid q wasm list-code --reverse --limit 1 --output json | jq -r .code_infos[0].code_id)
 
-# oraid tx wasm migrate $contract_address $new_code_id $MIGRATE_MSG --from validator1 $ARGS --home $VALIDATOR_HOME
-oraid tx wasm execute $contract_address $EXECUTE_MSG --from validator1 $ARGS --home $VALIDATOR_HOME > $HIDE_LOGS
+echo "Migrate the contract..."
+oraid tx wasm migrate $contract_address $new_code_id $MIGRATE_MSG --from validator1 $ARGS --home $VALIDATOR_HOME
+sleep 2
 
 # sleep about 5 secs to wait for the rest & json rpc server to be u
 echo "Waiting for the REST & JSONRPC servers to be up ..."
