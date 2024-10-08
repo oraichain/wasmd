@@ -134,6 +134,11 @@ sed -i -e "s%^ws-address *=.*%ws-address = \"0.0.0.0:7546\"%; " $VALIDATOR2_APP_
 sed -i -E 's|0.0.0.0:8545|0.0.0.0:6545|g' $VALIDATOR3_APP_TOML
 sed -i -e "s%^ws-address *=.*%ws-address = \"0.0.0.0:6546\"%; " $VALIDATOR3_APP_TOML
 
+# append no-op mempool config into app.toml for 0.45 -> 0.50 upgrade
+echo "\n[mempool]\nmax-txs = -1" >> $VALIDATOR1_APP_TOML
+echo "\n[mempool]\nmax-txs = -1" >> $VALIDATOR2_APP_TOML
+echo "\n[mempool]\nmax-txs = -1" >> $VALIDATOR3_APP_TOML
+
 # copy validator1 genesis file to validator2-3
 cp $HOME/.oraid/validator1/config/genesis.json $HOME/.oraid/validator2/config/genesis.json
 cp $HOME/.oraid/validator1/config/genesis.json $HOME/.oraid/validator3/config/genesis.json

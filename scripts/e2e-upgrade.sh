@@ -118,9 +118,9 @@ fi
 
 if [ $height_after -gt $height_before ]
 then
-echo "Test Passed"
+echo "Chain Upgrade Passed"
 else
-echo "Test Failed"
+echo "Chain Upgrade Failed"
 fi
 
 inflation=$(curl --no-progress-meter http://localhost:1317/cosmos/mint/v1beta1/inflation | jq '.inflation | tonumber')
@@ -149,4 +149,5 @@ NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.4/test-cw-stargate-staking-
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-cw20-erc20.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-globalfee.sh
 
+bash scripts/clean-multinode-local-testnet.sh
 echo "Tests Passed!!"
