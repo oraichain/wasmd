@@ -4,7 +4,7 @@ set -eu
 
 # setup the network using the old binary
 
-OLD_VERSION=${OLD_VERSION:-"v0.42.3"}
+OLD_VERSION=${OLD_VERSION:-"v0.42.4"}
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/swapmap.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
 NEW_VERSION=${NEW_VERSION:-"v0.50.0"}
@@ -19,12 +19,22 @@ pkill oraid && sleep 2
 
 # download current production binary
 current_dir=$PWD
-rm -rf $current_dir/../orai-old/ && git clone https://github.com/oraichain/orai.git $current_dir/../orai-old && cd $current_dir/../orai-old && git checkout $OLD_VERSION && cd orai && go mod tidy && GOTOOLCHAIN=$GO_VERSION make install
+
+# clone or pull latest repo
+if ! [ -d "../orai-old" ]; then
+  git clone https://github.com/oraichain/orai.git ../orai-old
+fi
+
+# build old binary
+cd ../orai-old
+git fetch
+git checkout $OLD_VERSION
+go mod tidy && GOTOOLCHAIN=$GO_VERSION make install
 
 cd $current_dir
 
 # setup local network
-sh $PWD/scripts/multinode-local-testnet_v0.42.3.sh
+sh $PWD/scripts/multinode-local-testnet-v0.42.4.sh
 
 # deploy new contract
 store_ret=$(oraid tx wasm store $WASM_PATH --from validator1 --home $VALIDATOR_HOME $ARGS -b block --output json)
@@ -130,12 +140,15 @@ fi
 sh $PWD/scripts/test_clock_counter_contract.sh
 
 # test gasless
-NODE_HOME=$VALIDATOR_HOME USER=validator1 WASM_PATH="$PWD/scripts/wasm_file/counter_high_gas_cost.wasm" sh $PWD/scripts/tests-0.42.1/test-gasless.sh
+USER=validator1 USER2=validator2 WASM_PATH="$PWD/scripts/wasm_file/counter_high_gas_cost.wasm" sh $PWD/scripts/tests-0.42.1/test-gasless.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory-bindings.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-evm-cosmos-mapping.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-evm-cosmos-mapping-complex.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.2/test-multi-sig.sh
 NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.3/test-commit-timeout.sh
+NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.4/test-cw-stargate-staking-query.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-cw20-erc20.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-globalfee.sh
 
 echo "Tests Passed!!"

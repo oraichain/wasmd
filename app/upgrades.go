@@ -1,11 +1,14 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
+	cmtbfttypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
@@ -17,12 +20,20 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	"github.com/CosmWasm/wasmd/app/upgrades/noop"
 	v050 "github.com/CosmWasm/wasmd/app/upgrades/v050"
 	v2 "github.com/CosmWasm/wasmd/x/wasm/migrations/v2"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // Upgrades list of chain upgrades
@@ -45,9 +56,43 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 		Codec:                 app.appCodec,
 		GetStoreKey:           app.GetKey,
 	}
+
 	app.GetStoreKeys()
 	// register all upgrade handlers
 	for _, upgrade := range Upgrades {
+		// special case, we need to resolve this issue: https://github.com/cosmos/cosmos-sdk/issues/20160
+		if upgrade.UpgradeName == v050.Upgrade.UpgradeName {
+			app.UpgradeKeeper.SetUpgradeHandler(
+				upgrade.UpgradeName,
+				func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+
+					defaultConsensusParams := cmtbfttypes.DefaultConsensusParams()
+					cp := cmtproto.ConsensusParams{
+						Block: &cmtproto.BlockParams{
+							// hard-coded max bytes like in prod params
+							MaxBytes: 1048576,
+							MaxGas:   defaultConsensusParams.Block.MaxGas,
+						},
+						Evidence: &cmtproto.EvidenceParams{
+							MaxAgeNumBlocks: defaultConsensusParams.Evidence.MaxAgeNumBlocks,
+							MaxAgeDuration:  defaultConsensusParams.Evidence.MaxAgeDuration,
+							MaxBytes:        defaultConsensusParams.Evidence.MaxBytes,
+						},
+						Validator: &cmtproto.ValidatorParams{
+							PubKeyTypes: defaultConsensusParams.Validator.PubKeyTypes,
+						},
+						Version: defaultConsensusParams.ToProto().Version, // Version is stored in x/upgrade
+					}
+					err := app.ConsensusParamsKeeper.ParamsStore.Set(ctx, cp)
+					if err != nil {
+						return nil, err
+					}
+					return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
+				},
+			)
+			continue
+		}
+
 		app.UpgradeKeeper.SetUpgradeHandler(
 			upgrade.UpgradeName,
 			upgrade.CreateUpgradeHandler(
@@ -101,6 +146,17 @@ func setupLegacyKeyTables(k *paramskeeper.Keeper) {
 			// wasm
 		case wasmtypes.ModuleName:
 			keyTable = v2.ParamKeyTable() //nolint:staticcheck
+		case ibcexported.ModuleName:
+			keyTable = ibcclienttypes.ParamKeyTable()
+			keyTable.RegisterParamSet(&ibcconnectiontypes.Params{})
+		case icacontrollertypes.SubModuleName:
+			keyTable = icacontrollertypes.ParamKeyTable() //nolint:staticcheck
+		case ibctransfertypes.ModuleName:
+			keyTable = ibctransfertypes.ParamKeyTable() //nolint:staticcheck
+		case evmtypes.ModuleName:
+			keyTable = evmtypes.ParamKeyTable()
+		case feemarkettypes.ModuleName:
+			keyTable = feemarkettypes.ParamKeyTable()
 		default:
 			continue
 		}

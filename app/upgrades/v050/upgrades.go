@@ -8,6 +8,9 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
 	"github.com/cosmos/cosmos-sdk/types/module"
+	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
+	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
+	erc20types "github.com/evmos/ethermint/x/erc20/types"
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
 )
@@ -21,8 +24,11 @@ var Upgrade = upgrades.Upgrade{
 	StoreUpgrades: storetypes.StoreUpgrades{
 		Added: []string{
 			circuittypes.ModuleName,
+			consensustypes.StoreKey,
+			crisistypes.StoreKey,
+			erc20types.StoreKey,
 		},
-		Deleted: []string{},
+		Deleted: []string{"utilevm", "evmutil", "intertx"},
 	},
 }
 

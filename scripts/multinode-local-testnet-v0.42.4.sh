@@ -78,6 +78,11 @@ pruning_keep_recent="5"
 pruning_keep_every="10"
 pruning_interval="10000"
 
+# new cosmos sdk version forces us to set minimum gas prices
+sed -i -e "s%^minimum-gas-prices *=.*%minimum-gas-prices = \"0orai\"%; " $VALIDATOR1_APP_TOML
+sed -i -e "s%^minimum-gas-prices *=.*%minimum-gas-prices = \"0orai\"%; " $VALIDATOR2_APP_TOML
+sed -i -e "s%^minimum-gas-prices *=.*%minimum-gas-prices = \"0orai\"%; " $VALIDATOR3_APP_TOML
+
 sed -i -e "s%^pruning *=.*%pruning = \"$pruning\"%; " $VALIDATOR1_APP_TOML
 sed -i -e "s%^pruning-keep-recent *=.*%pruning-keep-recent = \"$pruning_keep_recent\"%; " $VALIDATOR1_APP_TOML
 sed -i -e "s%^pruning-keep-every *=.*%pruning-keep-every = \"$pruning_keep_every\"%; " $VALIDATOR1_APP_TOML
