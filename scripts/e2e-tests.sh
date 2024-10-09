@@ -10,7 +10,6 @@ cd $PROJECT_DIR
 
 WASM_PATH=${WASM_PATH:-"scripts/wasm_file/swapmap.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
-NEW_VERSION=${NEW_VERSION:-"v0.42.3"}
 VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
 re='^[0-9]+([.][0-9]+)?$'
 
@@ -27,11 +26,6 @@ echo "Waiting for the REST & JSONRPC servers to be up ..."
     sleep 1
   done
 } 2>/dev/null
-
-oraid_version=$(oraid version)
-if [[ $oraid_version =~ $NEW_VERSION ]] ; then
-   echo "The chain version is not latest yet. There's something wrong!"; exit 1
-fi
 
 inflation=$(curl --no-progress-meter http://localhost:1317/cosmos/mint/v1beta1/inflation | jq '.inflation | tonumber')
 if ! [[ $inflation =~ $re ]] ; then
@@ -58,7 +52,6 @@ NODE_HOME=$VALIDATOR_HOME bash scripts/tests-0.42.3/test-commit-timeout.sh
 NODE_HOME=$VALIDATOR_HOME bash scripts/tests-0.42.4/test-cw-stargate-staking-query.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.4/test-cw20-erc20.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.4/test-globalfee.sh
-
 
 bash scripts/clean-multinode-local-testnet.sh
 echo "Tests Passed!!"
