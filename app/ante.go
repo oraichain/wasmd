@@ -17,8 +17,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
+	"github.com/CosmWasm/wasmd/precompile/registry"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
@@ -48,11 +50,12 @@ type HandlerOptions struct {
 	FeeMarketKeeper       feemarketkeeper.Keeper
 	WasmConfig            *wasmTypes.WasmConfig
 	WasmKeeper            *wasmkeeper.Keeper
+	ContractKeeper        *wasmkeeper.PermissionedKeeper
 	TXCounterStoreService corestoretypes.KVStoreService
 	TxCounterStoreKey     storetypes.StoreKey
 	MaxTxGasWanted        uint64
 	CircuitKeeper         *circuitkeeper.Keeper
-	BankKeeper            evmtypes.BankKeeper
+	BankKeeper            *bankkeeper.BaseKeeper
 	DisabledAuthzMsgs     []string
 	BypassMinFeeMsgTypes  []string
 }
@@ -79,6 +82,13 @@ func (options *HandlerOptions) Validate() error {
 	if options.EvmKeeper == nil {
 		return errors.New("evm keeper is required for ante builder")
 	}
+	if options.WasmKeeper == nil {
+		return errors.New("wasm keeper is required for ante builder")
+	}
+	if options.ContractKeeper == nil {
+		return errors.New("contract keeper is required for ante builder")
+	}
+
 	return nil
 }
 
@@ -92,6 +102,9 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	return func(
 		ctx sdk.Context, tx sdk.Tx, sim bool,
 	) (newCtx sdk.Context, err error) {
+
+		registry.InitializePrecompiles(options.ContractKeeper, options.WasmKeeper, options.EvmKeeper, options.BankKeeper, options.AccountKeeper)
+
 		var anteHandler sdk.AnteHandler
 
 		defer Recover(ctx.Logger(), &err)

@@ -3,7 +3,7 @@
 # sh $PWD/scripts/multinode-local-testnet.sh
 # cw-clock-example.wasm source code: https://github.com/oraichain/cw-plus.git
 
-set -ux
+set -eu
 
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/cw-clock-example.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync"
@@ -29,7 +29,7 @@ code_id=$(cat temp.json | jq -r '.events[4].attributes[] | select(.key | contain
 rm temp.json
 oraid tx wasm instantiate $code_id '{}' --label 'cw clock contract' $VALIDATOR1_ARGS --admin $(oraid keys show validator1 --keyring-backend test --home $HOME/.oraid/validator1 -a) $ARGS > $HIDE_LOGS
 # need to sleep 1s for tx already in block
-sleep 1
+sleep 2
 contract_address=$(oraid query wasm list-contract-by-code $code_id --output json | jq -r '.contracts | last')
 echo "cw-clock contract address: $contract_address, $CONTRACT_GAS_LIMIT, $TITLE, $INITIAL_DEPOSIT, $DESCRIPTION"
 
