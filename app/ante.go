@@ -88,10 +88,7 @@ func (options *HandlerOptions) Validate() error {
 	if options.ContractKeeper == nil {
 		return errors.New("contract keeper is required for ante builder")
 	}
-	if &options.GlobalFeeKeeper == nil {
-		return errors.New("globalfee keeper is required for ante builder")
 
-	}
 	return nil
 }
 
