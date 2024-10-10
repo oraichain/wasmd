@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/CosmWasm/wasmd/tree/HEAD)
 
-[Full Changelog](https://github.com/CosmWasm/wasmd/compare/v0.52.0...HEAD)
+[Full Changelog](https://github.com/CosmWasm/wasmd/compare/v0.53.0...HEAD)
+
+## [v0.53.0](https://github.com/CosmWasm/wasmd/tree/v0.53.0) (2024-08-21)
+
+[Full Changelog](https://github.com/CosmWasm/wasmd/compare/v0.52.0...v0.53.0)
+
+- Fix CWA-2024-005
+- Fix CWA-2024-006
+- Fix submit-proposal instantiate-contract-2 command [\#1934](https://github.com/CosmWasm/wasmd/pull/1934)
 
 ## [v0.52.0](https://github.com/CosmWasm/wasmd/tree/v0.52.0) (2024-07-11)
 

@@ -95,6 +95,8 @@ var (
 
 	// ErrUnsetGaslessFailed error for unsetting gasless contract failures
 	ErrUnsetGaslessFailed = errorsmod.Register(DefaultCodespace, 41, "unsetting gasless contract failed")
+	// ErrExceedMaxCallDepth error if max message stack size is exceeded
+	ErrExceedMaxCallDepth = errorsmod.Register(DefaultCodespace, 30, "max call depth exceeded")
 )
 
 // WasmVMErrorable mapped error type in wasmvm and are not redacted

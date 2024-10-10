@@ -415,6 +415,7 @@ func (chain *TestChain) sendWithSigner(
 	require.Len(chain.t, blockResp.TxResults, 1)
 	txResult := blockResp.TxResults[0]
 	if txResult.Code != 0 {
+		fmt.Println("tx result error: ", fmt.Errorf("%s/%d: %q", txResult.Codespace, txResult.Code, txResult.Log))
 		return txResult, fmt.Errorf("%s/%d: %q", txResult.Codespace, txResult.Code, txResult.Log)
 	}
 
