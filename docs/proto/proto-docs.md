@@ -4,50 +4,64 @@
 
 ## Table of Contents
 
-- [cosmwasm/evmutil/v1beta1/conversion_pair.proto](#cosmwasm/evmutil/v1beta1/conversion_pair.proto)
-    - [ConversionPair](#cosmwasm.evmutil.v1beta1.ConversionPair)
+- [cosmwasm/tokenfactory/v1beta1/authorityMetadata.proto](#cosmwasm/tokenfactory/v1beta1/authorityMetadata.proto)
+    - [DenomAuthorityMetadata](#cosmwasm.tokenfactory.v1beta1.DenomAuthorityMetadata)
   
-- [cosmwasm/evmutil/v1beta1/genesis.proto](#cosmwasm/evmutil/v1beta1/genesis.proto)
-    - [Account](#cosmwasm.evmutil.v1beta1.Account)
-    - [GenesisState](#cosmwasm.evmutil.v1beta1.GenesisState)
-    - [Params](#cosmwasm.evmutil.v1beta1.Params)
+- [cosmwasm/tokenfactory/v1beta1/params.proto](#cosmwasm/tokenfactory/v1beta1/params.proto)
+    - [Params](#cosmwasm.tokenfactory.v1beta1.Params)
   
-- [cosmwasm/evmutil/v1beta1/query.proto](#cosmwasm/evmutil/v1beta1/query.proto)
-    - [QueryParamsRequest](#cosmwasm.evmutil.v1beta1.QueryParamsRequest)
-    - [QueryParamsResponse](#cosmwasm.evmutil.v1beta1.QueryParamsResponse)
+- [cosmwasm/tokenfactory/v1beta1/genesis.proto](#cosmwasm/tokenfactory/v1beta1/genesis.proto)
+    - [GenesisDenom](#cosmwasm.tokenfactory.v1beta1.GenesisDenom)
+    - [GenesisState](#cosmwasm.tokenfactory.v1beta1.GenesisState)
   
-    - [Query](#cosmwasm.evmutil.v1beta1.Query)
+- [cosmwasm/tokenfactory/v1beta1/query.proto](#cosmwasm/tokenfactory/v1beta1/query.proto)
+    - [QueryDenomAuthorityMetadataRequest](#cosmwasm.tokenfactory.v1beta1.QueryDenomAuthorityMetadataRequest)
+    - [QueryDenomAuthorityMetadataResponse](#cosmwasm.tokenfactory.v1beta1.QueryDenomAuthorityMetadataResponse)
+    - [QueryDenomsFromCreatorRequest](#cosmwasm.tokenfactory.v1beta1.QueryDenomsFromCreatorRequest)
+    - [QueryDenomsFromCreatorResponse](#cosmwasm.tokenfactory.v1beta1.QueryDenomsFromCreatorResponse)
+    - [QueryParamsRequest](#cosmwasm.tokenfactory.v1beta1.QueryParamsRequest)
+    - [QueryParamsResponse](#cosmwasm.tokenfactory.v1beta1.QueryParamsResponse)
   
-- [cosmwasm/evmutil/v1beta1/tx.proto](#cosmwasm/evmutil/v1beta1/tx.proto)
-    - [MsgConvertCoinToERC20](#cosmwasm.evmutil.v1beta1.MsgConvertCoinToERC20)
-    - [MsgConvertCoinToERC20Response](#cosmwasm.evmutil.v1beta1.MsgConvertCoinToERC20Response)
-    - [MsgConvertERC20ToCoin](#cosmwasm.evmutil.v1beta1.MsgConvertERC20ToCoin)
-    - [MsgConvertERC20ToCoinResponse](#cosmwasm.evmutil.v1beta1.MsgConvertERC20ToCoinResponse)
+    - [Query](#cosmwasm.tokenfactory.v1beta1.Query)
   
-    - [Msg](#cosmwasm.evmutil.v1beta1.Msg)
+- [cosmwasm/tokenfactory/v1beta1/tx.proto](#cosmwasm/tokenfactory/v1beta1/tx.proto)
+    - [MsgBurn](#cosmwasm.tokenfactory.v1beta1.MsgBurn)
+    - [MsgBurnResponse](#cosmwasm.tokenfactory.v1beta1.MsgBurnResponse)
+    - [MsgChangeAdmin](#cosmwasm.tokenfactory.v1beta1.MsgChangeAdmin)
+    - [MsgChangeAdminResponse](#cosmwasm.tokenfactory.v1beta1.MsgChangeAdminResponse)
+    - [MsgCreateDenom](#cosmwasm.tokenfactory.v1beta1.MsgCreateDenom)
+    - [MsgCreateDenomResponse](#cosmwasm.tokenfactory.v1beta1.MsgCreateDenomResponse)
+    - [MsgForceTransfer](#cosmwasm.tokenfactory.v1beta1.MsgForceTransfer)
+    - [MsgForceTransferResponse](#cosmwasm.tokenfactory.v1beta1.MsgForceTransferResponse)
+    - [MsgMint](#cosmwasm.tokenfactory.v1beta1.MsgMint)
+    - [MsgMintResponse](#cosmwasm.tokenfactory.v1beta1.MsgMintResponse)
+    - [MsgSetDenomMetadata](#cosmwasm.tokenfactory.v1beta1.MsgSetDenomMetadata)
+    - [MsgSetDenomMetadataResponse](#cosmwasm.tokenfactory.v1beta1.MsgSetDenomMetadataResponse)
+  
+    - [Msg](#cosmwasm.tokenfactory.v1beta1.Msg)
   
 - [Scalar Value Types](#scalar-value-types)
 
 
 
-<a name="cosmwasm/evmutil/v1beta1/conversion_pair.proto"></a>
+<a name="cosmwasm/tokenfactory/v1beta1/authorityMetadata.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## cosmwasm/evmutil/v1beta1/conversion_pair.proto
+## cosmwasm/tokenfactory/v1beta1/authorityMetadata.proto
 
 
 
-<a name="cosmwasm.evmutil.v1beta1.ConversionPair"></a>
+<a name="cosmwasm.tokenfactory.v1beta1.DenomAuthorityMetadata"></a>
 
-### ConversionPair
-ConversionPair defines a Kava ERC20 address and corresponding denom that is
-allowed to be converted between ERC20 and sdk.Coin
+### DenomAuthorityMetadata
+DenomAuthorityMetadata specifies metadata for addresses that have specific
+capabilities over a token factory denom. Right now there is only one Admin
+permission, but is planned to be extended to the future.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `orai_erc20_address` | [bytes](#bytes) |  | ERC20 address of the token on the Kava EVM |
-| `denom` | [string](#string) |  | Denom of the corresponding sdk.Coin |
+| `admin` | [string](#string) |  | Can be empty for no admin, or a valid cosmwasm address |
 
 
 
@@ -63,54 +77,23 @@ allowed to be converted between ERC20 and sdk.Coin
 
 
 
-<a name="cosmwasm/evmutil/v1beta1/genesis.proto"></a>
+<a name="cosmwasm/tokenfactory/v1beta1/params.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## cosmwasm/evmutil/v1beta1/genesis.proto
+## cosmwasm/tokenfactory/v1beta1/params.proto
 
 
 
-<a name="cosmwasm.evmutil.v1beta1.Account"></a>
-
-### Account
-BalanceAccount defines an account in the evmutil module.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `address` | [bytes](#bytes) |  |  |
-| `balance` | [string](#string) |  | balance indicates the amount of a orai owned by the address. |
-
-
-
-
-
-
-<a name="cosmwasm.evmutil.v1beta1.GenesisState"></a>
-
-### GenesisState
-GenesisState defines the evmutil module's genesis state.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `accounts` | [Account](#cosmwasm.evmutil.v1beta1.Account) | repeated |  |
-| `params` | [Params](#cosmwasm.evmutil.v1beta1.Params) |  | params defines all the parameters of the module. |
-
-
-
-
-
-
-<a name="cosmwasm.evmutil.v1beta1.Params"></a>
+<a name="cosmwasm.tokenfactory.v1beta1.Params"></a>
 
 ### Params
-Params defines the evmutil module params
+Params defines the parameters for the tokenfactory module.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `enabled_conversion_pairs` | [ConversionPair](#cosmwasm.evmutil.v1beta1.ConversionPair) | repeated | enabled_conversion_pairs defines the list of conversion pairs allowed to be converted between Kava ERC20 and sdk.Coin |
+| `denom_creation_fee` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated |  |
+| `denom_creation_gas_consume` | [uint64](#uint64) |  | https://github.com/CosmWasm/wasmd/issues/11 |
 
 
 
@@ -126,34 +109,146 @@ Params defines the evmutil module params
 
 
 
-<a name="cosmwasm/evmutil/v1beta1/query.proto"></a>
+<a name="cosmwasm/tokenfactory/v1beta1/genesis.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## cosmwasm/evmutil/v1beta1/query.proto
+## cosmwasm/tokenfactory/v1beta1/genesis.proto
 
 
 
-<a name="cosmwasm.evmutil.v1beta1.QueryParamsRequest"></a>
+<a name="cosmwasm.tokenfactory.v1beta1.GenesisDenom"></a>
+
+### GenesisDenom
+GenesisDenom defines a tokenfactory denom that is defined within genesis
+state. The structure contains DenomAuthorityMetadata which defines the
+denom's admin.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `denom` | [string](#string) |  |  |
+| `authority_metadata` | [DenomAuthorityMetadata](#cosmwasm.tokenfactory.v1beta1.DenomAuthorityMetadata) |  |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.GenesisState"></a>
+
+### GenesisState
+GenesisState defines the tokenfactory module's genesis state.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `params` | [Params](#cosmwasm.tokenfactory.v1beta1.Params) |  | params defines the paramaters of the module. |
+| `factory_denoms` | [GenesisDenom](#cosmwasm.tokenfactory.v1beta1.GenesisDenom) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="cosmwasm/tokenfactory/v1beta1/query.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## cosmwasm/tokenfactory/v1beta1/query.proto
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.QueryDenomAuthorityMetadataRequest"></a>
+
+### QueryDenomAuthorityMetadataRequest
+QueryDenomAuthorityMetadataRequest defines the request structure for the
+DenomAuthorityMetadata gRPC query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `denom` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.QueryDenomAuthorityMetadataResponse"></a>
+
+### QueryDenomAuthorityMetadataResponse
+QueryDenomAuthorityMetadataResponse defines the response structure for the
+DenomAuthorityMetadata gRPC query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `authority_metadata` | [DenomAuthorityMetadata](#cosmwasm.tokenfactory.v1beta1.DenomAuthorityMetadata) |  |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.QueryDenomsFromCreatorRequest"></a>
+
+### QueryDenomsFromCreatorRequest
+QueryDenomsFromCreatorRequest defines the request structure for the
+DenomsFromCreator gRPC query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `creator` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.QueryDenomsFromCreatorResponse"></a>
+
+### QueryDenomsFromCreatorResponse
+QueryDenomsFromCreatorRequest defines the response structure for the
+DenomsFromCreator gRPC query.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `denoms` | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.QueryParamsRequest"></a>
 
 ### QueryParamsRequest
-QueryParamsRequest defines the request type for querying x/evmutil
-parameters.
+QueryParamsRequest is the request type for the Query/Params RPC method.
 
 
 
 
 
 
-<a name="cosmwasm.evmutil.v1beta1.QueryParamsResponse"></a>
+<a name="cosmwasm.tokenfactory.v1beta1.QueryParamsResponse"></a>
 
 ### QueryParamsResponse
-QueryParamsResponse defines the response type for querying x/evmutil
-parameters.
+QueryParamsResponse is the response type for the Query/Params RPC method.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `params` | [Params](#cosmwasm.evmutil.v1beta1.Params) |  |  |
+| `params` | [Params](#cosmwasm.tokenfactory.v1beta1.Params) |  | params defines the parameters of the module. |
 
 
 
@@ -166,77 +261,203 @@ parameters.
  <!-- end HasExtensions -->
 
 
-<a name="cosmwasm.evmutil.v1beta1.Query"></a>
+<a name="cosmwasm.tokenfactory.v1beta1.Query"></a>
 
 ### Query
-Query defines the gRPC querier service for evmutil module
+Query defines the gRPC querier service.
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `Params` | [QueryParamsRequest](#cosmwasm.evmutil.v1beta1.QueryParamsRequest) | [QueryParamsResponse](#cosmwasm.evmutil.v1beta1.QueryParamsResponse) | Params queries all parameters of the evmutil module. | GET|/kava/evmutil/v1beta1/params|
+| `Params` | [QueryParamsRequest](#cosmwasm.tokenfactory.v1beta1.QueryParamsRequest) | [QueryParamsResponse](#cosmwasm.tokenfactory.v1beta1.QueryParamsResponse) | Params defines a gRPC query method that returns the tokenfactory module's parameters. | GET|/cosmwasm/tokenfactory/v1beta1/params|
+| `DenomAuthorityMetadata` | [QueryDenomAuthorityMetadataRequest](#cosmwasm.tokenfactory.v1beta1.QueryDenomAuthorityMetadataRequest) | [QueryDenomAuthorityMetadataResponse](#cosmwasm.tokenfactory.v1beta1.QueryDenomAuthorityMetadataResponse) | DenomAuthorityMetadata defines a gRPC query method for fetching DenomAuthorityMetadata for a particular denom. | GET|/cosmwasm/tokenfactory/v1beta1/denoms/{denom}/authority_metadata|
+| `DenomsFromCreator` | [QueryDenomsFromCreatorRequest](#cosmwasm.tokenfactory.v1beta1.QueryDenomsFromCreatorRequest) | [QueryDenomsFromCreatorResponse](#cosmwasm.tokenfactory.v1beta1.QueryDenomsFromCreatorResponse) | DenomsFromCreator defines a gRPC query method for fetching all denominations created by a specific admin/creator. | GET|/cosmwasm/tokenfactory/v1beta1/denoms_from_creator/{creator}|
 
  <!-- end services -->
 
 
 
-<a name="cosmwasm/evmutil/v1beta1/tx.proto"></a>
+<a name="cosmwasm/tokenfactory/v1beta1/tx.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## cosmwasm/evmutil/v1beta1/tx.proto
+## cosmwasm/tokenfactory/v1beta1/tx.proto
 
 
 
-<a name="cosmwasm.evmutil.v1beta1.MsgConvertCoinToERC20"></a>
+<a name="cosmwasm.tokenfactory.v1beta1.MsgBurn"></a>
 
-### MsgConvertCoinToERC20
-MsgConvertCoinToERC20 defines a conversion from sdk.Coin to Kava ERC20.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `initiator` | [string](#string) |  | Kava bech32 address initiating the conversion. |
-| `receiver` | [string](#string) |  | EVM 0x hex address that will receive the converted Kava ERC20 tokens. |
-| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | Amount is the sdk.Coin amount to convert. |
-
-
-
-
-
-
-<a name="cosmwasm.evmutil.v1beta1.MsgConvertCoinToERC20Response"></a>
-
-### MsgConvertCoinToERC20Response
-MsgConvertCoinToERC20Response defines the response value from
-Msg/ConvertCoinToERC20.
-
-
-
-
-
-
-<a name="cosmwasm.evmutil.v1beta1.MsgConvertERC20ToCoin"></a>
-
-### MsgConvertERC20ToCoin
-MsgConvertERC20ToCoin defines a conversion from Kava ERC20 to sdk.Coin.
+### MsgBurn
+MsgBurn is the sdk.Msg type for allowing an admin account to burn
+a token.  For now, we only support burning from the sender account.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `initiator` | [string](#string) |  | EVM 0x hex address initiating the conversion. |
-| `receiver` | [string](#string) |  | Kava bech32 address that will receive the converted sdk.Coin. |
-| `orai_erc20_address` | [string](#string) |  | EVM 0x hex address of the ERC20 contract. |
-| `amount` | [string](#string) |  | ERC20 token amount to convert. |
+| `sender` | [string](#string) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `burnFromAddress` | [string](#string) |  |  |
 
 
 
 
 
 
-<a name="cosmwasm.evmutil.v1beta1.MsgConvertERC20ToCoinResponse"></a>
+<a name="cosmwasm.tokenfactory.v1beta1.MsgBurnResponse"></a>
 
-### MsgConvertERC20ToCoinResponse
-MsgConvertERC20ToCoinResponse defines the response value from
-Msg/MsgConvertERC20ToCoin.
+### MsgBurnResponse
+
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgChangeAdmin"></a>
+
+### MsgChangeAdmin
+MsgChangeAdmin is the sdk.Msg type for allowing an admin account to reassign
+adminship of a denom to a new account
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `sender` | [string](#string) |  |  |
+| `denom` | [string](#string) |  |  |
+| `new_admin` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgChangeAdminResponse"></a>
+
+### MsgChangeAdminResponse
+MsgChangeAdminResponse defines the response structure for an executed
+MsgChangeAdmin message.
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgCreateDenom"></a>
+
+### MsgCreateDenom
+MsgCreateDenom defines the message structure for the CreateDenom gRPC service
+method. It allows an account to create a new denom. It requires a sender
+address and a sub denomination. The (sender_address, sub_denomination) tuple
+must be unique and cannot be re-used.
+
+The resulting denom created is defined as
+<factory/{creatorAddress}/{subdenom}>. The resulting denom's admin is
+originally set to be the creator, but this can be changed later. The token
+denom does not indicate the current admin.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `sender` | [string](#string) |  |  |
+| `subdenom` | [string](#string) |  | subdenom can be up to 44 "alphanumeric" characters long. |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgCreateDenomResponse"></a>
+
+### MsgCreateDenomResponse
+MsgCreateDenomResponse is the return value of MsgCreateDenom
+It returns the full string of the newly created denom
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `new_token_denom` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgForceTransfer"></a>
+
+### MsgForceTransfer
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `sender` | [string](#string) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `transferFromAddress` | [string](#string) |  |  |
+| `transferToAddress` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgForceTransferResponse"></a>
+
+### MsgForceTransferResponse
+
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgMint"></a>
+
+### MsgMint
+MsgMint is the sdk.Msg type for allowing an admin account to mint
+more of a token.  For now, we only support minting to the sender account
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `sender` | [string](#string) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `mintToAddress` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgMintResponse"></a>
+
+### MsgMintResponse
+
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgSetDenomMetadata"></a>
+
+### MsgSetDenomMetadata
+MsgSetDenomMetadata is the sdk.Msg type for allowing an admin account to set
+the denom's bank metadata
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `sender` | [string](#string) |  |  |
+| `metadata` | [cosmos.bank.v1beta1.Metadata](#cosmos.bank.v1beta1.Metadata) |  |  |
+
+
+
+
+
+
+<a name="cosmwasm.tokenfactory.v1beta1.MsgSetDenomMetadataResponse"></a>
+
+### MsgSetDenomMetadataResponse
+MsgSetDenomMetadataResponse defines the response structure for an executed
+MsgSetDenomMetadata message.
 
 
 
@@ -249,15 +470,19 @@ Msg/MsgConvertERC20ToCoin.
  <!-- end HasExtensions -->
 
 
-<a name="cosmwasm.evmutil.v1beta1.Msg"></a>
+<a name="cosmwasm.tokenfactory.v1beta1.Msg"></a>
 
 ### Msg
-Msg defines the evmutil Msg service.
+Msg defines the tokefactory module's gRPC message service.
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `ConvertCoinToERC20` | [MsgConvertCoinToERC20](#cosmwasm.evmutil.v1beta1.MsgConvertCoinToERC20) | [MsgConvertCoinToERC20Response](#cosmwasm.evmutil.v1beta1.MsgConvertCoinToERC20Response) | ConvertCoinToERC20 defines a method for converting sdk.Coin to Kava ERC20. | |
-| `ConvertERC20ToCoin` | [MsgConvertERC20ToCoin](#cosmwasm.evmutil.v1beta1.MsgConvertERC20ToCoin) | [MsgConvertERC20ToCoinResponse](#cosmwasm.evmutil.v1beta1.MsgConvertERC20ToCoinResponse) | ConvertERC20ToCoin defines a method for converting Kava ERC20 to sdk.Coin. | |
+| `CreateDenom` | [MsgCreateDenom](#cosmwasm.tokenfactory.v1beta1.MsgCreateDenom) | [MsgCreateDenomResponse](#cosmwasm.tokenfactory.v1beta1.MsgCreateDenomResponse) |  | |
+| `Mint` | [MsgMint](#cosmwasm.tokenfactory.v1beta1.MsgMint) | [MsgMintResponse](#cosmwasm.tokenfactory.v1beta1.MsgMintResponse) |  | |
+| `Burn` | [MsgBurn](#cosmwasm.tokenfactory.v1beta1.MsgBurn) | [MsgBurnResponse](#cosmwasm.tokenfactory.v1beta1.MsgBurnResponse) |  | |
+| `ChangeAdmin` | [MsgChangeAdmin](#cosmwasm.tokenfactory.v1beta1.MsgChangeAdmin) | [MsgChangeAdminResponse](#cosmwasm.tokenfactory.v1beta1.MsgChangeAdminResponse) |  | |
+| `SetDenomMetadata` | [MsgSetDenomMetadata](#cosmwasm.tokenfactory.v1beta1.MsgSetDenomMetadata) | [MsgSetDenomMetadataResponse](#cosmwasm.tokenfactory.v1beta1.MsgSetDenomMetadataResponse) |  | |
+| `ForceTransfer` | [MsgForceTransfer](#cosmwasm.tokenfactory.v1beta1.MsgForceTransfer) | [MsgForceTransferResponse](#cosmwasm.tokenfactory.v1beta1.MsgForceTransferResponse) |  | |
 
  <!-- end services -->
 

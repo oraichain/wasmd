@@ -13,6 +13,7 @@ import (
 	erc20types "github.com/evmos/ethermint/x/erc20/types"
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
+	"github.com/cosmos/cosmos-sdk/x/group"
 )
 
 // UpgradeName defines the on-chain upgrade name
@@ -27,6 +28,7 @@ var Upgrade = upgrades.Upgrade{
 			consensustypes.StoreKey,
 			crisistypes.StoreKey,
 			erc20types.StoreKey,
+			group.StoreKey,
 		},
 		Deleted: []string{"utilevm", "evmutil", "intertx"},
 	},
