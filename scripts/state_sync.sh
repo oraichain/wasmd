@@ -41,9 +41,9 @@ STATESYNC_APP_TOML=.oraid/state_sync/config/app.toml
 
 # state_sync
 sed -i -E 's|tcp://0.0.0.0:1317|tcp://0.0.0.0:1350|g' $STATESYNC_APP_TOML
-sed -i -E 's|0.0.0.0:8545|0.0.0.0:5545|g' $STATESYNC_APP_TOML
-sed -i -E 's|0.0.0.0:8546|0.0.0.0:5546|g' $STATESYNC_APP_TOML
-sed -i -E 's|0.0.0.0:9090|0.0.0.0:9080|g' $STATESYNC_APP_TOML
+sed -i -E 's|127.0.0.1:8545|0.0.0.0:5545|g' $STATESYNC_APP_TOML
+sed -i -E 's|127.0.0.1:8546|0.0.0.0:5546|g' $STATESYNC_APP_TOML
+sed -i -E 's|localhost:9090|localhost:9080|g' $STATESYNC_APP_TOML
 sed -i -E 's|0.0.0.0:9091|0.0.0.0:9081|g' $STATESYNC_APP_TOML
 
 # change config.toml values
