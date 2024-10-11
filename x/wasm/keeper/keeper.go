@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	wasmvm "github.com/CosmWasm/wasmvm"
@@ -187,6 +188,14 @@ func (k Keeper) storeCodeInfo(ctx sdk.Context, codeID uint64, codeInfo types.Cod
 }
 
 func (k Keeper) importCode(ctx sdk.Context, codeID uint64, codeInfo types.CodeInfo, wasmCode []byte) error {
+	err := k.compileWasmCode(codeInfo, wasmCode)
+	if err != nil {
+		return err
+	}
+	return k.storeWasmCode(ctx, codeID, &codeInfo)
+}
+
+func (k Keeper) compileWasmCode(codeInfo types.CodeInfo, wasmCode []byte) error {
 	if ioutils.IsGzip(wasmCode) {
 		var err error
 		wasmCode, err = ioutils.Uncompress(wasmCode, uint64(types.MaxWasmSize))
@@ -202,13 +211,17 @@ func (k Keeper) importCode(ctx sdk.Context, codeID uint64, codeInfo types.CodeIn
 		return sdkerrors.Wrap(types.ErrInvalid, "code hashes not same")
 	}
 
+	return nil
+}
+
+func (k Keeper) storeWasmCode(ctx sdk.Context, codeID uint64, codeInfo *types.CodeInfo) error {
 	store := ctx.KVStore(k.storeKey)
 	key := types.GetCodeKey(codeID)
 	if store.Has(key) {
 		return sdkerrors.Wrapf(types.ErrDuplicate, "duplicate code: %d", codeID)
 	}
 	// 0x01 | codeID (uint64) -> ContractInfo
-	store.Set(key, k.cdc.MustMarshal(&codeInfo))
+	store.Set(key, k.cdc.MustMarshal(codeInfo))
 	return nil
 }
 
@@ -787,10 +800,10 @@ func (k Keeper) IterateContractState(ctx sdk.Context, contractAddress sdk.AccAdd
 	}
 }
 
-func (k Keeper) importContractState(ctx sdk.Context, contractAddress sdk.AccAddress, models []types.Model) error {
+func (k Keeper) importContractState(ctx sdk.Context, contractAddress sdk.AccAddress, models *[]types.Model) error {
 	prefixStoreKey := types.GetContractStorePrefix(contractAddress)
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), prefixStoreKey)
-	for _, model := range models {
+	for _, model := range *models {
 		if model.Value == nil {
 			model.Value = []byte{}
 		}
@@ -798,6 +811,24 @@ func (k Keeper) importContractState(ctx sdk.Context, contractAddress sdk.AccAddr
 			return sdkerrors.Wrapf(types.ErrDuplicate, "duplicate key: %x", model.Key)
 		}
 		prefixStore.Set(model.Key, model.Value)
+	}
+	return nil
+}
+
+func (k Keeper) importContractStateWithMutex(ctx sdk.Context, contractAddress sdk.AccAddress, models *[]types.Model, storeMutex *sync.Mutex) error {
+	prefixStoreKey := types.GetContractStorePrefix(contractAddress)
+	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), prefixStoreKey)
+	for _, model := range *models {
+		if model.Value == nil {
+			model.Value = []byte{}
+		}
+		if prefixStore.Has(model.Key) {
+			return sdkerrors.Wrapf(types.ErrDuplicate, "duplicate key: %x", model.Key)
+		}
+		// only lock when storing model, seems like there's a data race here for some reason
+		storeMutex.Lock()
+		prefixStore.Set(model.Key, model.Value)
+		storeMutex.Unlock()
 	}
 	return nil
 }
@@ -1079,7 +1110,27 @@ func (k Keeper) importContract(ctx sdk.Context, contractAddr sdk.AccAddress, c *
 	k.storeContractInfo(ctx, contractAddr, c)
 	k.addToContractCodeSecondaryIndex(ctx, contractAddr, entries[len(entries)-1])
 	k.addToContractCreatorSecondaryIndex(ctx, creatorAddress, entries[0].Updated, contractAddr)
-	return k.importContractState(ctx, contractAddr, state)
+	return k.importContractState(ctx, contractAddr, &state)
+}
+
+func (k Keeper) importContractWithoutState(ctx sdk.Context, contractAddr sdk.AccAddress, c *types.ContractInfo, entries []types.ContractCodeHistoryEntry) error {
+	if !k.containsCodeInfo(ctx, c.CodeID) {
+		return sdkerrors.Wrapf(types.ErrNotFound, "code id: %d", c.CodeID)
+	}
+	if k.HasContractInfo(ctx, contractAddr) {
+		return sdkerrors.Wrapf(types.ErrDuplicate, "contract: %s", contractAddr)
+	}
+
+	creatorAddress, err := sdk.AccAddressFromBech32(c.Creator)
+	if err != nil {
+		return err
+	}
+
+	k.appendToContractHistory(ctx, contractAddr, entries...)
+	k.storeContractInfo(ctx, contractAddr, c)
+	k.addToContractCodeSecondaryIndex(ctx, contractAddr, entries[len(entries)-1])
+	k.addToContractCreatorSecondaryIndex(ctx, creatorAddress, entries[0].Updated, contractAddr)
+	return nil
 }
 
 func (k Keeper) newQueryHandler(ctx sdk.Context, contractAddress sdk.AccAddress) QueryHandler {

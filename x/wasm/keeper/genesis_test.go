@@ -79,7 +79,7 @@ func TestGenesisExportImport(t *testing.T) {
 		contractAddr := wasmKeeper.ClassicAddressGenerator()(srcCtx, codeID, nil)
 		wasmKeeper.storeContractInfo(srcCtx, contractAddr, &contract)
 		wasmKeeper.appendToContractHistory(srcCtx, contractAddr, history...)
-		wasmKeeper.importContractState(srcCtx, contractAddr, stateModels)
+		wasmKeeper.importContractState(srcCtx, contractAddr, &stateModels)
 	}
 	var wasmParams types.Params
 	f.NilChance(0).Fuzz(&wasmParams)
@@ -117,7 +117,7 @@ func TestGenesisExportImport(t *testing.T) {
 	var importState wasmTypes.GenesisState
 	err = dstKeeper.cdc.UnmarshalJSON(exportedGenesis, &importState)
 	require.NoError(t, err)
-	InitGenesis(dstCtx, dstKeeper, importState)
+	InitGenesis(dstCtx, dstKeeper, &importState)
 
 	// compare whole DB
 	for j := range srcStoreKeys {
@@ -457,7 +457,7 @@ func TestGenesisInit(t *testing.T) {
 			keeper, ctx, _ := setupKeeper(t)
 
 			require.NoError(t, types.ValidateGenesis(spec.src))
-			_, gotErr := InitGenesis(ctx, keeper, spec.src)
+			_, gotErr := InitGenesis(ctx, keeper, &spec.src)
 			if !spec.expSuccess {
 				require.Error(t, gotErr)
 				return
@@ -551,7 +551,7 @@ func TestImportContractWithCodeHistoryPreserved(t *testing.T) {
 	ctx = ctx.WithBlockHeight(0).WithGasMeter(sdk.NewInfiniteGasMeter())
 
 	// when
-	_, err = InitGenesis(ctx, keeper, importState)
+	_, err = InitGenesis(ctx, keeper, &importState)
 	require.NoError(t, err)
 
 	// verify wasm code

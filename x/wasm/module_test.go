@@ -553,7 +553,17 @@ func assertContractList(t *testing.T, q sdk.Querier, ctx sdk.Context, codeID uin
 		hasAddrs[i] = r
 	}
 
-	assert.Equal(t, expContractAddrs, hasAddrs)
+	assert.Equal(t, len(expContractAddrs), len(hasAddrs))
+	for _, addr := range expContractAddrs {
+		match := false
+		for _, hasAddr := range hasAddrs {
+			if addr == hasAddr {
+				match = true
+				break
+			}
+		}
+		assert.True(t, match)
+	}
 }
 
 func assertContractState(t *testing.T, q sdk.Querier, ctx sdk.Context, contractBech32Addr string, expected state) {

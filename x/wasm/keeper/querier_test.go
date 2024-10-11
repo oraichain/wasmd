@@ -36,7 +36,7 @@ func TestQueryAllContractState(t *testing.T) {
 		{Key: []byte{0x0, 0x1}, Value: []byte(`{"count":8}`)},
 		{Key: []byte("foo"), Value: []byte(`"bar"`)},
 	}
-	require.NoError(t, keeper.importContractState(ctx, contractAddr, contractModel))
+	require.NoError(t, keeper.importContractState(ctx, contractAddr, &contractModel))
 
 	q := Querier(keeper)
 	specs := map[string]struct {
@@ -211,7 +211,7 @@ func TestQueryRawContractState(t *testing.T) {
 		{Key: []byte("foo"), Value: []byte(`"bar"`)},
 		{Key: []byte{0x0, 0x1}, Value: []byte(`{"count":8}`)},
 	}
-	require.NoError(t, keeper.importContractState(ctx, exampleContract.Contract, contractModel))
+	require.NoError(t, keeper.importContractState(ctx, exampleContract.Contract, &contractModel))
 
 	q := Querier(keeper)
 	specs := map[string]struct {
