@@ -88,7 +88,6 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgSetGaslessContracts{},
 	)
 	registry.RegisterInterface("cosmwasm.wasm.v1.ContractInfoExtension", (*ContractInfoExtension)(nil))
-	registry.RegisterInterface("cosmwasm.wasm.v1beta1.UpdateAdminProposal", (*UpdateAdminProposal)(nil))
 
 	registry.RegisterInterface("cosmwasm.wasm.v1.ContractAuthzFilterX", (*ContractAuthzFilterX)(nil))
 	registry.RegisterImplementations(
