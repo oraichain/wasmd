@@ -8,6 +8,7 @@ import (
 
 	cmtbfttypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -20,11 +21,14 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	v6 "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/migrations/v6"
 	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
@@ -87,6 +91,21 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 					if err != nil {
 						return nil, err
 					}
+
+					sdkCtx := sdk.UnwrapSDKContext(ctx)
+					// ibc v6
+					// NOTE: The moduleName arg of v6.CreateUpgradeHandler refers to the auth module ScopedKeeper name to which the channel capability should be migrated from.
+					// This should be the same string value provided upon instantiation of the ScopedKeeper with app.CapabilityKeeper.ScopeToModule()
+					const moduleName = icacontrollertypes.SubModuleName
+					if err := v6.MigrateICS27ChannelCapability(sdkCtx, keepers.Codec, keepers.GetStoreKey(capabilitytypes.ModuleName),
+						keepers.CapabilityKeeper, moduleName); err != nil {
+						return nil, err
+					}
+					// ibc v7
+					if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, keepers.Codec, keepers.IBCKeeper.ClientKeeper); err != nil {
+						return nil, err
+					}
+
 					return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 				},
 			)
