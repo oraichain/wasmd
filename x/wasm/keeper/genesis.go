@@ -160,6 +160,8 @@ func InitGenesis(ctx sdk.Context, keeper *Keeper, data *types.GenesisState) ([]a
 		}
 	}
 	ctx.Logger().Debug("After store wasm code")
+	// allow GC to do its job cleaning Codes if possible
+	data.Codes = nil
 
 	maxContractID := len(data.Contracts)
 
