@@ -395,7 +395,7 @@ func NewWasmApp(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 	// init optimistic execution
-	baseapp.SetOptimisticExecution()(bApp)
+	// baseapp.SetOptimisticExecution()(bApp)
 
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,
