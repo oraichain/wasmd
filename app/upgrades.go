@@ -106,6 +106,17 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 						return nil, err
 					}
 
+					// update mint params
+					mintSpace, exist := app.ParamsKeeper.GetSubspace(minttypes.ModuleName)
+					if !exist {
+						panic("must have subspace")
+					}
+
+					var mintParams minttypes.Params
+					mintSpace.GetParamSet(sdkCtx, &mintParams)
+					mintParams.InflationMin = mintParams.InflationMax
+					mintSpace.SetParamSet(sdkCtx, &mintParams)
+
 					return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 				},
 			)
