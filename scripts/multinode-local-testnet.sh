@@ -54,6 +54,7 @@ update_genesis '.app_state["gov"]["params"]["expedited_min_deposit"][0]["denom"]
 update_genesis '.app_state["gov"]["params"]["voting_period"]="6s"'
 # update mint genesis
 update_genesis '.app_state["mint"]["params"]["mint_denom"]="orai"'
+update_genesis '.initial_height="1"'
 # port key (validator1 uses default ports)
 # validator1 1317, 9090, 9091, 26658, 26657, 26656, 6060
 # validator2 1316, 9088, 9089, 26655, 26654, 26653, 6061
@@ -146,8 +147,8 @@ cp $VALIDATOR1_HOME/config/genesis.json $VALIDATOR2_HOME/config/genesis.json
 cp $VALIDATOR1_HOME/config/genesis.json $VALIDATOR3_HOME/config/genesis.json
 
 # copy tendermint node id of validator1 to persistent peers of validator2-3
-sed -i -E "s|persistent_peers = \"\"|persistent_peers = \"$(oraid comet show-node-id --home $VALIDATOR1_HOME)@localhost:26656\"|g" $VALIDATOR2_CONFIG
-sed -i -E "s|persistent_peers = \"\"|persistent_peers = \"$(oraid comet show-node-id --home $VALIDATOR1_HOME)@localhost:26656\"|g" $VALIDATOR3_CONFIG
+sed -i -E "s|persistent_peers = \"\"|persistent_peers = \"$(oraid tendermint show-node-id --home $VALIDATOR1_HOME)@localhost:26656\"|g" $VALIDATOR2_CONFIG
+sed -i -E "s|persistent_peers = \"\"|persistent_peers = \"$(oraid tendermint show-node-id --home $VALIDATOR1_HOME)@localhost:26656\"|g" $VALIDATOR3_CONFIG
 
 # start all three validators
 screen -S validator1 -d -m oraid start --home $VALIDATOR1_HOME
@@ -182,8 +183,8 @@ update_validator () {
     cat $validator_info_temp_path | jq "$1" > $PWD/scripts/json/temp_validator.json && mv $PWD/scripts/json/temp_validator.json $validator_info_temp_path
 }
 
-VALIDATOR2_PUBKEY=$(oraid comet show-validator --home $VALIDATOR2_HOME | jq -r '.key')
-VALIDATOR3_PUBKEY=$(oraid comet show-validator --home $VALIDATOR3_HOME | jq -r '.key')
+VALIDATOR2_PUBKEY=$(oraid tendermint show-validator --home $VALIDATOR2_HOME | jq -r '.key')
+VALIDATOR3_PUBKEY=$(oraid tendermint show-validator --home $VALIDATOR3_HOME | jq -r '.key')
 
 # create second validator
 update_validator ".pubkey[\"key\"]=\"$VALIDATOR2_PUBKEY\""

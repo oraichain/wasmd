@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -63,12 +64,12 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 	app.GetStoreKeys()
 	// register all upgrade handlers
 	for _, upgrade := range Upgrades {
-		// special case, we need to resolve this issue: https://github.com/cosmos/cosmos-sdk/issues/20160
 		if upgrade.UpgradeName == v050.Upgrade.UpgradeName {
 			app.UpgradeKeeper.SetUpgradeHandler(
 				upgrade.UpgradeName,
 				func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 
+					// special case, we need to resolve this issue: https://github.com/cosmos/cosmos-sdk/issues/20160
 					defaultConsensusParams := cmtbfttypes.DefaultConsensusParams()
 					cp := cmtproto.ConsensusParams{
 						Block: &cmtproto.BlockParams{
@@ -87,6 +88,15 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 						Version: defaultConsensusParams.ToProto().Version, // Version is stored in x/upgrade
 					}
 					err := app.ConsensusParamsKeeper.ParamsStore.Set(ctx, cp)
+					if err != nil {
+						return nil, err
+					}
+
+					// actually update consensus param keeper store
+					Authority := authtypes.NewModuleAddress(govtypes.ModuleName)
+					AuthorityAddr := Authority.String()
+					updateConsensusParamStore := consensustypes.MsgUpdateParams{Authority: AuthorityAddr, Block: cp.Block, Evidence: cp.Evidence, Validator: cp.Validator, Abci: cp.Abci}
+					_, err = app.ConsensusParamsKeeper.UpdateParams(ctx, &updateConsensusParamStore)
 					if err != nil {
 						return nil, err
 					}
@@ -111,7 +121,7 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 					// upgrade mint module params
 					mintSpace, exist := app.ParamsKeeper.GetSubspace(minttypes.ModuleName)
 					if !exist {
-						panic("must have subspace")
+						panic("mint module must have subspace")
 					}
 
 					var mintParams minttypes.Params
