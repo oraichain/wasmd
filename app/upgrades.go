@@ -21,14 +21,13 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	v6 "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/migrations/v6"
 	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
+	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
@@ -93,20 +92,23 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 					}
 
 					sdkCtx := sdk.UnwrapSDKContext(ctx)
-					// ibc v6
-					// NOTE: The moduleName arg of v6.CreateUpgradeHandler refers to the auth module ScopedKeeper name to which the channel capability should be migrated from.
-					// This should be the same string value provided upon instantiation of the ScopedKeeper with app.CapabilityKeeper.ScopeToModule()
-					const moduleName = icacontrollertypes.SubModuleName
-					if err := v6.MigrateICS27ChannelCapability(sdkCtx, keepers.Codec, keepers.GetStoreKey(capabilitytypes.ModuleName),
-						keepers.CapabilityKeeper, moduleName); err != nil {
-						return nil, err
-					}
-					// ibc v7
-					if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, keepers.Codec, keepers.IBCKeeper.ClientKeeper); err != nil {
-						return nil, err
+
+					// upgrade ica capability
+					chanels := app.IBCKeeper.ChannelKeeper.GetAllChannelsWithPortPrefix(sdkCtx, icatypes.ControllerPortPrefix)
+					for _, ch := range chanels {
+						name := host.ChannelCapabilityPath(ch.PortId, ch.ChannelId)
+						_, found := app.ScopedICAControllerKeeper.GetCapability(sdkCtx, name)
+
+						// if not found then try to add capability for chanel
+						if !found {
+							_, err := app.ScopedICAControllerKeeper.NewCapability(sdkCtx, name)
+							if err != nil {
+								panic(err)
+							}
+						}
 					}
 
-					// update mint params
+					// upgrade mint module params
 					mintSpace, exist := app.ParamsKeeper.GetSubspace(minttypes.ModuleName)
 					if !exist {
 						panic("must have subspace")
