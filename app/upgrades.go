@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -94,30 +95,16 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 					sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 					// upgrade ica capability
-					chanels := app.IBCKeeper.ChannelKeeper.GetAllChannelsWithPortPrefix(sdkCtx, icatypes.ControllerPortPrefix)
-					for _, ch := range chanels {
-						name := host.ChannelCapabilityPath(ch.PortId, ch.ChannelId)
-						_, found := app.ScopedICAControllerKeeper.GetCapability(sdkCtx, name)
-
-						// if not found then try to add capability for chanel
-						if !found {
-							_, err := app.ScopedICAControllerKeeper.NewCapability(sdkCtx, name)
-							if err != nil {
-								panic(err)
-							}
-						}
+					err = app.upgradeIcaController(sdkCtx)
+					if err != nil {
+						panic(err)
 					}
 
 					// upgrade mint module params
-					mintSpace, exist := app.ParamsKeeper.GetSubspace(minttypes.ModuleName)
-					if !exist {
-						panic("must have subspace")
+					err = app.upgradeMintParams(sdkCtx)
+					if err != nil {
+						panic(err)
 					}
-
-					var mintParams minttypes.Params
-					mintSpace.GetParamSet(sdkCtx, &mintParams)
-					mintParams.InflationMin = mintParams.InflationMax
-					mintSpace.SetParamSet(sdkCtx, &mintParams)
 
 					return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 				},
@@ -151,6 +138,40 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 			break
 		}
 	}
+}
+
+func (app *WasmApp) upgradeIcaController(ctx sdk.Context) error {
+	chanels := app.IBCKeeper.ChannelKeeper.GetAllChannelsWithPortPrefix(ctx, icatypes.ControllerPortPrefix)
+	for _, ch := range chanels {
+		name := host.ChannelCapabilityPath(ch.PortId, ch.ChannelId)
+		_, found := app.ScopedICAControllerKeeper.GetCapability(ctx, name)
+
+		// if not found then try to add capability for chanel
+		if !found {
+			_, err := app.ScopedICAControllerKeeper.NewCapability(ctx, name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (app *WasmApp) upgradeMintParams(ctx sdk.Context) error {
+	mintSpace, exist := app.ParamsKeeper.GetSubspace(minttypes.ModuleName)
+	if !exist {
+		return errors.New("mint space must existed")
+	}
+
+	var mintParams minttypes.Params
+	mintSpace.GetParamSet(ctx, &mintParams)
+	if mintParams.InflationMin.GT(mintParams.InflationMax) {
+		mintParams.InflationMin = mintParams.InflationMax
+		mintSpace.SetParamSet(ctx, &mintParams)
+	}
+
+	return nil
 }
 
 func setupLegacyKeyTables(k *paramskeeper.Keeper) {
