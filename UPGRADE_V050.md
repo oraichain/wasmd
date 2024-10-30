@@ -5,7 +5,7 @@ During the upgrade of our mainnet from `v0.42.4` to `v0.50.0`, we transitioned o
 
 ## Why we change our mainnet repository to wasmd
 When upgrading our chain, we identified several advantages in transitioning to the wasmd codebase:
-- Reduced Maintenance Burden: As our mainnet doesn’t rely on unique modules, switching to the `wasmd` repo allows us to avoid developing and maintaining a separate repository, saving resources and reducing code management.
+- Reduced Maintenance Burden: As our mainnet doesn’t implement any custom modules directly, switching to the `wasmd` repo allows us to avoid developing and maintaining a separate repository, saving resources and reducing code management.
 - Simplified Synchronization with Cosmos SDK Updates: The `wasmd` repo is actively maintained by the community, allowing easy synchronization with the latest Cosmos SDK updates, saving time and effort.
 - Upstream Logic Improvements: `wasmd` offers continuous logic optimizations and fixes from upstream, so our team only needs to focus on syncing updates without handling independent code adjustments.
 
@@ -17,6 +17,7 @@ To build the binary for `Oraichain v0.50.0`, follow these steps. Only proceed af
 git clone https://github.com/oraichain/wasmd
 cd wasmd
 git checkout v0.50.0
+# NOTE: you may need to upgrade your Golang version to 1.22.6+ with GOTOOLCHAIN to build the binary
 make build
 ```
 - Verify the new binary version:

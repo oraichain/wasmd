@@ -389,13 +389,14 @@ func NewWasmApp(
 	// }
 	// baseAppOptions = append(baseAppOptions, voteExtOp)
 
+	// init optimistic execution
+	// uncomment the below line to enable optimistic execution
+	// baseAppOptions = append(baseAppOptions, baseapp.SetOptimisticExecution())
 	bApp := baseapp.NewBaseApp(appName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
-	// init optimistic execution
-	// baseapp.SetOptimisticExecution()(bApp)
 
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,

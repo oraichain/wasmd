@@ -27,8 +27,6 @@ This repository contains the source code & how to build the Oraichain mainnet, a
 
     - Make
 
-    - Wasmvm library: https://github.com/CosmWasm/wasmvm/releases/download/v2.1.3/libwasmvm_muslc.a (you can download it and put in /lib/libwasmvm_muslc.a). The file is used by CosmWasm when building the binary
-
 ### Hardware requirements
 
 [Please visit the official hardware requirement for Oraichain mainnet here](https://docs.orai.io/developers/networks/mainnet#node-hardwarde-specification)
@@ -42,16 +40,6 @@ This repository contains the source code & how to build the Oraichain mainnet, a
 * **Install make**
 
 Normally, for Linux-based machines, you already have Make installed by default.
-
-* **Install libwasmvm**
-
-the wasmd module of CosmWasm uses a wasm vm library, which should be included when building the chain binary. Hence, we need to download and place it in a specific location.
-
-For Linux based machines, please run the following command:
-
-```bash
-sudo wget https://github.com/CosmWasm/wasmvm/releases/download/v2.1.3/libwasmvm_muslc.a -O /lib/libwasmvm_muslc.a
-```
 
 * **Build the binary**
 
