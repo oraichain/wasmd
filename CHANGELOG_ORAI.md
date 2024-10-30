@@ -6,18 +6,18 @@
   performance; ABCI Optimistic Execution reducing block time,
   custom mempools allowing private transactions, front-running,...
   ([\#19](https://github.com/oraichain/wasmd/issues/19))
+- IAVL 1.0 enhances performance
+  ([\#19](https://github.com/oraichain/wasmd/issues/19))
 - Upgrade Oraichain mainnet to Cosmos SDK 0.50.10 with module
   enhancements like gov module emergency proposals; advanced IBC features
-  ([\#19](https://github.com/oraichain/wasmd/issues/19))
-- IAVL 1.0 enhances performance
   ([\#19](https://github.com/oraichain/wasmd/issues/19))
 
 ### BUG FIXES
 
-- Support reading old cosmwasm proposals by adding backward compatible logic
-  ([\#16](https://github.com/oraichain/wasmd/issues/16))
 - Decrease inflation max to be equal to min when upgrading
   ([\#17](https://github.com/oraichain/wasmd/issues/17))
+- Support reading old cosmwasm proposals by adding backward compatible logic
+  ([\#16](https://github.com/oraichain/wasmd/issues/16))
 
 ### IMPROVEMENTS
 

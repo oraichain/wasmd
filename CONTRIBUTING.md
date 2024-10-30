@@ -108,3 +108,7 @@ Ensure that you base and target your PR on the `main` branch.
 All feature additions and all bug fixes must be targeted against `main`. Exception is for bug fixes which are only related to a released version. In that case, the related bug fix PRs must target against the release branch.
 
 If needed, we backport a commit from `main` to a release branch (excluding consensus breaking feature, API breaking and similar).
+
+### Changelog
+
+Please use [unclog](https://github.com/informalsystems/unclog) to help generate changelogs. Please follow the open-source standard for changelogs
