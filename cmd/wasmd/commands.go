@@ -117,7 +117,6 @@ func initRootCmd(
 		snapshot.Cmd(newApp),
 	)
 
-	ethermintserver.AddCommands(rootCmd, app.DefaultNodeHome, newApp, appExport, addModuleInitFlags)
 	wasmcli.ExtendUnsafeResetAllCmd(rootCmd)
 
 	// ethermintserver adds additional flags to start the JSON-RPC server for evm support
