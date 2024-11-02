@@ -268,9 +268,9 @@ replace (
 	github.com/CosmosContracts/juno/v18/x/globalfee => github.com/oraichain/juno/x/globalfee v0.0.0-20240925043856-fe3d1d8b9ad3
 
 	// indexer and timestamp added
-	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241016192914-5c0462aa0de4
+	github.com/cometbft/cometbft => ../cometbft
 	// go list -m -json github.com/oraichain/cosmos-sdk@cae2f186c240bed6f0244eab0fae42b3cb6f504f | jq '.|"\(.Path) \(.Version)"' -r
-	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241009233931-82ce436cb389
+	github.com/cosmos/cosmos-sdk => ../cosmos-sdk
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/13134

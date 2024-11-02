@@ -48,3 +48,5 @@ dependency-graph.png
 *.synctex.gz
 
 .oraid
+
+streaming/streaming
