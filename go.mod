@@ -66,6 +66,12 @@ require (
 )
 
 require (
+	github.com/hashicorp/go-hclog v1.5.0
+	github.com/hashicorp/go-plugin v1.6.0
+	github.com/lib/pq v1.10.9
+)
+
+require (
 	cloud.google.com/go v0.112.1 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
@@ -151,10 +157,8 @@ require (
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-getter v1.7.5 // indirect
-	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-metrics v0.5.3 // indirect
-	github.com/hashicorp/go-plugin v1.6.0 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
@@ -177,7 +181,6 @@ require (
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/lib/pq v1.10.9 // indirect
 	github.com/linxGnu/grocksdb v1.8.14 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect
@@ -268,9 +271,9 @@ replace (
 	github.com/CosmosContracts/juno/v18/x/globalfee => github.com/oraichain/juno/x/globalfee v0.0.0-20240925043856-fe3d1d8b9ad3
 
 	// indexer and timestamp added
-	github.com/cometbft/cometbft => ../cometbft
+	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241101014628-5fe58e5c48de
 	// go list -m -json github.com/oraichain/cosmos-sdk@cae2f186c240bed6f0244eab0fae42b3cb6f504f | jq '.|"\(.Path) \(.Version)"' -r
-	github.com/cosmos/cosmos-sdk => ../cosmos-sdk
+	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241009233931-82ce436cb389
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/13134
