@@ -5,8 +5,9 @@ import (
 
 	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/indexer/sinkreader"
-	"github.com/CosmWasm/wasmd/streaming/emitter"
+	"github.com/CosmWasm/wasmd/indexer/x/wasm"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/hashicorp/go-plugin"
 
 	streamingabci "cosmossdk.io/store/streaming/abci"
@@ -21,16 +22,16 @@ import (
 // ModsStreamingPlugin is the implementation of the ABCIListener interface
 // For Go plugins this is all that is required to process data sent over gRPC.
 type ModsStreamingPlugin struct {
-	es           *indexer.CustomEventSink
-	reader       sinkreader.EventSinkReader
-	eventEmitter emitter.StreamingEventEmitter
+	indexerManager *indexer.IndexerManager
+	es             *psql.EventSink
+	reader         sinkreader.EventSinkReader
 }
 
 func (p *ModsStreamingPlugin) initStreamIndexerConn() {
 	// init psql conn for indexing complex ops if is nil
 	if p.es == nil {
 		psqlConn, chainID := p.reader.ReadEventSinkInfo()
-		es, err := indexer.IndexerFromConfig(psqlConn, chainID)
+		es, err := psql.NewEventSink(psqlConn, chainID)
 		if err != nil {
 			panic(err)
 		}
@@ -38,13 +39,26 @@ func (p *ModsStreamingPlugin) initStreamIndexerConn() {
 	}
 }
 
+func (p *ModsStreamingPlugin) initIndexerManager() {
+	if p.indexerManager == nil {
+		p.indexerManager = indexer.NewIndexerManager(wasm.NewWasmEventSinkIndexer(p.es))
+	}
+}
+
 func (a *ModsStreamingPlugin) ListenFinalizeBlock(ctx context.Context, req abci.RequestFinalizeBlock, res abci.ResponseFinalizeBlock) error {
 	a.initStreamIndexerConn()
-	err := a.es.InsertModuleEvents(req, res)
-	if err != nil {
-		return err
+	a.initIndexerManager()
+	for _, indexer := range a.indexerManager.Modules {
+		err := indexer.InsertModuleEvents(&req, &res)
+		if err != nil {
+			return err
+		}
+		err = indexer.EmitModuleEvents(&req, &res)
+		if err != nil {
+			return err
+		}
 	}
-	return a.eventEmitter.EmitModuleEvents(req, res)
+	return nil
 }
 
 func (a *ModsStreamingPlugin) ListenCommit(ctx context.Context, res abci.ResponseCommit, changeSet []*store.StoreKVPair) error {
@@ -57,7 +71,7 @@ func main() {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: streamingabci.Handshake,
 		Plugins: map[string]plugin.Plugin{
-			"abci": &streamingabci.ListenerGRPCPlugin{Impl: &ModsStreamingPlugin{reader: sinkreader.NewEventSinkReader(), eventEmitter: emitter.NewEventEmitter()}},
+			"abci": &streamingabci.ListenerGRPCPlugin{Impl: &ModsStreamingPlugin{reader: sinkreader.NewEventSinkReader()}},
 		},
 
 		// A non-nil value here enables gRPC serving for this streaming...

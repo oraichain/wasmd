@@ -95,11 +95,11 @@ func TestMain(m *testing.M) {
 	var db *sql.DB
 
 	if err := pool.Retry(func() error {
-		sink, err := IndexerFromConfig(conn, chainID)
+		sink, err := psql.NewEventSink(conn, chainID)
 		if err != nil {
 			return err
 		}
-		db = sink.es.DB() // set global for test use
+		db = sink.DB() // set global for test use
 		return db.Ping()
 	}); err != nil {
 		log.Fatalf("Connecting to database: %v", err)
@@ -257,6 +257,52 @@ func TestIndexing(t *testing.T) {
 
 		time.Sleep(100 * time.Millisecond)
 		require.True(t, service.IsRunning())
+	})
+
+	t.Run("IndexCosmWasmTxs", func(t *testing.T) {
+		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
+
+		txResult := txResultWithEvents([]abci.Event{
+			psql.MakeIndexedEvent("account.number", "1"),
+			psql.MakeIndexedEvent("account.owner", "Ivan"),
+			psql.MakeIndexedEvent("account.owner", "Yulieta"),
+
+			{Type: "", Attributes: []abci.EventAttribute{
+				{
+					Key:   "not_allowed",
+					Value: "Vlad",
+					Index: true,
+				},
+			}},
+		})
+		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
+
+		txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
+		require.NoError(t, err)
+		assert.Equal(t, txResult, txr)
+
+		require.NoError(t, verifyTimeStamp(psql.TableTxResults))
+		require.NoError(t, verifyTimeStamp(viewTxEvents))
+
+		verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
+			txr, err := indexer.GetTxByHash(types.Tx(txResult.Tx).Hash())
+			return txr != nil, err
+		})
+		verifyNotImplemented(t, "tx search", func() (bool, error) {
+			txr, err := indexer.SearchTxEvents(context.Background(), nil)
+			return txr != nil, err
+		})
+
+		// try to insert the duplicate tx events.
+		err = indexer.IndexTxEvents([]*abci.TxResult{txResult})
+		require.NoError(t, err)
+
+		// test loading tx events
+		height := uint64(1)
+		txEvent, err := loadTxEvents(height)
+		require.NoError(t, err)
+		txHash := fmt.Sprintf("%X", types.Tx(txResult.Tx).Hash())
+		require.Equal(t, txEvent, &indexertypes.TxEvent{Height: height, ChainId: chainID, Type: "tx", Key: "hash", Value: txHash})
 	})
 }
 
