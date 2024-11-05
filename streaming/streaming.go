@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/indexer/sinkreader"
 	"github.com/CosmWasm/wasmd/indexer/x/wasm"
@@ -13,11 +14,14 @@ import (
 	streamingabci "cosmossdk.io/store/streaming/abci"
 	store "cosmossdk.io/store/types"
 
-	// "database/sql"
-
-	// Register the Postgres database driver.
 	_ "github.com/lib/pq"
 )
+
+var encodingConfig params.EncodingConfig
+
+func init() {
+	encodingConfig = params.MakeEncodingConfig()
+}
 
 // ModsStreamingPlugin is the implementation of the ABCIListener interface
 // For Go plugins this is all that is required to process data sent over gRPC.
@@ -41,7 +45,7 @@ func (p *ModsStreamingPlugin) initStreamIndexerConn() {
 
 func (p *ModsStreamingPlugin) initIndexerManager() {
 	if p.indexerManager == nil {
-		p.indexerManager = indexer.NewIndexerManager(wasm.NewWasmEventSinkIndexer(p.es))
+		p.indexerManager = indexer.NewIndexerManager(wasm.NewWasmEventSinkIndexer(p.es, encodingConfig))
 	}
 }
 

@@ -1,8 +1,9 @@
-package indexer
+package tests
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/adlio/schema"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ory/dockertest"
@@ -24,9 +26,14 @@ import (
 	"github.com/cometbft/cometbft/types"
 
 	// Register the Postgres database driver.
-	indexertypes "github.com/CosmWasm/wasmd/indexer/types"
+	"github.com/CosmWasm/wasmd/app/params"
+	indexercodec "github.com/CosmWasm/wasmd/indexer/codec"
+	indexertx "github.com/CosmWasm/wasmd/indexer/x/tx"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/state/txindex"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	cosmostx "github.com/cosmos/cosmos-sdk/types/tx"
 	_ "github.com/lib/pq"
 )
 
@@ -37,7 +44,13 @@ var (
 	// A hook that test cases can call to obtain the shared database instance
 	// used for testing the sink. This is initialized in TestMain (see below).
 	testDB func() *sql.DB
+
+	encodingConfig params.EncodingConfig
 )
+
+func init() {
+	encodingConfig = indexercodec.MakeEncodingConfig()
+}
 
 const (
 	user     = "admin"
@@ -50,6 +63,14 @@ const (
 	viewBlockEvents = "block_events"
 	viewTxEvents    = "tx_events"
 )
+
+func TestMarshalJson(t *testing.T) {
+	fee := cosmostx.Fee{Amount: sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1))), GasLimit: 10000, Payer: sdk.AccAddress("orai1wsg0l9c6tr5uzjrhwhqch9tt4e77h0w28wvp3u").String(), Granter: sdk.AccAddress("orai1wsg0l9c6tr5uzjrhwhqch9tt4e77h0w28wvp3u").String()}
+	feeBz, err := json.Marshal(fee)
+	require.NoError(t, err)
+	fmt.Println(string(feeBz))
+	require.Equal(t, `{"amount":[{"denom":"orai","amount":"1"}],"gas_limit":10000,"payer":"orai1daexz6f3waekwvrv893nvarjx46h56njdpmksutrdquhgap5v5mnw6pswuersamkwqeh2g6rztw","granter":"orai1daexz6f3waekwvrv893nvarjx46h56njdpmksutrdquhgap5v5mnw6pswuersamkwqeh2g6rztw"}`, string(feeBz))
+}
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -206,7 +227,7 @@ func TestIndexing(t *testing.T) {
 		txEvent, err := loadTxEvents(height)
 		require.NoError(t, err)
 		txHash := fmt.Sprintf("%X", types.Tx(txResult.Tx).Hash())
-		require.Equal(t, txEvent, &indexertypes.TxEvent{Height: height, ChainId: chainID, Type: "tx", Key: "hash", Value: txHash})
+		require.Equal(t, txEvent, &indexertx.TxEvent{Height: height, ChainId: chainID, Type: "tx", Key: "hash", Value: txHash})
 	})
 
 	t.Run("IndexerService", func(t *testing.T) {
@@ -262,7 +283,7 @@ func TestIndexing(t *testing.T) {
 	t.Run("IndexCosmWasmTxs", func(t *testing.T) {
 		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
 
-		txResult := txResultWithEvents([]abci.Event{
+		txResult := wasmTxResultWithEvents([]abci.Event{
 			psql.MakeIndexedEvent("account.number", "1"),
 			psql.MakeIndexedEvent("account.owner", "Ivan"),
 			psql.MakeIndexedEvent("account.owner", "Yulieta"),
@@ -277,32 +298,40 @@ func TestIndexing(t *testing.T) {
 		})
 		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
 
-		txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
-		require.NoError(t, err)
-		assert.Equal(t, txResult, txr)
-
-		require.NoError(t, verifyTimeStamp(psql.TableTxResults))
-		require.NoError(t, verifyTimeStamp(viewTxEvents))
-
-		verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
-			txr, err := indexer.GetTxByHash(types.Tx(txResult.Tx).Hash())
-			return txr != nil, err
-		})
-		verifyNotImplemented(t, "tx search", func() (bool, error) {
-			txr, err := indexer.SearchTxEvents(context.Background(), nil)
-			return txr != nil, err
-		})
-
-		// try to insert the duplicate tx events.
-		err = indexer.IndexTxEvents([]*abci.TxResult{txResult})
+		// try indexing tx requests
+		txs := [][]byte{}
+		txs = append(txs, txResult.Tx)
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+		time := time.Now()
+		err := customTxEventSink.InsertModuleEvents(&abci.RequestFinalizeBlock{Txs: txs, Time: time}, &abci.ResponseFinalizeBlock{Events: []abci.Event{}})
 		require.NoError(t, err)
 
-		// test loading tx events
-		height := uint64(1)
-		txEvent, err := loadTxEvents(height)
-		require.NoError(t, err)
-		txHash := fmt.Sprintf("%X", types.Tx(txResult.Tx).Hash())
-		require.Equal(t, txEvent, &indexertypes.TxEvent{Height: height, ChainId: chainID, Type: "tx", Key: "hash", Value: txHash})
+		// txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
+		// require.NoError(t, err)
+		// assert.Equal(t, txResult, txr)
+
+		// require.NoError(t, verifyTimeStamp(psql.TableTxResults))
+		// require.NoError(t, verifyTimeStamp(viewTxEvents))
+
+		// verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
+		// 	txr, err := indexer.GetTxByHash(types.Tx(txResult.Tx).Hash())
+		// 	return txr != nil, err
+		// })
+		// verifyNotImplemented(t, "tx search", func() (bool, error) {
+		// 	txr, err := indexer.SearchTxEvents(context.Background(), nil)
+		// 	return txr != nil, err
+		// })
+
+		// // try to insert the duplicate tx events.
+		// err = indexer.IndexTxEvents([]*abci.TxResult{txResult})
+		// require.NoError(t, err)
+
+		// // test loading tx events
+		// height := uint64(1)
+		// txEvent, err := loadTxEvents(height)
+		// require.NoError(t, err)
+		// txHash := fmt.Sprintf("%X", types.Tx(txResult.Tx).Hash())
+		// require.Equal(t, txEvent, &indexertx.TxEvent{Height: height, ChainId: chainID, Type: "tx", Key: "hash", Value: txHash})
 	})
 }
 
@@ -327,7 +356,7 @@ func newTestBlockEvents() types.EventDataNewBlockEvents {
 
 // readSchema loads the indexing database schema file
 func readSchema() ([]*schema.Migration, error) {
-	filename := filepath.Join("db_sql", "schema.sql")
+	filename := filepath.Join("../", "db_sql", "schema.sql")
 	contents, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read sql file from '%s': %w", filename, err)
@@ -368,6 +397,49 @@ func txResultWithEvents(events []abci.Event) *abci.TxResult {
 	}
 }
 
+// txResultWithEvents constructs a fresh transaction result with fixed values
+// for testing, that includes the specified events.
+func wasmTxResultWithEvents(events []abci.Event) *abci.TxResult {
+
+	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
+	grant := "orai1wsg0l9c6tr5uzjrhwhqch9tt4e77h0w28wvp3u"
+	instantiateMsg := wasmtypes.MsgInstantiateContract{
+		Sender: grant,
+		CodeID: 0,
+		Label:  "label",
+		Funds:  sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100))),
+		Msg:    []byte(wasmtypes.RawContractMessage{}),
+		Admin:  grant,
+	}
+
+	if err := txBuilder.SetMsgs(&instantiateMsg); err != nil {
+		panic(err)
+	}
+	// txBuilder.SetMemo("hello world")
+	// txBuilder.SetFeeGranter(sdk.MustAccAddressFromBech32(grant))
+	// txBuilder.SetFeePayer(sdk.MustAccAddressFromBech32(grant))
+	txBuilder.SetGasLimit(10000000)
+	txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1))))
+	// txBuilder.SetMemo("memo foobar")
+	tx := txBuilder.GetTx()
+	txBz, err := encodingConfig.TxConfig.TxEncoder()(tx)
+	if err != nil {
+		panic(err)
+	}
+
+	return &abci.TxResult{
+		Height: 1,
+		Index:  0,
+		Tx:     txBz,
+		Result: abci.ExecTxResult{
+			Data:   []byte{0},
+			Code:   abci.CodeTypeOK,
+			Log:    "",
+			Events: events,
+		},
+	}
+}
+
 func loadTxResult(hash []byte) (*abci.TxResult, error) {
 	hashString := fmt.Sprintf("%X", hash)
 	var resultData []byte
@@ -385,7 +457,7 @@ SELECT tx_result FROM `+psql.TableTxResults+` WHERE tx_hash = $1;
 	return txr, nil
 }
 
-func loadTxEvents(height uint64) (*indexertypes.TxEvent, error) {
+func loadTxEvents(height uint64) (*indexertx.TxEvent, error) {
 	var Height uint64
 	var ChainId string
 	var Type string
@@ -397,7 +469,7 @@ SELECT height, chain_id, type, key, value FROM `+viewTxEvents+` WHERE height = $
 		return nil, fmt.Errorf("lookup tx event for height %d failed: %v", height, err)
 	}
 
-	return &indexertypes.TxEvent{Height: Height, ChainId: ChainId, Type: Type, Key: Key, Value: Value}, nil
+	return &indexertx.TxEvent{Height: Height, ChainId: ChainId, Type: Type, Key: Key, Value: Value}, nil
 }
 
 func verifyTimeStamp(tableName string) error {

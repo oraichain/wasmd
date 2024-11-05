@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -15,19 +16,20 @@ import (
 // implementation stores records in a PostgreSQL database using the schema
 // defined in state/indexer/sink/psql/schema.sql.
 type WasmEventSink struct {
-	es *psql.EventSink
+	es             *psql.EventSink
+	encodingConfig params.EncodingConfig
 }
 
 var _ indexer.ModuleEventSinkIndexer = (*WasmEventSink)(nil)
 
-func NewWasmEventSinkIndexer(es *psql.EventSink) *WasmEventSink {
-	return &WasmEventSink{es: es}
+func NewWasmEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig) *WasmEventSink {
+	return &WasmEventSink{es: es, encodingConfig: encodingConfig}
 }
 
 // FIXME: this is just testing logic for POC
 func (cs *WasmEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
 	var dest uint64
-	err := indexer.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
+	err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
 		res, err := dbtx.Query("select height from blocks limit 1")
 		if err != nil {
 			return err
