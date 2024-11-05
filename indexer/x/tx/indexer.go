@@ -10,9 +10,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	cosmostx "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/hashicorp/go-hclog"
 )
 
 // EventSink is an indexer backend providing the tx/block index services.  This
@@ -36,50 +33,15 @@ func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingCon
 func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
 	// unmarshal txs
 	for i, txBz := range req.Txs {
-		// tx proto
-		tx, err := cs.encodingConfig.TxConfig.TxDecoder()(txBz)
-		if err != nil {
-			hclog.Default().Debug("err decoder: ", err)
-			tx, err = cs.encodingConfig.TxConfig.TxJSONDecoder()(txBz)
-			if err != nil {
-				panic(err)
-			}
-		}
-		msgs := tx.GetMsgs()
-		if err != nil {
-			panic(err)
-		}
-
-		// try getting memo
-		txWithMemo := tx.(sdk.TxWithMemo)
-		memo := txWithMemo.GetMemo()
-
-		// try getting fees
-		feeTx := tx.(sdk.FeeTx)
-		granter := feeTx.FeeGranter()
-		payer := feeTx.FeePayer()
-		fees := feeTx.GetFee()
-		gas := feeTx.GetGas()
-		fee := cosmostx.Fee{Amount: fees, GasLimit: gas, Payer: sdk.AccAddress(payer).String(), Granter: sdk.AccAddress(granter).String()}
-		feeBz, err := json.Marshal(&fee)
+		cosmosTx, err := indexer.UnmarshalTxBz(cs, txBz)
 		if err != nil {
 			return err
 		}
-
-		msgsAny, err := cosmostx.SetMsgs(msgs)
+		fullMsgsBz, err := indexer.MarshalMsgsAny(cs.encodingConfig, cosmosTx.Body.Messages)
 		if err != nil {
 			return err
 		}
-		msgsBz := [][]byte{}
-		for _, msg := range msgsAny {
-			msgMarshal, err := cs.encodingConfig.Codec.Marshal(msg)
-			if err != nil {
-				return err
-			}
-			msgsBz = append(msgsBz, msgMarshal)
-		}
-
-		fullMsgsBz, err := cs.encodingConfig.Amino.Marshal(msgsBz)
+		feeBz, err := json.Marshal(&cosmosTx.AuthInfo.Fee)
 		if err != nil {
 			return err
 		}
@@ -110,7 +72,7 @@ INSERT INTO `+TableTxRequests+` (block_id, index, created_at, tx_hash, messages,
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT DO NOTHING
 RETURNING rowid;
-`, blockID, i, req.Time, txHash, fullMsgsBz, string(feeBz), memo)
+`, blockID, i, req.Time, txHash, fullMsgsBz, string(feeBz), cosmosTx.Body.Memo)
 			if err == sql.ErrNoRows {
 				return nil // we already saw this transaction; quietly succeed
 			} else if err != nil {
@@ -131,4 +93,12 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 
 func (cs *TxEventSink) ModuleName() string {
 	return "tx"
+}
+
+func (cs *TxEventSink) EventSink() *psql.EventSink {
+	return cs.es
+}
+
+func (cs *TxEventSink) EncodingConfig() params.EncodingConfig {
+	return cs.encodingConfig
 }

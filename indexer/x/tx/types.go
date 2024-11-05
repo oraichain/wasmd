@@ -1,6 +1,8 @@
 package tx
 
-import "time"
+import (
+	"time"
+)
 
 type TxEvent struct {
 	Height       uint64

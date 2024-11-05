@@ -53,3 +53,11 @@ func (cs *WasmEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *a
 func (cs *WasmEventSink) ModuleName() string {
 	return types.ModuleName
 }
+
+func (cs *WasmEventSink) EventSink() *psql.EventSink {
+	return cs.es
+}
+
+func (cs *WasmEventSink) EncodingConfig() params.EncodingConfig {
+	return cs.encodingConfig
+}
