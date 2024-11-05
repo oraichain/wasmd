@@ -25,6 +25,12 @@ cd indexer/
 docker-compose up -d
 ```
 
+### Interacting with the DBMS
+
+There are several tools that can do the trick: **pgAdmin**, **dBeaver**, ...
+
+Use [these migration SQLs](./db_sql/schema.sql) to create tables for the indexer via **dBeaver** or your favorite migration script.
+
 ### Configuration
 
 You need to configure the `config.toml` file as follows to enable the indexer via Postgres:
@@ -54,7 +60,3 @@ indexer = "psql"
 # sslmode=disable for local
 psql-conn = "postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
 ```
-
-## Interacting with the DBMS
-
-There are several tools that can do the trick: **pgAdmin**, **dBeaver**, ...
