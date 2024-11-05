@@ -352,7 +352,7 @@ func NewWasmApp(
 	encodingConfig := simappparams.EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
 		Codec:             appCodec,
-		TxConfig:          authtx.NewTxConfig(appCodec, authtx.DefaultSignModes),
+		TxConfig:          txConfig,
 		Amino:             legacyAmino,
 	}
 

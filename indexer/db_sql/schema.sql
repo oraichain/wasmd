@@ -18,16 +18,6 @@ CREATE TABLE blocks (
 -- indexing transaction records and transaction events.
 CREATE INDEX idx_blocks_height_chain ON blocks(height, chain_id);
 
-CREATE TYPE fee_amount as (amount VARCHAR, denom VARCHAR);
-
-CREATE TYPE tx_fee AS (
-  -- gas limit of the transaction
-  gas_limit BIGINT,
-  amount fee_amount [],
-  payer VARCHAR,
-  granter VARCHAR
-);
-
 -- The tx_requests table records metadata about transaction requests.
 CREATE TABLE tx_requests (
   rowid BIGSERIAL PRIMARY KEY,
@@ -42,14 +32,9 @@ CREATE TABLE tx_requests (
   -- messages of the transaction
   messages BYTEA NOT NULL,
   -- transaction fees
-  fee tx_fee NOT NULL,
+  fee VARCHAR NOT NULL,
   -- memo of the transaction
   memo VARCHAR,
-  -- signer info
-  signer_pub_key BYTEA NOT NULL,
-  signer_pub_key_type VARCHAR NOT NULL,
-  signer_mode VARCHAR NOT NULL,
-  signer_sequence BIGINT NOT NULL,
   UNIQUE (block_id, index)
 );
 

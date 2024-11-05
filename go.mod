@@ -280,7 +280,7 @@ replace (
 	github.com/CosmosContracts/juno/v18/x/globalfee => github.com/oraichain/juno/x/globalfee v0.0.0-20240925043856-fe3d1d8b9ad3
 
 	// indexer and timestamp added
-	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241104032712-291852fb6e6b
+	github.com/cometbft/cometbft => ../cometbft
 	// go list -m -json github.com/oraichain/cosmos-sdk@cae2f186c240bed6f0244eab0fae42b3cb6f504f | jq '.|"\(.Path) \(.Version)"' -r
 	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241114003258-bef8b864b9a0
 
