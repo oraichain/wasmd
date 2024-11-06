@@ -5,7 +5,9 @@ import (
 
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
+	"github.com/CosmWasm/wasmd/indexer/codec"
 	"github.com/CosmWasm/wasmd/indexer/sinkreader"
+	"github.com/CosmWasm/wasmd/indexer/x/tx"
 	"github.com/CosmWasm/wasmd/indexer/x/wasm"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
@@ -20,7 +22,7 @@ import (
 var encodingConfig params.EncodingConfig
 
 func init() {
-	encodingConfig = params.MakeEncodingConfig()
+	encodingConfig = codec.MakeEncodingConfig()
 }
 
 // ModsStreamingPlugin is the implementation of the ABCIListener interface
@@ -45,7 +47,11 @@ func (p *ModsStreamingPlugin) initStreamIndexerConn() {
 
 func (p *ModsStreamingPlugin) initIndexerManager() {
 	if p.indexerManager == nil {
-		p.indexerManager = indexer.NewIndexerManager(wasm.NewWasmEventSinkIndexer(p.es, encodingConfig))
+		// orders matter! the tx indexer must always be at the top to insert tx requests & block events into postgres
+		p.indexerManager = indexer.NewIndexerManager(
+			tx.NewTxEventSinkIndexer(p.es, encodingConfig),
+			wasm.NewWasmEventSinkIndexer(p.es, encodingConfig),
+		)
 	}
 }
 

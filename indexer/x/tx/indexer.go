@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
@@ -85,6 +86,75 @@ RETURNING rowid;
 		}
 	}
 	return nil
+}
+
+// FIXME: this is just for testing. Should have filters here based on events, height, chain id
+func (cs *TxEventSink) SearchTxs(limit uint64, offset uint64) (uint64, error) {
+	count := uint64(0)
+	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
+
+		// query txs. FIXME: Need filters and limit!
+		row, err := dbtx.Query(`
+SELECT
+  tx_requests.index,
+  json_attribute_events.chain_id,
+  json_attribute_events.height,
+  tx_requests.created_at,
+  tx_requests.tx_hash,
+  tx_requests.messages,
+  tx_requests.memo,
+  jsonb_agg(
+    json_build_object('type', type, 'attributes', attributes)
+  ) as events
+FROM
+  tx_requests
+  JOIN json_attribute_events ON (json_attribute_events.block_id = tx_requests.block_id)
+GROUP BY
+  tx_requests.index,
+  json_attribute_events.chain_id,
+  json_attribute_events.height,
+  tx_requests.created_at,
+  tx_requests.tx_hash,
+  tx_requests.messages,
+  tx_requests.memo
+ORDER BY
+  json_attribute_events.height;
+	`)
+		if err != nil {
+			return err
+		}
+
+		for {
+			hasNext := row.Next()
+			if !hasNext {
+				break
+			}
+			count++
+			var index int32
+			var chainId string
+			var height uint64
+			var createdAt time.Time
+			var txHash []byte
+			var messages []byte
+			var memo string
+			var events string
+
+			err = row.Scan(&index, &chainId, &height, &createdAt, &txHash, &messages, &memo, &events)
+			if err != nil {
+				panic(err)
+			}
+			msgsAny, err := indexer.UnmarshalMsgsBz(cs.encodingConfig, messages)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(index, chainId, height, createdAt, msgsAny, messages, memo, events)
+		}
+		return nil
+	}); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {

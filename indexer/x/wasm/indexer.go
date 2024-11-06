@@ -1,15 +1,15 @@
 package wasm
 
 import (
-	"database/sql"
-	"fmt"
-
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
-	"github.com/hashicorp/go-hclog"
+)
+
+const (
+	TableWasmTxs = "wasm_txs"
 )
 
 // EventSink is an indexer backend providing the tx/block index services.  This
@@ -26,24 +26,32 @@ func NewWasmEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingC
 	return &WasmEventSink{es: es, encodingConfig: encodingConfig}
 }
 
-// FIXME: this is just testing logic for POC
-func (cs *WasmEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
-	var dest uint64
-	err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
-		res, err := dbtx.Query("select height from blocks limit 1")
-		if err != nil {
-			return err
+func (cs *WasmEventSink) insertTxEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) ([]*abci.TxResult, error) {
+	txResults := []*abci.TxResult{}
+	for i, tx := range req.Txs {
+		txResult := &abci.TxResult{
+			Height: req.Height,
+			Index:  uint32(i),
+			Tx:     tx,
+			Result: *res.TxResults[i],
+			Time:   &req.Time,
 		}
-		res.Next()
-		err = res.Scan(&dest)
-		if err != nil {
-			return err
-		}
+		txResults = append(txResults, txResult)
+	}
+	// we need tx events to get wasm txs. If the cometbft indexer already inserts it -> nothing will happen
+	err := cs.es.IndexTxEvents(txResults)
+	if err != nil {
+		return nil, err
+	}
+	return txResults, nil
+}
 
-		return nil
-	})
-	hclog.Default().Error(fmt.Sprintln("wasm res: ", dest))
-	return err
+func (cs *WasmEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
+	_, err := cs.insertTxEvents(req, res)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (cs *WasmEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
