@@ -46,7 +46,7 @@ In the base directory (wasmd/), run the following command to build the plugin:
 # build the plugin
 go build -o streaming/streaming streaming/streaming.go
 
-# export env variable so the plugin can be seen by the node
+# export env variable so the plugin can be seen by the node. Ref: https://github.com/oraichain/cosmos-sdk/blob/f503e9b2186f54e8480dd35e5033a03ebc8e8dac/baseapp/streaming.go#L35. The method initializes a new streaming plugin and runs it using an env variable path COSMOS_SDK_<plugin-name>
 export COSMOS_SDK_ABCI="{path to}/streaming/streaming"
 
 # build another plugin
