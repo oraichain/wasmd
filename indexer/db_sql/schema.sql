@@ -25,6 +25,8 @@ CREATE TABLE tx_requests (
   block_id BIGINT NOT NULL REFERENCES blocks(rowid),
   -- The sequential index of the transaction within the block.
   index INTEGER NOT NULL,
+  -- block height
+  height BIGINT NOT NULL,
   -- When this result record was logged into the sink, in UTC.
   created_at TIMESTAMPTZ NOT NULL,
   -- The hex-encoded hash of the transaction.
@@ -128,9 +130,10 @@ WHERE
 
 CREATE VIEW json_attribute_events AS
 SELECT
-  block_id,
+  tx_requests.block_id,
+  tx_id,
   height,
-  chain_id,
+  tx_hash,
   type,
   json_agg(
     json_build_object(
@@ -141,10 +144,13 @@ SELECT
     )
   ) AS attributes
 FROM
-  blocks
-  JOIN event_attributes ON (rowid = block_id)
+  tx_requests
+  JOIN event_attributes ON (rowid = tx_id)
+WHERE
+  event_attributes.tx_id IS NOT NULL
 GROUP BY
-  block_id,
+  tx_requests.block_id,
+  tx_id,
   height,
-  chain_id,
+  tx_hash,
   type;

@@ -71,11 +71,11 @@ SELECT rowid FROM `+psql.TableBlocks+` WHERE height = $1 AND chain_id = $2;
 			// Insert a record for this tx_requests and capture its ID for indexing events.
 			// NOTE: for tx index, it is the tx index in the list of txs. Ref: https://github.com/oraichain/cometbft/blob/5c0462aa0de4250a0c1ab43a80f8ea8adb84fa33/state/execution.go#L710; https://github.com/oraichain/cometbft/blob/5c0462aa0de4250a0c1ab43a80f8ea8adb84fa33/state/execution.go#L749
 			_, err = psql.QueryWithID(dbtx, `
-INSERT INTO `+TableTxRequests+` (block_id, index, created_at, tx_hash, messages, fee, memo)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO `+TableTxRequests+` (block_id, index, height, created_at, tx_hash, messages, fee, memo)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT DO NOTHING
 RETURNING rowid;
-`, blockID, i, req.Time, txHash, fullMsgsBz, string(feeBz), cosmosTx.Body.Memo)
+`, blockID, i, req.Height, req.Time, txHash, fullMsgsBz, string(feeBz), cosmosTx.Body.Memo)
 			if err == sql.ErrNoRows {
 				return nil // we already saw this transaction; quietly succeed
 			} else if err != nil {
