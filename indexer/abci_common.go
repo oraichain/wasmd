@@ -1,6 +1,8 @@
 package indexer
 
 import (
+	"fmt"
+
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -38,11 +40,30 @@ func MarshalMsgsAny(config params.EncodingConfig, msgsAny []*types.Any) ([]byte,
 	return fullMsgsBz, nil
 }
 
+func UnmarshalMsgsBz(config params.EncodingConfig, msgsBz []byte) ([]*types.Any, error) {
+	msgsBytes := [][]byte{}
+	err := config.Amino.Unmarshal(msgsBz, &msgsBytes)
+	if err != nil {
+		return nil, err
+	}
+	msgsAny := []*types.Any{}
+	for _, msg := range msgsBytes {
+		msgAny := types.Any{}
+		err := config.Codec.Unmarshal(msg, &msgAny)
+		if err != nil {
+			return nil, err
+		}
+		msgsAny = append(msgsAny, &msgAny)
+	}
+	return msgsAny, nil
+}
+
 func UnmarshalTxBz(indexer ModuleEventSinkIndexer, txBz []byte) (*cosmostx.Tx, error) {
 	// tx proto
 	config := indexer.EncodingConfig()
 	tx, err := config.TxConfig.TxDecoder()(txBz)
 	if err != nil {
+		fmt.Println("err decoder: ", err)
 		hclog.Default().Debug("err decoder: ", err)
 		tx, err = config.TxConfig.TxJSONDecoder()(txBz)
 		if err != nil {

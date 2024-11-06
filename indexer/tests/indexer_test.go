@@ -29,11 +29,13 @@ import (
 	"github.com/CosmWasm/wasmd/app/params"
 	indexercodec "github.com/CosmWasm/wasmd/indexer/codec"
 	indexertx "github.com/CosmWasm/wasmd/indexer/x/tx"
+	indexerwasm "github.com/CosmWasm/wasmd/indexer/x/wasm"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/state/txindex"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	cosmostx "github.com/cosmos/cosmos-sdk/types/tx"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	_ "github.com/lib/pq"
 )
 
@@ -287,6 +289,7 @@ func TestIndexing(t *testing.T) {
 			psql.MakeIndexedEvent("account.number", "1"),
 			psql.MakeIndexedEvent("account.owner", "Ivan"),
 			psql.MakeIndexedEvent("account.owner", "Yulieta"),
+			psql.MakeIndexedEvent("wasm.data", "Wasm data"),
 
 			{Type: "", Attributes: []abci.EventAttribute{
 				{
@@ -296,15 +299,39 @@ func TestIndexing(t *testing.T) {
 				},
 			}},
 		})
-		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
+		nonWasmTxResult := txResultWithEvents([]abci.Event{
+			psql.MakeIndexedEvent("account.number", "2"),
+			psql.MakeIndexedEvent("account.owner", "Duc"),
+			psql.MakeIndexedEvent("account.owner", "Pham"),
+
+			{Type: "", Attributes: []abci.EventAttribute{
+				{
+					Key:   "not_allowed",
+					Value: "Vlad",
+					Index: true,
+				},
+			}},
+		})
+		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult, nonWasmTxResult}))
 
 		// try indexing tx requests
-		txs := [][]byte{}
-		txs = append(txs, txResult.Tx)
-		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
 		time := time.Now()
-		err := customTxEventSink.InsertModuleEvents(&abci.RequestFinalizeBlock{Txs: txs, Time: time}, &abci.ResponseFinalizeBlock{Events: []abci.Event{}})
+		txs := [][]byte{}
+		txs = append(txs, txResult.Tx, nonWasmTxResult.Tx)
+		execTxResults := []*abci.ExecTxResult{&txResult.Result, &nonWasmTxResult.Result}
+		req := &abci.RequestFinalizeBlock{Txs: txs, Time: time}
+		res := &abci.ResponseFinalizeBlock{Events: []abci.Event{}, TxResults: execTxResults}
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+		err := customTxEventSink.InsertModuleEvents(req, res)
 		require.NoError(t, err)
+
+		customWasmEventSink := indexerwasm.NewWasmEventSinkIndexer(indexer, encodingConfig)
+		txEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+		err = customWasmEventSink.InsertModuleEvents(req, res)
+		require.NoError(t, err)
+		count, err := txEventSink.SearchTxs(1, 1)
+		require.NoError(t, err)
+		require.Equal(t, count, uint64(2))
 
 		// txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
 		// require.NoError(t, err)
@@ -384,10 +411,29 @@ func resetDatabase(db *sql.DB) error {
 // txResultWithEvents constructs a fresh transaction result with fixed values
 // for testing, that includes the specified events.
 func txResultWithEvents(events []abci.Event) *abci.TxResult {
+
+	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
+	grant := "orai1wsg0l9c6tr5uzjrhwhqch9tt4e77h0w28wvp3u"
+	instantiateMsg := banktypes.MsgSend{
+		FromAddress: grant,
+		ToAddress:   grant,
+		Amount:      sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100))),
+	}
+
+	if err := txBuilder.SetMsgs(&instantiateMsg); err != nil {
+		panic(err)
+	}
+	txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1))))
+	tx := txBuilder.GetTx()
+	txBz, err := encodingConfig.TxConfig.TxEncoder()(tx)
+	if err != nil {
+		panic(err)
+	}
+
 	return &abci.TxResult{
 		Height: 1,
 		Index:  0,
-		Tx:     types.Tx("HELLO WORLD"),
+		Tx:     txBz,
 		Result: abci.ExecTxResult{
 			Data:   []byte{0},
 			Code:   abci.CodeTypeOK,
@@ -415,12 +461,11 @@ func wasmTxResultWithEvents(events []abci.Event) *abci.TxResult {
 	if err := txBuilder.SetMsgs(&instantiateMsg); err != nil {
 		panic(err)
 	}
-	// txBuilder.SetMemo("hello world")
-	// txBuilder.SetFeeGranter(sdk.MustAccAddressFromBech32(grant))
-	// txBuilder.SetFeePayer(sdk.MustAccAddressFromBech32(grant))
+	txBuilder.SetMemo("hello world")
+	txBuilder.SetFeeGranter(sdk.MustAccAddressFromBech32(grant))
+	txBuilder.SetFeePayer(sdk.MustAccAddressFromBech32(grant))
 	txBuilder.SetGasLimit(10000000)
 	txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1))))
-	// txBuilder.SetMemo("memo foobar")
 	tx := txBuilder.GetTx()
 	txBz, err := encodingConfig.TxConfig.TxEncoder()(tx)
 	if err != nil {

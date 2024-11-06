@@ -126,20 +126,25 @@ FROM
 WHERE
   event_attributes.tx_id IS NOT NULL;
 
--- The wasm_txs view records all wasm txs
--- TODO: consider adding 'events' column as well to improve performance
-CREATE VIEW wasm_txs AS
+CREATE VIEW json_attribute_events AS
 SELECT
-  blocks.height,
-  tx_requests.index,
-  blocks.chain_id,
-  tx_requests.created_at,
-  tx_requests.tx_hash,
-  tx_requests.messages,
-  tx_requests.memo
+  block_id,
+  height,
+  chain_id,
+  type,
+  json_agg(
+    json_build_object(
+      'key',
+      key,
+      'value',
+      value
+    )
+  ) AS attributes
 FROM
   blocks
-  JOIN tx_requests ON (blocks.rowid = tx_requests.block_id)
-  JOIN tx_events on (blocks.rowid = tx_requests.block_id)
-WHERE
-  tx_events.type = 'wasm';
+  JOIN event_attributes ON (rowid = block_id)
+GROUP BY
+  block_id,
+  height,
+  chain_id,
+  type;
