@@ -19,7 +19,8 @@ type IndexerManager struct {
 }
 
 func NewIndexerManager(indexers ...ModuleEventSinkIndexer) *IndexerManager {
-	manager := IndexerManager{}
+	modules := make(map[string]ModuleEventSinkIndexer)
+	manager := IndexerManager{Modules: modules}
 	for _, indexer := range indexers {
 		manager.Modules[indexer.ModuleName()] = indexer
 	}

@@ -24,12 +24,19 @@ Update the streaming section in `app.toml` to enable ABCI state streaming
 keys = ["*"]
 
 # The plugin name used for streaming via gRPC
-# Supported plugins: abci
 plugin = "abci"
 
 # stop-node-on-err specifies whether to stop the node when the plugin has problems
 stop-node-on-err = false
+
+# streaming.wasm specifies the configuration for the ABCI Listener streaming service, for the wasm module
+[streaming.wasm]
+
+# The plugin name used for streaming via gRPC
+plugin = "wasm"
 ```
+
+Note that the ABCI plugin is a must-have. You can add additional plugins, but the `keys` and `stop-node-on-err` fields in `app.toml` only take values from the ABCI plugin.
 
 ## Build the plugin
 
@@ -41,5 +48,10 @@ go build -o streaming/streaming streaming/streaming.go
 
 # export env variable so the plugin can be seen by the node
 export COSMOS_SDK_ABCI="{path to}/streaming/streaming"
-```
 
+# build another plugin
+go build -o streaming/streaming streaming/wasm_streaming.go
+
+# export env variable so the plugin can be seen by the node
+export COSMOS_SDK_WASM="{path to}/streaming/wasm_streaming"
+```

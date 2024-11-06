@@ -11,6 +11,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/types"
+	"github.com/hashicorp/go-hclog"
 )
 
 // EventSink is an indexer backend providing the tx/block index services.  This
@@ -33,6 +34,7 @@ func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingCon
 
 func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
 	// unmarshal txs
+	hclog.Default().Debug("before unmarshal txs")
 	for i, txBz := range req.Txs {
 		cosmosTx, err := indexer.UnmarshalTxBz(cs, txBz)
 		if err != nil {
@@ -158,7 +160,7 @@ ORDER BY
 }
 
 func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
-	panic("Not implemented")
+	return nil
 }
 
 func (cs *TxEventSink) ModuleName() string {
