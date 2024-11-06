@@ -8,10 +8,6 @@ import (
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 )
 
-const (
-	TableWasmTxs = "wasm_txs"
-)
-
 // EventSink is an indexer backend providing the tx/block index services.  This
 // implementation stores records in a PostgreSQL database using the schema
 // defined in state/indexer/sink/psql/schema.sql.
@@ -55,7 +51,7 @@ func (cs *WasmEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res 
 }
 
 func (cs *WasmEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
-	panic("Not implemented")
+	return nil
 }
 
 func (cs *WasmEventSink) ModuleName() string {
