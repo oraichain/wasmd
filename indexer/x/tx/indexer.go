@@ -1,6 +1,7 @@
 package tx
 
 import (
+	"context"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
+	indexerConfig "github.com/CosmWasm/wasmd/indexer/config"
+	redpanda "github.com/CosmWasm/wasmd/indexer/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
@@ -20,12 +23,15 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 )
 
+var ModuleName = indexerConfig.Tx
+
 // EventSink is an indexer backend providing the tx/block index services.  This
 // implementation stores records in a PostgreSQL database using the schema
 // defined in state/indexer/sink/psql/schema.sql.
 type TxEventSink struct {
 	es             *psql.EventSink
 	encodingConfig params.EncodingConfig
+	ri             *redpanda.RedpandaInfo
 }
 
 const (
@@ -35,7 +41,11 @@ const (
 var _ indexer.ModuleEventSinkIndexer = (*TxEventSink)(nil)
 
 func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig) *TxEventSink {
-	return &TxEventSink{es: es, encodingConfig: encodingConfig}
+	ri := &redpanda.RedpandaInfo{}
+	ri.SetBrokers()
+	ri.SetTopic(ModuleName)
+
+	return &TxEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
 }
 
 func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
@@ -183,12 +193,36 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 	return txResponses, count, nil
 }
 
-func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
+func (cs *TxEventSink) EmitModuleEvents(ctx context.Context, req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
+	admin := cs.ri.GetAdmin()
+	if admin == nil {
+		cs.ri.SetAdmin()
+		admin = cs.ri.GetAdmin()
+	}
+	defer admin.Close()
+
+	topic := cs.ri.GetTopic()
+	if !admin.IsTopicExist(ctx, topic) {
+		err := admin.CreateTopic(ctx, topic)
+		if err != nil {
+			return err
+		}
+	}
+
+	producer := cs.ri.GetProducer()
+	if producer == nil {
+		cs.ri.SetProducer()
+		producer = cs.ri.GetProducer()
+	}
+	defer producer.Close()
+
+	producer.SendToRedpanda(ctx, req.Height)
+
 	return nil
 }
 
 func (cs *TxEventSink) ModuleName() string {
-	return "tx"
+	return string(ModuleName)
 }
 
 func (cs *TxEventSink) EventSink() *psql.EventSink {

@@ -33,7 +33,7 @@ func (ri *RedpandaInfo) GetBrockers() []string {
 }
 
 func (ri *RedpandaInfo) SetTopic(module indexerConfig.IndexerModule) {
-	topic := os.Getenv("REDPANDA_TOPIC_" + string(module))
+	topic := os.Getenv("REDPANDA_TOPIC_" + strings.ToUpper(string(module)))
 	if topic == "" {
 		panic("Topic must not be empty")
 	}
