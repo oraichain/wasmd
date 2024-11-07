@@ -39,6 +39,9 @@ sed -i '' -E "s%^keys *=.*%keys = [\"*\"]%; " $APP_TOML
 sed -i '' -E "s%^plugin *=.*%plugin = \"abci\"%; " $APP_TOML
 # export cosmos sdk streaming plugin path
 export COSMOS_SDK_ABCI="$PWD/streaming/streaming"
+export REDPANDA_BROKERS="localhost:19092"
+export REDPANDA_TOPIC_TX="topic_tx"
+export REDPANDA_TOPIC_WASM="topic_wasm"
 # build streaming plugin
 go build -o $PWD/streaming/streaming $PWD/streaming/streaming.go
 

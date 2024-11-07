@@ -69,7 +69,7 @@ func (a *ModsStreamingPlugin) ListenFinalizeBlock(ctx context.Context, req abci.
 		if err != nil {
 			return err
 		}
-		err = indexer.EmitModuleEvents(&req, &res)
+		err = indexer.EmitModuleEvents(ctx, &req, &res)
 		if err != nil {
 			return err
 		}

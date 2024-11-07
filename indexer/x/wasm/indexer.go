@@ -1,6 +1,8 @@
 package wasm
 
 import (
+	"context"
+
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
@@ -26,7 +28,7 @@ func (cs *WasmEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res 
 	return nil
 }
 
-func (cs *WasmEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
+func (cs *WasmEventSink) EmitModuleEvents(ctx context.Context, req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
 	return nil
 }
 
