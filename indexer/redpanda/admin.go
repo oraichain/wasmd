@@ -27,7 +27,8 @@ func NewAdmin(brokers []string) *Admin {
 	return &Admin{client: admin}
 }
 
-func (a *Admin) IsTopicExist(ctx context.Context, topic string) bool {
+func (a *Admin) IsTopicExist(topic string) bool {
+	ctx := context.Background()
 	topicMetadatas, err := a.client.ListTopics(ctx)
 	if err != nil {
 		panic(err)
@@ -42,7 +43,8 @@ func (a *Admin) IsTopicExist(ctx context.Context, topic string) bool {
 	return false
 }
 
-func (a *Admin) CreateTopic(ctx context.Context, topic string) error {
+func (a *Admin) CreateTopic(topic string) error {
+	ctx := context.Background()
 	res, err := a.client.CreateTopics(ctx, 1, 1, nil, topic)
 	if err != nil {
 		return err

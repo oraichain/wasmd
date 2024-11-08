@@ -28,13 +28,22 @@ func NewProducer(brokers []string, topic string) *Producer {
 	return &Producer{client: client, topic: topic}
 }
 
-func (p *Producer) SendToRedpanda(ctx context.Context, height int64) {
+func (p *Producer) SendToRedpanda(height int64) error {
 	// TODO: Need implement this function to
 	// send data to redpanda
 
+	ctx := context.Background()
 	b, _ := json.Marshal(Message{Height: height})
 
-	p.client.Produce(ctx, &kgo.Record{Topic: p.topic, Value: b}, nil)
+	var err error
+	p.client.Produce(ctx, &kgo.Record{Topic: p.topic, Value: b}, func(_ *kgo.Record, e error) {
+		err = e
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Producer) Close() {
