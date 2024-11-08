@@ -3,10 +3,13 @@ package wasm
 import (
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
-	"github.com/CosmWasm/wasmd/x/wasm/types"
+	indexerConfig "github.com/CosmWasm/wasmd/indexer/config"
+	"github.com/CosmWasm/wasmd/streaming/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 )
+
+var ModuleName = indexerConfig.Wasm
 
 // EventSink is an indexer backend providing the tx/block index services.  This
 // implementation stores records in a PostgreSQL database using the schema
@@ -14,12 +17,17 @@ import (
 type WasmEventSink struct {
 	es             *psql.EventSink
 	encodingConfig params.EncodingConfig
+	ri             *redpanda.RedpandaInfo
 }
 
 var _ indexer.ModuleEventSinkIndexer = (*WasmEventSink)(nil)
 
 func NewWasmEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig) *WasmEventSink {
-	return &WasmEventSink{es: es, encodingConfig: encodingConfig}
+	ri := &redpanda.RedpandaInfo{}
+	ri.SetBrokers()
+	ri.SetTopic(ModuleName)
+
+	return &WasmEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
 }
 
 func (cs *WasmEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
@@ -31,7 +39,7 @@ func (cs *WasmEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *a
 }
 
 func (cs *WasmEventSink) ModuleName() string {
-	return types.ModuleName
+	return string(ModuleName)
 }
 
 func (cs *WasmEventSink) EventSink() *psql.EventSink {
