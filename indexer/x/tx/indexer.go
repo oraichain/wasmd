@@ -10,7 +10,7 @@ import (
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	indexerConfig "github.com/CosmWasm/wasmd/indexer/config"
-	redpanda "github.com/CosmWasm/wasmd/indexer/redpanda"
+	redpanda "github.com/CosmWasm/wasmd/streaming/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
