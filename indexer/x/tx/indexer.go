@@ -1,7 +1,6 @@
 package tx
 
 import (
-	"context"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
@@ -193,17 +192,16 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 	return txResponses, count, nil
 }
 
-func (cs *TxEventSink) EmitModuleEvents(ctx context.Context, req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
+func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
 	admin := cs.ri.GetAdmin()
 	if admin == nil {
 		cs.ri.SetAdmin()
 		admin = cs.ri.GetAdmin()
 	}
-	defer admin.Close()
 
 	topic := cs.ri.GetTopic()
-	if !admin.IsTopicExist(ctx, topic) {
-		err := admin.CreateTopic(ctx, topic)
+	if !admin.IsTopicExist(topic) {
+		err := admin.CreateTopic(topic)
 		if err != nil {
 			return err
 		}
@@ -214,11 +212,10 @@ func (cs *TxEventSink) EmitModuleEvents(ctx context.Context, req *abci.RequestFi
 		cs.ri.SetProducer()
 		producer = cs.ri.GetProducer()
 	}
-	defer producer.Close()
 
-	producer.SendToRedpanda(ctx, req.Height)
+	err := producer.SendToRedpanda(req.Height)
 
-	return nil
+	return err
 }
 
 func (cs *TxEventSink) ModuleName() string {
