@@ -54,6 +54,14 @@ CREATE TABLE tx_results (
   tx_hash VARCHAR NOT NULL,
   -- The protobuf wire encoding of the TxResult message.
   tx_result BYTEA NOT NULL,
+  -- code of the tx verifying if it's successful or not
+  code INTEGER NOT NULL,
+  -- extra useful data
+  logs VARCHAR NOT NULL,
+  info VARCHAR NOT NULL,
+  gas_wanted BIGINT NOT NULL,
+  gas_used BIGINT NOT NULL,
+  codespace VARCHAR NOT NULL,
   UNIQUE (block_id, index)
 );
 
@@ -131,12 +139,11 @@ WHERE
 CREATE VIEW json_attribute_events AS
 SELECT
   tx_requests.block_id,
-  tx_id,
   height,
   tx_hash,
   type,
-  json_agg(
-    json_build_object(
+  jsonb_agg(
+    jsonb_build_object(
       'key',
       key,
       'value',
@@ -145,12 +152,48 @@ SELECT
   ) AS attributes
 FROM
   tx_requests
-  JOIN event_attributes ON (rowid = tx_id)
+  JOIN event_attributes ON (tx_requests.block_id = event_attributes.block_id)
 WHERE
   event_attributes.tx_id IS NOT NULL
 GROUP BY
   tx_requests.block_id,
-  tx_id,
+  height,
   height,
   tx_hash,
   type;
+
+-- select
+--   ftx.height,
+--   created_at,
+--   ftx.tx_hash,
+--   messages,
+--   memo,
+--   fee,
+--   jsonb_agg(
+--     DISTINCT jsonb_build_object('type', type, 'attributes', attributes)
+--   ) as events
+-- from
+--   tx_requests ftx
+--   join json_attribute_events jae on (ftx.height = jae.height)
+--   join (
+--     SELECT
+--       t1.height
+--     FROM
+--       tx_events t1
+--       JOIN tx_events t2 ON t1.height = t2.height
+--     WHERE
+--       (
+--         t2.composite_key LIKE 'message.module%'
+--         AND t2.value = 'bank'
+--       )
+--   ) as filter_table on filter_table.height = ftx.height
+-- where
+--   ftx.height > 30
+--   and ftx.height < 40
+-- group by
+--   ftx.height,
+--   created_at,
+--   ftx.tx_hash,
+--   messages,
+--   memo,
+--   fee;

@@ -2,15 +2,20 @@ package tx
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	cometbftindexer "github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
+	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/cometbft/cometbft/types"
+	cosmostypes "github.com/cosmos/cosmos-sdk/types"
+	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/hashicorp/go-hclog"
 )
 
@@ -44,7 +49,7 @@ func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *a
 		if err != nil {
 			return err
 		}
-		feeBz, err := json.Marshal(&cosmosTx.AuthInfo.Fee)
+		feeBz, err := cs.encodingConfig.Codec.MarshalJSON(cosmosTx.AuthInfo.Fee)
 		if err != nil {
 			return err
 		}
@@ -90,38 +95,62 @@ RETURNING rowid;
 	return nil
 }
 
-// FIXME: this is just for testing. Should have filters here based on events, height, chain id
-func (cs *TxEventSink) SearchTxs(limit uint64, offset uint64) (uint64, error) {
+// TODO: add limit & filters based on non-height conditions
+func (cs *TxEventSink) SearchTxs(q *query.Query) ([]*txtypes.GetTxResponse, uint64, error) {
 	count := uint64(0)
+	txResponses := []*txtypes.GetTxResponse{}
+
+	conditions := q.Syntax()
+	// conditions to skip because they're handled before "everything else"
+	// If we are not matching events and tx.height = 3 occurs more than once, the later value will
+	// overwrite the first one.
+	conditions, heightInfo := kv.DedupHeight(conditions)
+
+	// extract ranges
+	// if both upper and lower bounds exist, it's better to get them in order not
+	// no iterate over kvs that are not within range.
+	ranges, _ := lookForRangesWithHeight(conditions)
+	_, ok := ranges[types.TxHeightKey]
+	heightInfo.SetheightRange(ranges[types.TxHeightKey])
+	whereConditions, args, _ := CreateHeightRangeWhereConditions(heightInfo, ok)
+	queryClause := `
+	select
+  tx_requests.height,
+  tx_requests.created_at,
+  tx_requests.tx_hash,
+  messages,
+  memo,
+  fee,
+	code, 
+	logs, 
+	info, 
+	gas_wanted, 
+	gas_used, 
+	codespace,
+  jsonb_agg(
+    distinct jsonb_build_object('type', type, 'attributes', attributes)
+  ) as events
+from tx_requests
+join tx_results txr on (tx_requests.block_id = txr.block_id)
+join json_attribute_events jae on (tx_requests.height = jae.height) ` + whereConditions +
+		` group by
+  tx_requests.height,
+  tx_requests.created_at,
+  tx_requests.tx_hash,
+  messages,
+  memo,
+  fee,
+	code, 
+	logs, 
+	info, 
+	gas_wanted, 
+	gas_used, 
+	codespace;
+	`
 	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
 
 		// query txs. FIXME: Need filters and limit!
-		row, err := dbtx.Query(`
-SELECT
-  tx_requests.index,
-  json_attribute_events.chain_id,
-  json_attribute_events.height,
-  tx_requests.created_at,
-  tx_requests.tx_hash,
-  tx_requests.messages,
-  tx_requests.memo,
-  jsonb_agg(
-    json_build_object('type', type, 'attributes', attributes)
-  ) as events
-FROM
-  tx_requests
-  JOIN json_attribute_events ON (json_attribute_events.block_id = tx_requests.block_id)
-GROUP BY
-  tx_requests.index,
-  json_attribute_events.chain_id,
-  json_attribute_events.height,
-  tx_requests.created_at,
-  tx_requests.tx_hash,
-  tx_requests.messages,
-  tx_requests.memo
-ORDER BY
-  json_attribute_events.height;
-	`)
+		row, err := dbtx.Query(queryClause, args...)
 		if err != nil {
 			return err
 		}
@@ -132,16 +161,21 @@ ORDER BY
 				break
 			}
 			count++
-			var index int32
-			var chainId string
-			var height uint64
+			var height int64
 			var createdAt time.Time
-			var txHash []byte
+			var txHash string
 			var messages []byte
 			var memo string
+			var fee string
+			var code uint32
+			var logs string
+			var info string
+			var gasWanted int64
+			var gasUsed int64
+			var codespace string
 			var events string
 
-			err = row.Scan(&index, &chainId, &height, &createdAt, &txHash, &messages, &memo, &events)
+			err = row.Scan(&height, &createdAt, &txHash, &messages, &memo, &fee, &code, &logs, &info, &gasWanted, &gasUsed, &codespace, &events)
 			if err != nil {
 				panic(err)
 			}
@@ -150,13 +184,29 @@ ORDER BY
 				return err
 			}
 
-			fmt.Println(index, chainId, height, createdAt, msgsAny, messages, memo, events)
+			var feeProto txtypes.Fee
+			if err := cs.encodingConfig.Codec.UnmarshalJSON([]byte(fee), &feeProto); err != nil {
+				return err
+			}
+
+			var eventsProto []abci.Event
+			if err := cs.encodingConfig.Amino.UnmarshalJSON([]byte(events), &eventsProto); err != nil {
+				return err
+			}
+
+			txBody := txtypes.TxBody{
+				Messages: msgsAny,
+				Memo:     memo,
+			}
+			cosmosTx := txtypes.Tx{Body: &txBody, AuthInfo: &txtypes.AuthInfo{Fee: &feeProto}}
+			txResponse := cosmostypes.TxResponse{Height: height, TxHash: txHash, Codespace: codespace, Code: code, Info: info, RawLog: logs, GasWanted: gasWanted, GasUsed: gasUsed, Events: eventsProto}
+			txResponses = append(txResponses, &txtypes.GetTxResponse{Tx: &cosmosTx, TxResponse: &txResponse})
 		}
 		return nil
 	}); err != nil {
-		return 0, err
+		return nil, 0, err
 	}
-	return count, nil
+	return txResponses, count, nil
 }
 
 func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
@@ -173,4 +223,103 @@ func (cs *TxEventSink) EventSink() *psql.EventSink {
 
 func (cs *TxEventSink) EncodingConfig() params.EncodingConfig {
 	return cs.encodingConfig
+}
+
+func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo, hasHeightRange bool) (whereConditions string, vals []interface{}, argsCount int) {
+	// args count is used to increment parameterized arguments
+	argsCount = 1
+	// prioritize range conditions
+	if hasHeightRange {
+		value := heightInfo.HeightRange()
+		ops, values := detectQueryRangeBound(value)
+		whereConditions += "WHERE"
+		for i, operator := range ops {
+			if i == len(ops)-1 {
+				whereConditions += fmt.Sprintf(" %s.height %s $%d", TableTxRequests, operator, argsCount)
+			} else {
+				whereConditions += fmt.Sprintf(" %s.height %s $%d AND", TableTxRequests, operator, argsCount)
+			}
+
+			argsCount++
+		}
+		vals = values
+		return whereConditions, vals, argsCount
+	}
+	// if there's no range, and has eq condition -> handle it
+	if heightInfo.Height() != 0 {
+		return fmt.Sprintf("WHERE %s.height = $%d", TableTxRequests, argsCount), []interface{}{heightInfo.Height()}, argsCount
+	}
+	return "", nil, 0
+}
+
+func detectQueryRangeBound(value cometbftindexer.QueryRange) (ops []string, vals []interface{}) {
+	if value.LowerBound != nil {
+		operator := ">"
+		if value.IncludeLowerBound {
+			operator = ">="
+		}
+		ops = append(ops, operator)
+		vals = append(vals, value.LowerBound.(int64))
+	}
+	if value.UpperBound != nil {
+		operator := "<"
+		if value.IncludeUpperBound {
+			operator = "<="
+		}
+		upper := value.UpperBound.(int64)
+		ops = append(ops, operator)
+		vals = append(vals, upper)
+	}
+	return ops, vals
+}
+
+// lookForRangesWithHeight returns a mapping of QueryRanges and the matching indexes in
+// the provided query conditions.
+func lookForRangesWithHeight(conditions []syntax.Condition) (queryRange cometbftindexer.QueryRanges, nonRangeIndexes []int) {
+	queryRange = make(cometbftindexer.QueryRanges)
+	for i, c := range conditions {
+		if cometbftindexer.IsRangeOperation(c.Op) {
+			r, ok := queryRange[c.Tag]
+			if !ok {
+				r = cometbftindexer.QueryRange{Key: c.Tag}
+			}
+
+			switch c.Op {
+			case syntax.TGt:
+				r.LowerBound = conditionArg(c)
+
+			case syntax.TGeq:
+				r.IncludeLowerBound = true
+				r.LowerBound = conditionArg(c)
+
+			case syntax.TLt:
+				r.UpperBound = conditionArg(c)
+
+			case syntax.TLeq:
+				r.IncludeUpperBound = true
+				r.UpperBound = conditionArg(c)
+			}
+
+			queryRange[c.Tag] = r
+		} else {
+			nonRangeIndexes = append(nonRangeIndexes, i)
+		}
+	}
+
+	return queryRange, nonRangeIndexes
+}
+
+func conditionArg(c syntax.Condition) interface{} {
+	if c.Arg == nil {
+		return nil
+	}
+	switch c.Arg.Type {
+	case syntax.TNumber:
+		num, _ := c.Arg.Number().Int64()
+		return num
+	case syntax.TTime, syntax.TDate:
+		return c.Arg.Time()
+	default:
+		return c.Arg.Value() // string
+	}
 }
