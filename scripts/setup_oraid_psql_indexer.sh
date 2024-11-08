@@ -54,4 +54,4 @@ docker-compose -f $PWD/indexer/docker-compose.yml up -d
 # sleep a bit for psql to be up
 sleep 5
 
-oraid start $START_ARGS --log_level debug
+oraid start $START_ARGS

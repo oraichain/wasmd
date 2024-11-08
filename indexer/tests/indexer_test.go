@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -23,18 +22,17 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmlog "github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/types"
 
 	// Register the Postgres database driver.
 	"github.com/CosmWasm/wasmd/app/params"
 	indexercodec "github.com/CosmWasm/wasmd/indexer/codec"
 	indexertx "github.com/CosmWasm/wasmd/indexer/x/tx"
-	indexerwasm "github.com/CosmWasm/wasmd/indexer/x/wasm"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/state/txindex"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	cosmostx "github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	_ "github.com/lib/pq"
 )
@@ -65,14 +63,6 @@ const (
 	viewBlockEvents = "block_events"
 	viewTxEvents    = "tx_events"
 )
-
-func TestMarshalJson(t *testing.T) {
-	fee := cosmostx.Fee{Amount: sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1))), GasLimit: 10000, Payer: sdk.AccAddress("orai1wsg0l9c6tr5uzjrhwhqch9tt4e77h0w28wvp3u").String(), Granter: sdk.AccAddress("orai1wsg0l9c6tr5uzjrhwhqch9tt4e77h0w28wvp3u").String()}
-	feeBz, err := json.Marshal(fee)
-	require.NoError(t, err)
-	fmt.Println(string(feeBz))
-	require.Equal(t, `{"amount":[{"denom":"orai","amount":"1"}],"gas_limit":10000,"payer":"orai1daexz6f3waekwvrv893nvarjx46h56njdpmksutrdquhgap5v5mnw6pswuersamkwqeh2g6rztw","granter":"orai1daexz6f3waekwvrv893nvarjx46h56njdpmksutrdquhgap5v5mnw6pswuersamkwqeh2g6rztw"}`, string(feeBz))
-}
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -167,7 +157,8 @@ func TestMain(m *testing.M) {
 func TestIndexing(t *testing.T) {
 	t.Run("IndexBlockEvents", func(t *testing.T) {
 		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
-		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents()))
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(1)))
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(2)))
 
 		verifyBlock(t, 1)
 		verifyBlock(t, 2)
@@ -183,7 +174,8 @@ func TestIndexing(t *testing.T) {
 		require.NoError(t, verifyTimeStamp(psql.TableBlocks))
 
 		// Attempting to reindex the same events should gracefully succeed.
-		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents()))
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(1)))
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(2)))
 	})
 
 	t.Run("IndexTxEvents", func(t *testing.T) {
@@ -201,7 +193,7 @@ func TestIndexing(t *testing.T) {
 					Index: true,
 				},
 			}},
-		})
+		}, 1)
 		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
 
 		txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
@@ -230,6 +222,87 @@ func TestIndexing(t *testing.T) {
 		require.NoError(t, err)
 		txHash := fmt.Sprintf("%X", types.Tx(txResult.Tx).Hash())
 		require.Equal(t, txEvent, &indexertx.TxEvent{Height: height, ChainId: chainID, Type: "tx", Key: "hash", Value: txHash})
+	})
+
+	t.Run("IndexCosmWasmTxs", func(t *testing.T) {
+		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(1)))
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(2)))
+
+		txResult := wasmTxResultWithEvents([]abci.Event{
+			psql.MakeIndexedEvent("account.number", "1"),
+			psql.MakeIndexedEvent("account.owner", "Ivan"),
+			psql.MakeIndexedEvent("account.owner", "Yulieta"),
+			psql.MakeIndexedEvent("wasm.data", "Wasm data"),
+
+			{Type: "", Attributes: []abci.EventAttribute{
+				{
+					Key:   "not_allowed",
+					Value: "Vlad",
+					Index: true,
+				},
+			}},
+		})
+		nonWasmTxResult := txResultWithEvents([]abci.Event{
+			psql.MakeIndexedEvent("account.number", "2"),
+			psql.MakeIndexedEvent("account.owner", "Duc"),
+			psql.MakeIndexedEvent("account.owner", "Pham"),
+
+			{Type: "", Attributes: []abci.EventAttribute{
+				{
+					Key:   "not_allowed",
+					Value: "Vlad",
+					Index: true,
+				},
+			}},
+		}, 1)
+
+		nonWasmTxResultNextHeight := txResultWithEvents([]abci.Event{
+			psql.MakeIndexedEvent("account.number", "2"),
+			psql.MakeIndexedEvent("account.owner", "Duc"),
+			psql.MakeIndexedEvent("account.owner", "Pham"),
+
+			{Type: "", Attributes: []abci.EventAttribute{
+				{
+					Key:   "not_allowed",
+					Value: "Vlad",
+					Index: true,
+				},
+			}},
+		}, 2)
+
+		abciTxResults := []*abci.TxResult{txResult, nonWasmTxResult, nonWasmTxResultNextHeight}
+
+		require.NoError(t, indexer.IndexTxEvents(abciTxResults))
+
+		// try indexing tx requests
+		time := time.Now()
+		firstBlockTxs := [][]byte{abciTxResults[0].Tx, abciTxResults[1].Tx}
+		secBlockTxs := [][]byte{abciTxResults[2].Tx}
+		firstExecTxResults := []*abci.ExecTxResult{&abciTxResults[0].Result, &abciTxResults[1].Result}
+		secExecTxResults := []*abci.ExecTxResult{&abciTxResults[2].Result}
+
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+		err := customTxEventSink.InsertModuleEvents(&abci.RequestFinalizeBlock{Height: 1, Txs: firstBlockTxs, Time: time}, &abci.ResponseFinalizeBlock{Events: []abci.Event{}, TxResults: firstExecTxResults})
+		require.NoError(t, err)
+		err = customTxEventSink.InsertModuleEvents(&abci.RequestFinalizeBlock{Height: 2, Txs: secBlockTxs, Time: time}, &abci.ResponseFinalizeBlock{Events: []abci.Event{}, TxResults: secExecTxResults})
+		require.NoError(t, err)
+
+		_, count, err := customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height <= 2 AND john.doe < 1 AND john.doe ='10'"))
+		require.NoError(t, err)
+		require.Equal(t, uint64(3), count)
+
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height < 2 AND wasm.foobar = 'x'"))
+		require.NoError(t, err)
+		require.Equal(t, uint64(2), count)
+
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height > 1"))
+		require.NoError(t, err)
+		require.Equal(t, uint64(3), count)
+
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height = 2 AND hello.world > 1"))
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), count)
 	})
 
 	t.Run("IndexerService", func(t *testing.T) {
@@ -281,85 +354,6 @@ func TestIndexing(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 		require.True(t, service.IsRunning())
 	})
-
-	t.Run("IndexCosmWasmTxs", func(t *testing.T) {
-		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
-
-		txResult := wasmTxResultWithEvents([]abci.Event{
-			psql.MakeIndexedEvent("account.number", "1"),
-			psql.MakeIndexedEvent("account.owner", "Ivan"),
-			psql.MakeIndexedEvent("account.owner", "Yulieta"),
-			psql.MakeIndexedEvent("wasm.data", "Wasm data"),
-
-			{Type: "", Attributes: []abci.EventAttribute{
-				{
-					Key:   "not_allowed",
-					Value: "Vlad",
-					Index: true,
-				},
-			}},
-		})
-		nonWasmTxResult := txResultWithEvents([]abci.Event{
-			psql.MakeIndexedEvent("account.number", "2"),
-			psql.MakeIndexedEvent("account.owner", "Duc"),
-			psql.MakeIndexedEvent("account.owner", "Pham"),
-
-			{Type: "", Attributes: []abci.EventAttribute{
-				{
-					Key:   "not_allowed",
-					Value: "Vlad",
-					Index: true,
-				},
-			}},
-		})
-		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult, nonWasmTxResult}))
-
-		// try indexing tx requests
-		time := time.Now()
-		txs := [][]byte{}
-		txs = append(txs, txResult.Tx, nonWasmTxResult.Tx)
-		execTxResults := []*abci.ExecTxResult{&txResult.Result, &nonWasmTxResult.Result}
-		req := &abci.RequestFinalizeBlock{Txs: txs, Time: time}
-		res := &abci.ResponseFinalizeBlock{Events: []abci.Event{}, TxResults: execTxResults}
-		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
-		err := customTxEventSink.InsertModuleEvents(req, res)
-		require.NoError(t, err)
-
-		customWasmEventSink := indexerwasm.NewWasmEventSinkIndexer(indexer, encodingConfig)
-		txEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
-		err = customWasmEventSink.InsertModuleEvents(req, res)
-		require.NoError(t, err)
-		count, err := txEventSink.SearchTxs(1, 1)
-		require.NoError(t, err)
-		require.Equal(t, count, uint64(2))
-
-		// txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
-		// require.NoError(t, err)
-		// assert.Equal(t, txResult, txr)
-
-		// require.NoError(t, verifyTimeStamp(psql.TableTxResults))
-		// require.NoError(t, verifyTimeStamp(viewTxEvents))
-
-		// verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
-		// 	txr, err := indexer.GetTxByHash(types.Tx(txResult.Tx).Hash())
-		// 	return txr != nil, err
-		// })
-		// verifyNotImplemented(t, "tx search", func() (bool, error) {
-		// 	txr, err := indexer.SearchTxEvents(context.Background(), nil)
-		// 	return txr != nil, err
-		// })
-
-		// // try to insert the duplicate tx events.
-		// err = indexer.IndexTxEvents([]*abci.TxResult{txResult})
-		// require.NoError(t, err)
-
-		// // test loading tx events
-		// height := uint64(1)
-		// txEvent, err := loadTxEvents(height)
-		// require.NoError(t, err)
-		// txHash := fmt.Sprintf("%X", types.Tx(txResult.Tx).Hash())
-		// require.Equal(t, txEvent, &indexertx.TxEvent{Height: height, ChainId: chainID, Type: "tx", Key: "hash", Value: txHash})
-	})
 }
 
 func TestStop(t *testing.T) {
@@ -369,9 +363,9 @@ func TestStop(t *testing.T) {
 
 // newTestBlock constructs a fresh copy of a new block event containing
 // known test values to exercise the indexer.
-func newTestBlockEvents() types.EventDataNewBlockEvents {
+func newTestBlockEvents(height int64) types.EventDataNewBlockEvents {
 	return types.EventDataNewBlockEvents{
-		Height: 1,
+		Height: height,
 		Events: []abci.Event{
 			psql.MakeIndexedEvent("begin_event.proposer", "FCAA001"),
 			psql.MakeIndexedEvent("thingy.whatzit", "O.O"),
@@ -410,7 +404,7 @@ func resetDatabase(db *sql.DB) error {
 
 // txResultWithEvents constructs a fresh transaction result with fixed values
 // for testing, that includes the specified events.
-func txResultWithEvents(events []abci.Event) *abci.TxResult {
+func txResultWithEvents(events []abci.Event, height int64) *abci.TxResult {
 
 	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
 	grant := "orai1wsg0l9c6tr5uzjrhwhqch9tt4e77h0w28wvp3u"
@@ -431,7 +425,7 @@ func txResultWithEvents(events []abci.Event) *abci.TxResult {
 	}
 
 	return &abci.TxResult{
-		Height: 1,
+		Height: height,
 		Index:  0,
 		Tx:     txBz,
 		Result: abci.ExecTxResult{
