@@ -2,6 +2,7 @@ package tx_test
 
 import (
 	"fmt"
+	"math/big"
 	"regexp"
 	"testing"
 
@@ -56,8 +57,8 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 			name: "Inclusive lower bound, exclusive upper bound",
 			queryRanges: cometbftindexer.QueryRanges{
 				types.TxHeightKey: cometbftindexer.QueryRange{
-					LowerBound:        int64(5),
-					UpperBound:        int64(10),
+					LowerBound:        big.NewFloat(5),
+					UpperBound:        big.NewFloat(10),
 					Key:               types.TxHeightKey,
 					IncludeLowerBound: true,
 					IncludeUpperBound: false,
@@ -71,8 +72,8 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 			name: "Exclusive lower and upper bounds",
 			queryRanges: cometbftindexer.QueryRanges{
 				types.TxHeightKey: cometbftindexer.QueryRange{
-					LowerBound:        int64(5),
-					UpperBound:        int64(10),
+					LowerBound:        big.NewFloat(5),
+					UpperBound:        big.NewFloat(10),
 					Key:               types.TxHeightKey,
 					IncludeLowerBound: false,
 					IncludeUpperBound: false,
@@ -86,7 +87,7 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 			name: "Inclusive upper bound only",
 			queryRanges: cometbftindexer.QueryRanges{
 				types.TxHeightKey: cometbftindexer.QueryRange{
-					UpperBound:        int64(15),
+					UpperBound:        big.NewFloat(15),
 					Key:               types.TxHeightKey,
 					IncludeLowerBound: false,
 					IncludeUpperBound: true,
@@ -100,7 +101,7 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 			name: "Exclusive lower bound only",
 			queryRanges: cometbftindexer.QueryRanges{
 				types.TxHeightKey: cometbftindexer.QueryRange{
-					LowerBound:        int64(20),
+					LowerBound:        big.NewFloat(20),
 					Key:               types.TxHeightKey,
 					IncludeLowerBound: false,
 					IncludeUpperBound: true,
@@ -121,9 +122,9 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			heightRange, ok := tc.queryRanges[types.TxHeightKey]
+			heightRange := tc.queryRanges[types.TxHeightKey]
 			tc.heightInfo.SetheightRange(heightRange)
-			query, vals, _ := tx.CreateHeightRangeWhereConditions(tc.heightInfo, ok)
+			query, vals, _ := tx.CreateHeightRangeWhereConditions(tc.heightInfo)
 			require.Equal(t, tc.expectedVals, vals)
 
 			re := regexp.MustCompile(`\s+`)

@@ -3,6 +3,7 @@ package tx
 import (
 	"database/sql"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/CosmWasm/wasmd/app/params"
@@ -110,15 +111,14 @@ func (cs *TxEventSink) SearchTxs(q *query.Query, limit uint16) ([]*txtypes.GetTx
 	// extract ranges
 	// if both upper and lower bounds exist, it's better to get them in order not
 	// no iterate over kvs that are not within range.
-	ranges, nonRangeIndexes := lookForRangesWithHeight(conditions)
-	heightRange, ok := ranges[types.TxHeightKey]
+	ranges, indexes, heightRange := cometbftindexer.LookForRangesWithHeight(conditions)
 	heightInfo.SetheightRange(heightRange)
-	whereConditions, args, argsCount := CreateHeightRangeWhereConditions(heightInfo, ok)
+	whereConditions, args, argsCount := CreateHeightRangeWhereConditions(heightInfo)
 	whereConditions, err := cs.createCursorPaginationCondition(whereConditions)
 	if err != nil {
 		return nil, 0, err
 	}
-	filterTableClause, filterArgs := CreateNonHeightConditionFilterTable(conditions, ranges, nonRangeIndexes, argsCount)
+	filterTableClause, filterArgs := CreateNonHeightConditionFilterTable(conditions, ranges, indexes, argsCount)
 	queryClause := fmt.Sprintf(`
 	-- get all heights <= x that have txs, and limit the number of heights to y
 	WITH filtered_heights AS (
@@ -235,11 +235,11 @@ func (cs *TxEventSink) EncodingConfig() params.EncodingConfig {
 	return cs.encodingConfig
 }
 
-func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo, hasHeightRange bool) (whereConditions string, vals []interface{}, argsCount int) {
+func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo) (whereConditions string, vals []interface{}, argsCount int) {
 	// args count is used to increment parameterized arguments
 	argsCount = 1
 	// prioritize range conditions
-	if hasHeightRange {
+	if isHeightRangeNotEmpty(heightInfo.HeightRange()) {
 		value := heightInfo.HeightRange()
 		ops, values := detectQueryRangeBound(value)
 		whereConditions += "WHERE"
@@ -260,6 +260,10 @@ func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo, hasHeightRange b
 		return fmt.Sprintf("WHERE height = $%d", argsCount), []interface{}{heightInfo.Height()}, argsCount
 	}
 	return "", nil, 0
+}
+
+func isHeightRangeNotEmpty(heightRange cometbftindexer.QueryRange) bool {
+	return heightRange.LowerBound != nil || heightRange.UpperBound != nil
 }
 
 func (cs *TxEventSink) createCursorPaginationCondition(whereCondition string) (string, error) {
@@ -283,7 +287,7 @@ SELECT height FROM ` + psql.TableBlocks + ` order by height desc limit 1;
 	return fmt.Sprintf("WHERE height <= %d", height), nil
 }
 
-func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, ranges cometbftindexer.QueryRanges, nonRangeIndexes []int, argsCount int) (filterTableClause string, vals []interface{}) {
+func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, ranges cometbftindexer.QueryRanges, rangeIndexes []int, argsCount int) (filterTableClause string, vals []interface{}) {
 	// TODO: add filter conditions to handle non-height filters
 	return "", []interface{}{}
 }
@@ -295,67 +299,17 @@ func detectQueryRangeBound(value cometbftindexer.QueryRange) (ops []string, vals
 			operator = ">="
 		}
 		ops = append(ops, operator)
-		vals = append(vals, value.LowerBound.(int64))
+		val, _ := value.LowerBound.(*big.Float).Int64()
+		vals = append(vals, val)
 	}
 	if value.UpperBound != nil {
 		operator := "<"
 		if value.IncludeUpperBound {
 			operator = "<="
 		}
-		upper := value.UpperBound.(int64)
 		ops = append(ops, operator)
+		upper, _ := value.UpperBound.(*big.Float).Int64()
 		vals = append(vals, upper)
 	}
 	return ops, vals
-}
-
-// lookForRangesWithHeight returns a mapping of QueryRanges and the matching indexes in
-// the provided query conditions.
-func lookForRangesWithHeight(conditions []syntax.Condition) (queryRange cometbftindexer.QueryRanges, nonRangeIndexes []int) {
-	queryRange = make(cometbftindexer.QueryRanges)
-	for i, c := range conditions {
-		if cometbftindexer.IsRangeOperation(c.Op) {
-			r, ok := queryRange[c.Tag]
-			if !ok {
-				r = cometbftindexer.QueryRange{Key: c.Tag}
-			}
-
-			switch c.Op {
-			case syntax.TGt:
-				r.LowerBound = conditionArg(c)
-
-			case syntax.TGeq:
-				r.IncludeLowerBound = true
-				r.LowerBound = conditionArg(c)
-
-			case syntax.TLt:
-				r.UpperBound = conditionArg(c)
-
-			case syntax.TLeq:
-				r.IncludeUpperBound = true
-				r.UpperBound = conditionArg(c)
-			}
-
-			queryRange[c.Tag] = r
-		} else {
-			nonRangeIndexes = append(nonRangeIndexes, i)
-		}
-	}
-
-	return queryRange, nonRangeIndexes
-}
-
-func conditionArg(c syntax.Condition) interface{} {
-	if c.Arg == nil {
-		return nil
-	}
-	switch c.Arg.Type {
-	case syntax.TNumber:
-		num, _ := c.Arg.Number().Int64()
-		return num
-	case syntax.TTime, syntax.TDate:
-		return c.Arg.Time()
-	default:
-		return c.Arg.Value() // string
-	}
 }

@@ -391,7 +391,7 @@ func newTestBlockEvents(height int64) types.EventDataNewBlockEvents {
 
 // readSchema loads the indexing database schema file
 func readSchema() ([]*schema.Migration, error) {
-	filename := filepath.Join("../", "db_sql", "schema.sql")
+	filename := filepath.Join("../", "dbschema", "schema.sql")
 	contents, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read sql file from '%s': %w", filename, err)

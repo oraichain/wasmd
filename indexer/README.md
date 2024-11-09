@@ -29,7 +29,7 @@ docker-compose up -d
 
 There are several tools that can do the trick: **pgAdmin**, **dBeaver**, ...
 
-Use [these migration SQLs](./db_sql/schema.sql) to create tables for the indexer via **dBeaver** or your favorite migration script.
+Use [these migration SQLs](./dbschema/schema.sql) to create tables for the indexer via **dBeaver** or your favorite migration script.
 
 ### Configuration
 
@@ -60,3 +60,6 @@ indexer = "psql"
 # sslmode=disable for local
 psql-conn = "postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
 ```
+
+### Testing
+
