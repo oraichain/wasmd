@@ -288,19 +288,33 @@ func TestIndexing(t *testing.T) {
 		err = customTxEventSink.InsertModuleEvents(&abci.RequestFinalizeBlock{Height: 2, Txs: secBlockTxs, Time: time}, &abci.ResponseFinalizeBlock{Events: []abci.Event{}, TxResults: secExecTxResults})
 		require.NoError(t, err)
 
-		_, count, err := customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height <= 2 AND john.doe < 1 AND john.doe ='10'"))
+		_, count, err := customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height <= 2 AND john.doe < 1 AND john.doe ='10'"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(3), count)
 
-		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height < 2 AND wasm.foobar = 'x'"))
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height < 2 AND wasm.foobar = 'x'"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(2), count)
 
-		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height > 1"))
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height > 1"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(3), count)
 
-		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height = 2 AND hello.world > 1"))
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height < 1"), 10)
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), count)
+
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height = 2 AND hello.world > 1"), 10)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), count)
+
+		// no height clause, with limit 10 -> got all txs
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("hello.world > 1"), 10)
+		require.NoError(t, err)
+		require.Equal(t, uint64(3), count)
+
+		// limit 1 with no query clause -> only 1 txs
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("hello.world > 1"), 1)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), count)
 	})

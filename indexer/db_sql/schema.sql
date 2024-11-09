@@ -16,7 +16,7 @@ CREATE TABLE blocks (
 
 -- Index blocks by height and chain, since we need to resolve block IDs when
 -- indexing transaction records and transaction events.
-CREATE INDEX idx_blocks_height_chain ON blocks(height, chain_id);
+CREATE INDEX idx_blocks_height_chain ON blocks(height desc, chain_id);
 
 -- The tx_requests table records metadata about transaction requests.
 CREATE TABLE tx_requests (
@@ -24,7 +24,7 @@ CREATE TABLE tx_requests (
   -- The block to which this transaction belongs.
   block_id BIGINT NOT NULL REFERENCES blocks(rowid),
   -- The sequential index of the transaction within the block.
-  index INTEGER NOT NULL,
+  "index" INTEGER NOT NULL,
   -- block height
   height BIGINT NOT NULL,
   -- When this result record was logged into the sink, in UTC.
@@ -37,15 +37,18 @@ CREATE TABLE tx_requests (
   fee VARCHAR NOT NULL,
   -- memo of the transaction
   memo VARCHAR,
-  UNIQUE (block_id, index)
+  UNIQUE (block_id, "index")
 );
 
 -- Index idx_tx_requests_block_id_index by block_id and index, since we need to join tx_results with tx_requests
 -- block id and index forms a unique transaction in both tables.
-CREATE INDEX idx_tx_requests_block_id_index ON tx_requests(block_id, index);
+CREATE INDEX idx_tx_requests_block_id_index ON tx_requests(block_id desc, "index" desc);
 
 -- index based on hash for quick query
 CREATE INDEX idx_tx_requests_hash ON tx_requests(tx_hash);
+
+-- index based on height for quick query
+CREATE INDEX idx_tx_requests_height ON tx_requests(height);
 
 -- The tx_results table records metadata about transaction results.  Note that
 -- the events from a transaction are stored separately.
@@ -54,7 +57,7 @@ CREATE TABLE tx_results (
   -- The block to which this transaction belongs.
   block_id BIGINT NOT NULL REFERENCES blocks(rowid),
   -- The sequential index of the transaction within the block.
-  index INTEGER NOT NULL,
+  "index" INTEGER NOT NULL,
   height BIGINT NOT NULL,
   -- When this result record was logged into the sink, in UTC.
   created_at TIMESTAMPTZ NOT NULL,
@@ -62,12 +65,18 @@ CREATE TABLE tx_results (
   tx_hash VARCHAR NOT NULL,
   -- The protobuf wire encoding of the TxResult message.
   tx_result BYTEA NOT NULL,
-  UNIQUE (block_id, index)
+  UNIQUE (block_id, "index")
 );
+
+-- index based on hash for quick query
+CREATE INDEX idx_tx_results_hash ON tx_results(tx_hash);
+
+-- index based on height for quick query
+CREATE INDEX idx_tx_results_height ON tx_results(height);
 
 -- Index tx_results by block_id and index, since we need to join tx_results with tx_requests
 -- block id and index forms a unique transaction in both tables.
-CREATE INDEX idx_tx_results_block_id_index ON tx_results(block_id, index);
+CREATE INDEX idx_tx_results_block_id_index ON tx_results(block_id desc, "index" desc);
 
 -- The events table records events. All events (both block and transaction) are
 -- associated with a block ID; transaction events also have a transaction ID.
@@ -129,7 +138,7 @@ WHERE
 CREATE VIEW tx_events AS
 SELECT
   blocks.height,
-  index,
+  "index",
   chain_id,
   type,
   key,
