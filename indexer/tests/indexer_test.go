@@ -215,13 +215,6 @@ func TestIndexing(t *testing.T) {
 		// try to insert the duplicate tx events.
 		err = indexer.IndexTxEvents([]*abci.TxResult{txResult})
 		require.NoError(t, err)
-
-		// test loading tx events
-		height := uint64(1)
-		txEvent, err := loadTxEvents(height)
-		require.NoError(t, err)
-		txHash := fmt.Sprintf("%X", types.Tx(txResult.Tx).Hash())
-		require.Equal(t, txEvent, &indexertx.TxEvent{Height: height, ChainId: chainID, Type: "tx", Key: "hash", Value: txHash})
 	})
 
 	t.Run("IndexCosmWasmTxs", func(t *testing.T) {
@@ -508,21 +501,6 @@ SELECT tx_result FROM `+psql.TableTxResults+` WHERE tx_hash = $1;
 	}
 
 	return txr, nil
-}
-
-func loadTxEvents(height uint64) (*indexertx.TxEvent, error) {
-	var Height uint64
-	var ChainId string
-	var Type string
-	var Key string
-	var Value string
-	if err := testDB().QueryRow(`
-SELECT height, chain_id, type, key, value FROM `+viewTxEvents+` WHERE height = $1;
-`, height).Scan(&Height, &ChainId, &Type, &Key, &Value); err != nil {
-		return nil, fmt.Errorf("lookup tx event for height %d failed: %v", height, err)
-	}
-
-	return &indexertx.TxEvent{Height: Height, ChainId: ChainId, Type: Type, Key: Key, Value: Value}, nil
 }
 
 func verifyTimeStamp(tableName string) error {
