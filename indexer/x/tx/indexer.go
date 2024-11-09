@@ -29,6 +29,7 @@ type TxEventSink struct {
 
 const (
 	TableTxRequests = "tx_requests"
+	TxSearchLimit   = uint16(5000)
 )
 
 var _ indexer.ModuleEventSinkIndexer = (*TxEventSink)(nil)
@@ -96,7 +97,7 @@ RETURNING rowid;
 }
 
 // TODO: add limit & filters based on non-height conditions
-func (cs *TxEventSink) SearchTxs(q *query.Query) ([]*txtypes.GetTxResponse, uint64, error) {
+func (cs *TxEventSink) SearchTxs(q *query.Query, limit uint16) ([]*txtypes.GetTxResponse, uint64, error) {
 	count := uint64(0)
 	txResponses := []*txtypes.GetTxResponse{}
 
@@ -112,27 +113,40 @@ func (cs *TxEventSink) SearchTxs(q *query.Query) ([]*txtypes.GetTxResponse, uint
 	ranges, nonRangeIndexes := lookForRangesWithHeight(conditions)
 	_, ok := ranges[types.TxHeightKey]
 	heightInfo.SetheightRange(ranges[types.TxHeightKey])
-	whereConditions, args, _ := CreateHeightRangeWhereConditions(heightInfo, ok)
-	filterTableClause, filterArgs, _ := CreateNonHeightConditionFilterTable(conditions, ranges, nonRangeIndexes)
-	queryClause := `
-	with filtered_tx_event_attributes as (
+	whereConditions, args, argsCount := CreateHeightRangeWhereConditions(heightInfo, ok)
+	whereConditions, err := cs.createCursorPaginationCondition(whereConditions)
+	if err != nil {
+		return nil, 0, err
+	}
+	filterTableClause, filterArgs := CreateNonHeightConditionFilterTable(conditions, ranges, nonRangeIndexes, argsCount)
+	queryClause := fmt.Sprintf(`
+	-- get all heights <= x that have txs, and limit the number of heights to y
+	WITH filtered_heights AS (
+    SELECT distinct tr.rowid, height
+    FROM tx_results tr %s
+    ORDER BY height desc
+		LIMIT %d
+	),
+	-- filter all attributes within the filtered heights. This makes sure we still have limit & pagination without filtering out events
+	filtered_tx_event_attributes as (
   SELECT
     events.block_id,
     height,
     tx_id
   FROM
     events
+		JOIN filtered_heights fh on (fh.rowid = events.tx_id)
     JOIN attributes ON (events.rowid = attributes.event_id)
-    JOIN blocks on (events.block_id = blocks.rowid)
-  ` + whereConditions + `
-     AND tx_id is NOT null
+  WHERE tx_id is NOT null 
 	ORDER BY tx_id DESC 
 	),
+	-- filter txs based on input composite key conditions
 	filtered_tx_ids as (
 		select distinct tx_id
 		from filtered_tx_event_attributes te
-		` + filterTableClause + `
+		%s
 	)
+	-- join everything to get the final table with sufficient data
 	select
 		tr.height,
 		tr.created_at,
@@ -149,7 +163,7 @@ func (cs *TxEventSink) SearchTxs(q *query.Query) ([]*txtypes.GetTxResponse, uint
 			and tx_requests.index = tr.index
 		)
 	ORDER BY ftx.tx_id DESC;
-	`
+	`, whereConditions, min(TxSearchLimit, limit), filterTableClause)
 	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
 
 		// query txs. FIXME: Need filters and limit!
@@ -248,9 +262,30 @@ func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo, hasHeightRange b
 	return "", nil, 0
 }
 
-func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, ranges cometbftindexer.QueryRanges, nonRangeIndexes []int) (filterTableClause string, vals []interface{}, argsCount int) {
+func (cs *TxEventSink) createCursorPaginationCondition(whereCondition string) (string, error) {
+	if whereCondition != "" {
+		return whereCondition, nil
+	}
+	// if the whereCondition is empty -> we create the pagination cursor based on the latest height
+	var height int64
+	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
+		// Find the block associated with this transaction. The block header
+		// must have been indexed prior to the transactions belonging to it.
+		if err := dbtx.QueryRow(`
+SELECT height FROM ` + psql.TableBlocks + ` order by height desc limit 1;
+`).Scan(&height); err != nil {
+			return fmt.Errorf("finding block height: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("WHERE height <= %d", height), nil
+}
+
+func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, ranges cometbftindexer.QueryRanges, nonRangeIndexes []int, argsCount int) (filterTableClause string, vals []interface{}) {
 	// TODO: add filter conditions to handle non-height filters
-	return "", []interface{}{}, 0
+	return "", []interface{}{}
 }
 
 func detectQueryRangeBound(value cometbftindexer.QueryRange) (ops []string, vals []interface{}) {
