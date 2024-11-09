@@ -109,48 +109,51 @@ func (cs *TxEventSink) SearchTxs(q *query.Query) ([]*txtypes.GetTxResponse, uint
 	// extract ranges
 	// if both upper and lower bounds exist, it's better to get them in order not
 	// no iterate over kvs that are not within range.
-	ranges, _ := lookForRangesWithHeight(conditions)
+	ranges, nonRangeIndexes := lookForRangesWithHeight(conditions)
 	_, ok := ranges[types.TxHeightKey]
 	heightInfo.SetheightRange(ranges[types.TxHeightKey])
 	whereConditions, args, _ := CreateHeightRangeWhereConditions(heightInfo, ok)
+	filterTableClause, filterArgs, _ := CreateNonHeightConditionFilterTable(conditions, ranges, nonRangeIndexes)
 	queryClause := `
+	with filtered_tx_event_attributes as (
+  SELECT
+    events.block_id,
+    height,
+    tx_id
+  FROM
+    events
+    JOIN attributes ON (events.rowid = attributes.event_id)
+    JOIN blocks on (events.block_id = blocks.rowid)
+  ` + whereConditions + `
+     AND tx_id is NOT null
+	ORDER BY tx_id DESC 
+	),
+	filtered_tx_ids as (
+		select distinct tx_id
+		from filtered_tx_event_attributes te
+		` + filterTableClause + `
+	)
 	select
-  tx_requests.height,
-  tx_requests.created_at,
-  tx_requests.tx_hash,
-  messages,
-  memo,
-  fee,
-	code, 
-	logs, 
-	info, 
-	gas_wanted, 
-	gas_used, 
-	codespace,
-  jsonb_agg(
-    distinct jsonb_build_object('type', type, 'attributes', attributes)
-  ) as events
-from tx_requests
-join tx_results txr on (tx_requests.block_id = txr.block_id)
-join json_attribute_events jae on (tx_requests.height = jae.height) ` + whereConditions +
-		` group by
-  tx_requests.height,
-  tx_requests.created_at,
-  tx_requests.tx_hash,
-  messages,
-  memo,
-  fee,
-	code, 
-	logs, 
-	info, 
-	gas_wanted, 
-	gas_used, 
-	codespace;
+		tr.height,
+		tr.created_at,
+		tr.tx_hash,
+		messages,
+		memo,
+		fee,
+		tr.tx_result
+	from
+		filtered_tx_ids ftx
+		join tx_results tr on tr.rowid = ftx.tx_id
+		join tx_requests on (
+			tx_requests.block_id = tr.block_id
+			and tx_requests.index = tr.index
+		)
+	ORDER BY ftx.tx_id DESC;
 	`
 	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
 
 		// query txs. FIXME: Need filters and limit!
-		row, err := dbtx.Query(queryClause, args...)
+		row, err := dbtx.Query(queryClause, append(args, filterArgs...)...)
 		if err != nil {
 			return err
 		}
@@ -167,20 +170,18 @@ join json_attribute_events jae on (tx_requests.height = jae.height) ` + whereCon
 			var messages []byte
 			var memo string
 			var fee string
-			var code uint32
-			var logs string
-			var info string
-			var gasWanted int64
-			var gasUsed int64
-			var codespace string
-			var events string
+			var txResultBz []byte
+			var txResult abci.TxResult
 
-			err = row.Scan(&height, &createdAt, &txHash, &messages, &memo, &fee, &code, &logs, &info, &gasWanted, &gasUsed, &codespace, &events)
+			err = row.Scan(&height, &createdAt, &txHash, &messages, &memo, &fee, &txResultBz)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			msgsAny, err := indexer.UnmarshalMsgsBz(cs.encodingConfig, messages)
 			if err != nil {
+				return err
+			}
+			if err := cs.encodingConfig.Codec.Unmarshal(txResultBz, &txResult); err != nil {
 				return err
 			}
 
@@ -189,17 +190,12 @@ join json_attribute_events jae on (tx_requests.height = jae.height) ` + whereCon
 				return err
 			}
 
-			var eventsProto []abci.Event
-			if err := cs.encodingConfig.Amino.UnmarshalJSON([]byte(events), &eventsProto); err != nil {
-				return err
-			}
-
 			txBody := txtypes.TxBody{
 				Messages: msgsAny,
 				Memo:     memo,
 			}
 			cosmosTx := txtypes.Tx{Body: &txBody, AuthInfo: &txtypes.AuthInfo{Fee: &feeProto}}
-			txResponse := cosmostypes.TxResponse{Height: height, TxHash: txHash, Codespace: codespace, Code: code, Info: info, RawLog: logs, GasWanted: gasWanted, GasUsed: gasUsed, Events: eventsProto}
+			txResponse := cosmostypes.TxResponse{Height: height, TxHash: txHash, Codespace: txResult.Result.Codespace, Code: txResult.Result.Code, Info: txResult.Result.Info, RawLog: txResult.Result.Log, GasWanted: txResult.Result.GasWanted, GasUsed: txResult.Result.GasUsed, Events: txResult.Result.Events}
 			txResponses = append(txResponses, &txtypes.GetTxResponse{Tx: &cosmosTx, TxResponse: &txResponse})
 		}
 		return nil
@@ -235,9 +231,9 @@ func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo, hasHeightRange b
 		whereConditions += "WHERE"
 		for i, operator := range ops {
 			if i == len(ops)-1 {
-				whereConditions += fmt.Sprintf(" %s.height %s $%d", TableTxRequests, operator, argsCount)
+				whereConditions += fmt.Sprintf(" height %s $%d", operator, argsCount)
 			} else {
-				whereConditions += fmt.Sprintf(" %s.height %s $%d AND", TableTxRequests, operator, argsCount)
+				whereConditions += fmt.Sprintf(" height %s $%d AND", operator, argsCount)
 			}
 
 			argsCount++
@@ -247,9 +243,14 @@ func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo, hasHeightRange b
 	}
 	// if there's no range, and has eq condition -> handle it
 	if heightInfo.Height() != 0 {
-		return fmt.Sprintf("WHERE %s.height = $%d", TableTxRequests, argsCount), []interface{}{heightInfo.Height()}, argsCount
+		return fmt.Sprintf("WHERE height = $%d", argsCount), []interface{}{heightInfo.Height()}, argsCount
 	}
 	return "", nil, 0
+}
+
+func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, ranges cometbftindexer.QueryRanges, nonRangeIndexes []int) (filterTableClause string, vals []interface{}, argsCount int) {
+	// TODO: add filter conditions to handle non-height filters
+	return "", []interface{}{}, 0
 }
 
 func detectQueryRangeBound(value cometbftindexer.QueryRange) (ops []string, vals []interface{}) {

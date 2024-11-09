@@ -65,7 +65,7 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 			},
 			heightInfo:   heightInfo,
 			expectedVals: []interface{}{int64(5), int64(10)},
-			expectedSQL:  "WHEREtx_requests.height>=$1ANDtx_requests.height<$2",
+			expectedSQL:  "WHEREheight>=$1ANDheight<$2",
 		},
 		{
 			name: "Exclusive lower and upper bounds",
@@ -80,7 +80,7 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 			},
 			heightInfo:   heightInfo,
 			expectedVals: []interface{}{int64(5), int64(10)},
-			expectedSQL:  "WHEREtx_requests.height>$1ANDtx_requests.height<$2",
+			expectedSQL:  "WHEREheight>$1ANDheight<$2",
 		},
 		{
 			name: "Inclusive upper bound only",
@@ -94,7 +94,7 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 			},
 			heightInfo:   heightInfo,
 			expectedVals: []interface{}{int64(15)},
-			expectedSQL:  "WHEREtx_requests.height<=$1",
+			expectedSQL:  "WHEREheight<=$1",
 		},
 		{
 			name: "Exclusive lower bound only",
@@ -108,14 +108,14 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 			},
 			heightInfo:   heightInfo,
 			expectedVals: []interface{}{int64(20)},
-			expectedSQL:  "WHEREtx_requests.height>$1",
+			expectedSQL:  "WHEREheight>$1",
 		},
 		{
 			name:         "Equal only",
 			queryRanges:  cometbftindexer.QueryRanges{},
 			heightInfo:   heightInfo,
 			expectedVals: []interface{}{int64(2)},
-			expectedSQL:  "WHEREtx_requests.height=$1",
+			expectedSQL:  "WHEREheight=$1",
 		},
 	}
 

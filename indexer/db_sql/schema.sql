@@ -40,6 +40,13 @@ CREATE TABLE tx_requests (
   UNIQUE (block_id, index)
 );
 
+-- Index idx_tx_requests_block_id_index by block_id and index, since we need to join tx_results with tx_requests
+-- block id and index forms a unique transaction in both tables.
+CREATE INDEX idx_tx_requests_block_id_index ON tx_requests(block_id, index);
+
+-- index based on hash for quick query
+CREATE INDEX idx_tx_requests_hash ON tx_requests(tx_hash);
+
 -- The tx_results table records metadata about transaction results.  Note that
 -- the events from a transaction are stored separately.
 CREATE TABLE tx_results (
@@ -48,22 +55,19 @@ CREATE TABLE tx_results (
   block_id BIGINT NOT NULL REFERENCES blocks(rowid),
   -- The sequential index of the transaction within the block.
   index INTEGER NOT NULL,
+  height BIGINT NOT NULL,
   -- When this result record was logged into the sink, in UTC.
   created_at TIMESTAMPTZ NOT NULL,
   -- The hex-encoded hash of the transaction.
   tx_hash VARCHAR NOT NULL,
   -- The protobuf wire encoding of the TxResult message.
   tx_result BYTEA NOT NULL,
-  -- code of the tx verifying if it's successful or not
-  code INTEGER NOT NULL,
-  -- extra useful data
-  logs VARCHAR NOT NULL,
-  info VARCHAR NOT NULL,
-  gas_wanted BIGINT NOT NULL,
-  gas_used BIGINT NOT NULL,
-  codespace VARCHAR NOT NULL,
   UNIQUE (block_id, index)
 );
+
+-- Index tx_results by block_id and index, since we need to join tx_results with tx_requests
+-- block id and index forms a unique transaction in both tables.
+CREATE INDEX idx_tx_results_block_id_index ON tx_results(block_id, index);
 
 -- The events table records events. All events (both block and transaction) are
 -- associated with a block ID; transaction events also have a transaction ID.
@@ -87,6 +91,9 @@ CREATE TABLE attributes (
   value VARCHAR NULL,
   UNIQUE (event_id, key)
 );
+
+-- Index attributes composite key & value so we can filter attributes easier
+CREATE INDEX idx_attributes_composite_key_value ON attributes(composite_key, value);
 
 -- A joined view of events and their attributes. Events that do not have any
 -- attributes are represented as a single row with empty key and value fields.
@@ -121,7 +128,7 @@ WHERE
 -- A joined view of all transaction events.
 CREATE VIEW tx_events AS
 SELECT
-  height,
+  blocks.height,
   index,
   chain_id,
   type,
@@ -136,64 +143,47 @@ FROM
 WHERE
   event_attributes.tx_id IS NOT NULL;
 
-CREATE VIEW json_attribute_events AS
-SELECT
-  tx_requests.block_id,
-  height,
-  tx_hash,
-  type,
-  jsonb_agg(
-    jsonb_build_object(
-      'key',
-      key,
-      'value',
-      value
-    )
-  ) AS attributes
-FROM
-  tx_requests
-  JOIN event_attributes ON (tx_requests.block_id = event_attributes.block_id)
-WHERE
-  event_attributes.tx_id IS NOT NULL
-GROUP BY
-  tx_requests.block_id,
-  height,
-  height,
-  tx_hash,
-  type;
-
+-- with filtered_tx_event_attributes as (
+--   SELECT
+--     events.block_id,
+--     height,
+--     tx_id,
+--     type,
+--     key,
+--     composite_key,
+--     value
+--   FROM
+--     events
+--     JOIN attributes ON (events.rowid = attributes.event_id)
+--     join blocks on (events.block_id = blocks.rowid)
+--   where
+--     tx_id is NOT null -- and filter based on heights here
+--     and height > 30
+--     and height < 40
+--   ORDER BY
+--     tx_id desc
+-- ),
+-- filtered_tx_ids as (
+--   select
+--     tx_id
+--   from
+--     filtered_tx_event_attributes te2
+--   where
+--     te2.composite_key = 'message.module'
+--     AND te2.value = 'bank'
+-- )
 -- select
---   ftx.height,
---   created_at,
---   ftx.tx_hash,
+--   tx.height,
+--   tx.created_at,
+--   tx.tx_hash,
 --   messages,
 --   memo,
 --   fee,
---   jsonb_agg(
---     DISTINCT jsonb_build_object('type', type, 'attributes', attributes)
---   ) as events
+--   tr.tx_result
 -- from
---   tx_requests ftx
---   join json_attribute_events jae on (ftx.height = jae.height)
---   join (
---     SELECT
---       t1.height
---     FROM
---       tx_events t1
---       JOIN tx_events t2 ON t1.height = t2.height
---     WHERE
---       (
---         t2.composite_key LIKE 'message.module%'
---         AND t2.value = 'bank'
---       )
---   ) as filter_table on filter_table.height = ftx.height
--- where
---   ftx.height > 30
---   and ftx.height < 40
--- group by
---   ftx.height,
---   created_at,
---   ftx.tx_hash,
---   messages,
---   memo,
---   fee;
+--   filtered_tx_ids ftx
+--   join tx_results tr on tr.rowid = ftx.tx_id
+--   join tx_requests tx on (
+--     tx.block_id = tr.block_id
+--     and tx."index" = tr."index"
+--   );
