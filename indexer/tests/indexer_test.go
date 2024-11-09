@@ -193,7 +193,7 @@ func TestIndexing(t *testing.T) {
 					Index: true,
 				},
 			}},
-		}, 1)
+		}, 1, 0)
 		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
 
 		txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
@@ -242,7 +242,7 @@ func TestIndexing(t *testing.T) {
 					Index: true,
 				},
 			}},
-		})
+		}, 1, 0)
 		nonWasmTxResult := txResultWithEvents([]abci.Event{
 			psql.MakeIndexedEvent("account.number", "2"),
 			psql.MakeIndexedEvent("account.owner", "Duc"),
@@ -255,7 +255,7 @@ func TestIndexing(t *testing.T) {
 					Index: true,
 				},
 			}},
-		}, 1)
+		}, 1, 1)
 
 		nonWasmTxResultNextHeight := txResultWithEvents([]abci.Event{
 			psql.MakeIndexedEvent("account.number", "2"),
@@ -269,7 +269,7 @@ func TestIndexing(t *testing.T) {
 					Index: true,
 				},
 			}},
-		}, 2)
+		}, 2, 0)
 
 		abciTxResults := []*abci.TxResult{txResult, nonWasmTxResult, nonWasmTxResultNextHeight}
 
@@ -404,7 +404,7 @@ func resetDatabase(db *sql.DB) error {
 
 // txResultWithEvents constructs a fresh transaction result with fixed values
 // for testing, that includes the specified events.
-func txResultWithEvents(events []abci.Event, height int64) *abci.TxResult {
+func txResultWithEvents(events []abci.Event, height int64, txIndex uint32) *abci.TxResult {
 
 	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
 	grant := "orai1wsg0l9c6tr5uzjrhwhqch9tt4e77h0w28wvp3u"
@@ -426,7 +426,7 @@ func txResultWithEvents(events []abci.Event, height int64) *abci.TxResult {
 
 	return &abci.TxResult{
 		Height: height,
-		Index:  0,
+		Index:  txIndex,
 		Tx:     txBz,
 		Result: abci.ExecTxResult{
 			Data:   []byte{0},
@@ -439,7 +439,7 @@ func txResultWithEvents(events []abci.Event, height int64) *abci.TxResult {
 
 // txResultWithEvents constructs a fresh transaction result with fixed values
 // for testing, that includes the specified events.
-func wasmTxResultWithEvents(events []abci.Event) *abci.TxResult {
+func wasmTxResultWithEvents(events []abci.Event, height int64, txIndex uint32) *abci.TxResult {
 
 	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
 	grant := "orai1wsg0l9c6tr5uzjrhwhqch9tt4e77h0w28wvp3u"
@@ -467,8 +467,8 @@ func wasmTxResultWithEvents(events []abci.Event) *abci.TxResult {
 	}
 
 	return &abci.TxResult{
-		Height: 1,
-		Index:  0,
+		Height: height,
+		Index:  txIndex,
 		Tx:     txBz,
 		Result: abci.ExecTxResult{
 			Data:   []byte{0},
