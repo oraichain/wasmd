@@ -111,8 +111,8 @@ func (cs *TxEventSink) SearchTxs(q *query.Query, limit uint16) ([]*txtypes.GetTx
 	// if both upper and lower bounds exist, it's better to get them in order not
 	// no iterate over kvs that are not within range.
 	ranges, nonRangeIndexes := lookForRangesWithHeight(conditions)
-	_, ok := ranges[types.TxHeightKey]
-	heightInfo.SetheightRange(ranges[types.TxHeightKey])
+	heightRange, ok := ranges[types.TxHeightKey]
+	heightInfo.SetheightRange(heightRange)
 	whereConditions, args, argsCount := CreateHeightRangeWhereConditions(heightInfo, ok)
 	whereConditions, err := cs.createCursorPaginationCondition(whereConditions)
 	if err != nil {
