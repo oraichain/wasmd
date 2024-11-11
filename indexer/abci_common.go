@@ -77,7 +77,6 @@ func UnmarshalTxBz(indexer ModuleEventSinkIndexer, txBz []byte) (*cosmostx.Tx, e
 
 	// try getting memo
 	sdkTx := tx.(authsigning.Tx)
-	fmt.Println("tx: ", tx)
 	memo := sdkTx.GetMemo()
 	timeoutHeight := sdkTx.GetTimeoutHeight()
 	granter := sdkTx.FeeGranter()

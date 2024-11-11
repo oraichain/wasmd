@@ -63,3 +63,15 @@ psql-conn = "postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable
 
 ### Testing
 
+Run the following script to test the indexer locally: `./scripts/setup_oraid_psql_indexer.sh`
+
+### Search for txs
+
+Example:
+
+```bash
+# query: tx.height >= 2760 AND tx.height <= 2761
+curl "http://localhost:5050/tx_search?query=\"tx.height%20%3E%3D%202760%20AND%20tx.height%20%3C%3D%202761\""
+```
+
+Note that it must be `AND`, not `and`
