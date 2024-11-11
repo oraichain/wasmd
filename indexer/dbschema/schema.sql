@@ -18,38 +18,6 @@ CREATE TABLE blocks (
 -- indexing transaction records and transaction events.
 CREATE INDEX idx_blocks_height_chain ON blocks(height desc, chain_id);
 
--- The tx_requests table records metadata about transaction requests.
-CREATE TABLE tx_requests (
-  rowid BIGSERIAL PRIMARY KEY,
-  -- The block to which this transaction belongs.
-  block_id BIGINT NOT NULL REFERENCES blocks(rowid),
-  -- The sequential index of the transaction within the block.
-  "index" INTEGER NOT NULL,
-  -- block height
-  height BIGINT NOT NULL,
-  -- When this result record was logged into the sink, in UTC.
-  created_at TIMESTAMPTZ NOT NULL,
-  -- The hex-encoded hash of the transaction.
-  tx_hash VARCHAR NOT NULL,
-  -- messages of the transaction
-  messages BYTEA NOT NULL,
-  -- transaction fees
-  fee VARCHAR NOT NULL,
-  -- memo of the transaction
-  memo VARCHAR,
-  UNIQUE (block_id, "index")
-);
-
--- Index idx_tx_requests_block_id_index by block_id and index, since we need to join tx_results with tx_requests
--- block id and index forms a unique transaction in both tables.
-CREATE INDEX idx_tx_requests_block_id_index ON tx_requests(block_id desc, "index" desc);
-
--- index based on hash for quick query
-CREATE INDEX idx_tx_requests_hash ON tx_requests(tx_hash);
-
--- index based on height for quick query
-CREATE INDEX idx_tx_requests_height ON tx_requests(height);
-
 -- The tx_results table records metadata about transaction results.  Note that
 -- the events from a transaction are stored separately.
 CREATE TABLE tx_results (
@@ -74,7 +42,6 @@ CREATE INDEX idx_tx_results_hash ON tx_results(tx_hash);
 -- index based on height for quick query
 CREATE INDEX idx_tx_results_height ON tx_results(height);
 
--- Index tx_results by block_id and index, since we need to join tx_results with tx_requests
 -- block id and index forms a unique transaction in both tables.
 CREATE INDEX idx_tx_results_block_id_index ON tx_results(block_id desc, "index" desc);
 
@@ -192,7 +159,4 @@ WHERE
 -- from
 --   filtered_tx_ids ftx
 --   join tx_results tr on tr.rowid = ftx.tx_id
---   join tx_requests tx on (
---     tx.block_id = tr.block_id
---     and tx."index" = tr."index"
 --   );

@@ -22,31 +22,7 @@ func NewWasmEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingC
 	return &WasmEventSink{es: es, encodingConfig: encodingConfig}
 }
 
-func (cs *WasmEventSink) insertTxEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) ([]*abci.TxResult, error) {
-	txResults := []*abci.TxResult{}
-	for i, tx := range req.Txs {
-		txResult := &abci.TxResult{
-			Height: req.Height,
-			Index:  uint32(i),
-			Tx:     tx,
-			Result: *res.TxResults[i],
-			Time:   &req.Time,
-		}
-		txResults = append(txResults, txResult)
-	}
-	// we need tx events to get wasm txs. If the cometbft indexer already inserts it -> nothing will happen
-	err := cs.es.IndexTxEvents(txResults)
-	if err != nil {
-		return nil, err
-	}
-	return txResults, nil
-}
-
 func (cs *WasmEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
-	_, err := cs.insertTxEvents(req, res)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
