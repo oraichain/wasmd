@@ -17,6 +17,7 @@ import (
 	cometbftindexer "github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/state/txindex/kv"
+	cmttypes "github.com/cometbft/cometbft/types"
 )
 
 // EventSink is an indexer backend providing the tx/block index services.  This
@@ -75,7 +76,7 @@ func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int, 
 	return &ctypes.ResultTxSearch{Txs: txResponses, TotalCount: int(count)}, nil
 }
 
-// TODO: handle filter condition, handle query tx hash -> done
+// TODO: handle filter condition -> done
 func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.ResultTx, uint64, error) {
 	count := uint64(0)
 	txResponses := []*ctypes.ResultTx{}
@@ -89,14 +90,18 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 	// extract ranges
 	// if both upper and lower bounds exist, it's better to get them in order not
 	// no iterate over kvs that are not within range.
-	ranges, indexes, heightRange := cometbftindexer.LookForRangesWithHeight(conditions)
+	_, _, heightRange := cometbftindexer.LookForRangesWithHeight(conditions)
 	heightInfo.SetheightRange(heightRange)
 	whereConditions, args, argsCount := CreateHeightRangeWhereConditions(heightInfo)
 	whereConditions, err := cs.createCursorPaginationCondition(whereConditions)
 	if err != nil {
 		return nil, 0, err
 	}
-	filterTableClause, filterArgs := CreateNonHeightConditionFilterTable(conditions, ranges, indexes, argsCount)
+	filterTableClause, filterArgs, err := CreateNonHeightConditionFilterTable(conditions, argsCount)
+	if err != nil {
+		return nil, 0, err
+	}
+	fmt.Println("args and filter args: ", args, filterArgs)
 	queryClause := fmt.Sprintf(`
 	-- get all heights <= x that have txs, and limit the number of heights to y
 	WITH filtered_heights AS (
@@ -110,7 +115,9 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
   SELECT
     events.block_id,
     height,
-    tx_id
+    tx_id,
+		attributes.composite_key,
+		attributes.value
   FROM
     events
 		JOIN filtered_heights fh on (fh.rowid = events.tx_id)
@@ -119,11 +126,7 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 	ORDER BY tx_id DESC 
 	),
 	-- filter txs based on input composite key conditions
-	filtered_tx_ids as (
-		select distinct tx_id
-		from filtered_tx_event_attributes te
-		%s
-	)
+	%s
 	-- join everything to get the final table with sufficient data
 	select
 		tr.height,
@@ -135,6 +138,7 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 		join tx_results tr on tr.rowid = ftx.tx_id
 	ORDER BY ftx.tx_id DESC;
 	`, whereConditions, min(TxSearchLimit, limit), filterTableClause)
+	fmt.Println("query clause: ", queryClause)
 	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
 
 		// query txs. FIXME: Need filters and limit!
@@ -197,9 +201,10 @@ func (cs *TxEventSink) EncodingConfig() params.EncodingConfig {
 	return cs.encodingConfig
 }
 
-func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo) (whereConditions string, vals []interface{}, argsCount int) {
+func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo) (whereConditions string, vals []interface{}, argsCount *int) {
 	// args count is used to increment parameterized arguments
-	argsCount = 1
+	initialCount := 1
+	argsCount = &initialCount
 	// prioritize range conditions
 	if isHeightRangeNotEmpty(heightInfo.HeightRange()) {
 		value := heightInfo.HeightRange()
@@ -207,21 +212,21 @@ func CreateHeightRangeWhereConditions(heightInfo kv.HeightInfo) (whereConditions
 		whereConditions += "WHERE"
 		for i, operator := range ops {
 			if i == len(ops)-1 {
-				whereConditions += fmt.Sprintf(" height %s $%d", operator, argsCount)
+				whereConditions += fmt.Sprintf(" height %s $%d", operator, *argsCount)
 			} else {
-				whereConditions += fmt.Sprintf(" height %s $%d AND", operator, argsCount)
+				whereConditions += fmt.Sprintf(" height %s $%d AND", operator, *argsCount)
 			}
 
-			argsCount++
+			*argsCount++
 		}
 		vals = values
 		return whereConditions, vals, argsCount
 	}
 	// if there's no range, and has eq condition -> handle it
 	if heightInfo.Height() != 0 {
-		return fmt.Sprintf("WHERE height = $%d", argsCount), []interface{}{heightInfo.Height()}, argsCount
+		return fmt.Sprintf("WHERE height = $%d", *argsCount), []interface{}{heightInfo.Height()}, argsCount
 	}
-	return "", nil, 0
+	return "", nil, &initialCount
 }
 
 func isHeightRangeNotEmpty(heightRange cometbftindexer.QueryRange) bool {
@@ -298,9 +303,54 @@ func (cs *TxEventSink) GetTxByHash(txHash string) ([]*ctypes.ResultTx, error) {
 	return txResponses, nil
 }
 
-func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, ranges cometbftindexer.QueryRanges, rangeIndexes []int, argsCount int) (filterTableClause string, vals []interface{}) {
-	// TODO: add filter conditions to handle non-height filters
-	return "", []interface{}{}
+func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, argsCount *int) (filterTableClause string, vals []interface{}, err error) {
+	tableName := "ftea"
+	filterTableClause += "filtered_tx_ids as ("
+	filterTxs := func(tableName string) string {
+		return fmt.Sprintf("\nselect distinct tx_id \nfrom filtered_tx_event_attributes %s \n", tableName)
+	}
+	tableNameDelta := int8(1)
+	hasNonheightCondition := false
+	for i, condition := range conditions {
+		// ignore since we already covered tx.height elsewhere
+		if condition.Tag == cmttypes.TxHeightKey {
+			continue
+		}
+		completeTableName := fmt.Sprintf("%s%d", tableName, tableNameDelta)
+		tableNameDelta++
+		hasNonheightCondition = true
+		whereClause := fmt.Sprintf("%sWHERE %s.composite_key = $%d \n", filterTxs(completeTableName), completeTableName, *argsCount)
+		*argsCount++
+		vals = append(vals, condition.Tag)
+		whereValueClause, val, err := matchNonHeightCondition(condition, completeTableName, argsCount)
+		if err != nil {
+			return "", vals, err
+		}
+		whereClause += whereValueClause
+		vals = append(vals, val)
+		filterTableClause += whereClause
+
+		// if it's not the last condition -> add INTERSECT keyword to intersect the tables for AND condition
+		// TODO: If we allow OR keyword -> switch case to UNION
+		if i < len(conditions)-1 {
+			filterTableClause += "INTERSECT"
+		}
+	}
+	// empty table clause, meaning that there are no other clauses -> return filtered_tx_ids bare minimum
+	if !hasNonheightCondition {
+		return fmt.Sprintf("%s\n%s)", filterTableClause, filterTxs(tableName)), vals, nil
+	}
+	return fmt.Sprintf("%s)\n", filterTableClause), vals, nil
+}
+
+func matchNonHeightCondition(condition syntax.Condition, completeTableName string, argsCount *int) (whereClause string, val interface{}, err error) {
+	opStr, err := convertOpToOpStr(condition.Op)
+	if err != nil {
+		return "", nil, err
+	}
+	clause := fmt.Sprintf("AND %s.value %s $%d \n", completeTableName, opStr, *argsCount)
+	*argsCount++
+	return clause, conditionArg(condition), nil
 }
 
 func detectQueryRangeBound(value cometbftindexer.QueryRange) (ops []string, vals []interface{}) {
@@ -323,4 +373,36 @@ func detectQueryRangeBound(value cometbftindexer.QueryRange) (ops []string, vals
 		vals = append(vals, upper)
 	}
 	return ops, vals
+}
+
+func convertOpToOpStr(op syntax.Token) (string, error) {
+	switch op {
+	case syntax.TEq:
+		return "=", nil
+	case syntax.TGeq:
+		return ">=", nil
+	case syntax.TLeq:
+		return "<=", nil
+	case syntax.TLt:
+		return "<", nil
+	case syntax.TGt:
+		return ">", nil
+	default:
+		return "", fmt.Errorf("error converting op to op str. The op doesn't match any defined op")
+	}
+}
+
+func conditionArg(c syntax.Condition) interface{} {
+	if c.Arg == nil {
+		return nil
+	}
+	switch c.Arg.Type {
+	case syntax.TNumber:
+		num, _ := c.Arg.Number().Int64()
+		return num
+	case syntax.TTime, syntax.TDate:
+		return c.Arg.Time()
+	default:
+		return c.Arg.Value() // string
+	}
 }
