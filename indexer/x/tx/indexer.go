@@ -41,15 +41,24 @@ func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *a
 	return nil
 }
 
-// TODO: handle filter condition, handle query tx hash -> done
-func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int) (*ctypes.ResultTxSearch, error) {
+func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int, txHash string) (*ctypes.ResultTxSearch, error) {
+
+	// if tx hash is not empty -> we query via tx hash directly and ignore tx search txs
+	if txHash != "" {
+		txResponses, err := cs.GetTxByHash(txHash)
+		if err != nil {
+			return nil, err
+		}
+		return &ctypes.ResultTxSearch{Txs: txResponses, TotalCount: 1}, nil
+	}
+
 	if query == "" {
-		latestBlock, err := cs.getLatestBlock()
+		latestBlock, err := cs.GetLatestBlock()
 		if err != nil {
 			return nil, err
 		}
 		// sneak peak 10 latest blocks if leave empty
-		query = fmt.Sprintf("tx.height >= %d AND tx.height <= %d", latestBlock-10, latestBlock)
+		query = fmt.Sprintf("tx.height >= %d AND tx.height <= %d", max(0, latestBlock-10), latestBlock)
 	}
 	q, err := cmtquery.New(query)
 	if err != nil {
@@ -66,7 +75,7 @@ func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int) 
 	return &ctypes.ResultTxSearch{Txs: txResponses, TotalCount: int(count)}, nil
 }
 
-// TODO: add limit & filters based on non-height conditions
+// TODO: handle filter condition, handle query tx hash -> done
 func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.ResultTx, uint64, error) {
 	count := uint64(0)
 	txResponses := []*ctypes.ResultTx{}
@@ -224,14 +233,14 @@ func (cs *TxEventSink) createCursorPaginationCondition(whereCondition string) (s
 		return whereCondition, nil
 	}
 	// if the whereCondition is empty -> we create the pagination cursor based on the latest height
-	height, err := cs.getLatestBlock()
+	height, err := cs.GetLatestBlock()
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("WHERE height <= %d", height), nil
 }
 
-func (cs *TxEventSink) getLatestBlock() (int64, error) {
+func (cs *TxEventSink) GetLatestBlock() (int64, error) {
 	var height int64
 	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
 		// Find the block associated with this transaction. The block header
@@ -239,13 +248,54 @@ func (cs *TxEventSink) getLatestBlock() (int64, error) {
 		if err := dbtx.QueryRow(`
 SELECT height FROM ` + psql.TableBlocks + ` order by height desc limit 1;
 `).Scan(&height); err != nil {
-			return fmt.Errorf("finding block height: %w", err)
+			return fmt.Errorf("error finding latest block: %w", err)
 		}
 		return nil
 	}); err != nil {
 		return 0, err
 	}
 	return height, nil
+}
+
+func (cs *TxEventSink) GetTxByHash(txHash string) ([]*ctypes.ResultTx, error) {
+	var height int64
+	var createdAt time.Time
+	var txResultBz []byte
+	var txResult abci.TxResult
+	txResponses := []*ctypes.ResultTx{}
+
+	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
+		// Find the block associated with this transaction. The block header
+		// must have been indexed prior to the transactions belonging to it.
+		if err := dbtx.QueryRow(fmt.Sprintf(`
+	SELECT 
+		tx_results.height,
+		tx_results.created_at,
+		tx_results.tx_result
+ 	FROM %s
+	WHERE tx_results.tx_hash = '%s'`, psql.TableTxResults, txHash)).Scan(&height, &createdAt, &txResultBz); err != nil {
+			return fmt.Errorf("error finding tx by hash: %w with hash: %s", err, txHash)
+		}
+
+		if err := cs.encodingConfig.Codec.Unmarshal(txResultBz, &txResult); err != nil {
+			return err
+		}
+		txHashBz, err := hex.DecodeString(txHash)
+		if err != nil {
+			return err
+		}
+
+		txResponse := ctypes.ResultTx{Height: height, Hash: txHashBz, TxResult: txResult.Result, Index: txResult.Index, Tx: txResult.Tx}
+		if txResult.Time != nil {
+			txResponse.Timestamp = txResult.Time.Format(time.RFC3339)
+		}
+		txResponses = append(txResponses, &txResponse)
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return txResponses, nil
 }
 
 func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, ranges cometbftindexer.QueryRanges, rangeIndexes []int, argsCount int) (filterTableClause string, vals []interface{}) {

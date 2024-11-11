@@ -14,6 +14,6 @@ func GetRoutes(cs *tx.TxEventSink) RoutesMap {
 	return RoutesMap{
 		// info AP
 		// "tx":        rpc.NewRPCFunc(env.Tx, "hash,prove", rpc.Cacheable()),
-		"tx_search": rpc.NewRPCFunc(cs.TxSearch, "query,limit"),
+		"tx_search": rpc.NewRPCFunc(cs.TxSearch, "query,limit,hash"),
 	}
 }
