@@ -41,8 +41,16 @@ func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *a
 	return nil
 }
 
-// TODO: handle empty query, handle filter condition, handle query tx hash -> done
+// TODO: handle filter condition, handle query tx hash -> done
 func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int) (*ctypes.ResultTxSearch, error) {
+	if query == "" {
+		latestBlock, err := cs.getLatestBlock()
+		if err != nil {
+			return nil, err
+		}
+		// sneak peak 10 latest blocks if leave empty
+		query = fmt.Sprintf("tx.height >= %d AND tx.height <= %d", latestBlock-10, latestBlock)
+	}
 	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, err
@@ -216,6 +224,14 @@ func (cs *TxEventSink) createCursorPaginationCondition(whereCondition string) (s
 		return whereCondition, nil
 	}
 	// if the whereCondition is empty -> we create the pagination cursor based on the latest height
+	height, err := cs.getLatestBlock()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("WHERE height <= %d", height), nil
+}
+
+func (cs *TxEventSink) getLatestBlock() (int64, error) {
 	var height int64
 	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
 		// Find the block associated with this transaction. The block header
@@ -227,9 +243,9 @@ SELECT height FROM ` + psql.TableBlocks + ` order by height desc limit 1;
 		}
 		return nil
 	}); err != nil {
-		return "", err
+		return 0, err
 	}
-	return fmt.Sprintf("WHERE height <= %d", height), nil
+	return height, nil
 }
 
 func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, ranges cometbftindexer.QueryRanges, rangeIndexes []int, argsCount int) (filterTableClause string, vals []interface{}) {
