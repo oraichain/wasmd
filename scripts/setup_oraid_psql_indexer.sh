@@ -61,6 +61,11 @@ docker-compose -f $PWD/indexer/docker-compose.yml down -v
 # start new db
 docker-compose -f $PWD/indexer/docker-compose.yml up -d
 
+# clean old redpanda
+docker-compose -f $PWD/streaming/docker-compose.yml down -v
+# start new redpanda
+docker-compose -f $PWD/streaming/docker-compose.yml up -d
+
 # sleep a bit for psql to be up
 sleep 5
 
