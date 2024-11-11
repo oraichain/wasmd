@@ -11,6 +11,7 @@ import (
 	indexercodec "github.com/CosmWasm/wasmd/indexer/codec"
 	"github.com/CosmWasm/wasmd/indexer/x/tx"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	cometbftindexer "github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/cometbft/cometbft/types"
@@ -128,9 +129,50 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 			require.Equal(t, tc.expectedVals, vals)
 
 			re := regexp.MustCompile(`\s+`)
-			trimmedQuery := re.ReplaceAllString(query, "")
+			trimmedQuery := re.ReplaceAllString(query, " ")
 			fmt.Println(trimmedQuery)
 			require.Equal(t, tc.expectedSQL, trimmedQuery)
+		})
+	}
+}
+
+func TestCreateNonHeightConditionFilterTable(t *testing.T) {
+	testCases := []struct {
+		query         string
+		expectedQuery string
+		expectedVals  []interface{}
+	}{
+		{
+			query:         "account.number >= 2",
+			expectedQuery: "filtered_tx_ids as ( select distinct tx_id from filtered_tx_event_attributes ftea1 WHERE ftea1.composite_key = $1 AND ftea1.value >= $2 ) ",
+			expectedVals:  []interface{}{"account.number", int64(2)},
+		},
+		{
+			query:         "account.number >= 2 AND account.number < 5",
+			expectedQuery: "filtered_tx_ids as ( select distinct tx_id from filtered_tx_event_attributes ftea1 WHERE ftea1.composite_key = $1 AND ftea1.value >= $2 INTERSECT select distinct tx_id from filtered_tx_event_attributes ftea2 WHERE ftea2.composite_key = $3 AND ftea2.value < $4 ) ",
+			expectedVals:  []interface{}{"account.number", int64(2), "account.number", int64(5)},
+		},
+		{
+			query:         "wasm._contract_address = 'foo' AND account.number <= 2 AND account.owner = 'bar'",
+			expectedQuery: "filtered_tx_ids as ( select distinct tx_id from filtered_tx_event_attributes ftea1 WHERE ftea1.composite_key = $1 AND ftea1.value = $2 INTERSECT select distinct tx_id from filtered_tx_event_attributes ftea2 WHERE ftea2.composite_key = $3 AND ftea2.value <= $4 INTERSECT select distinct tx_id from filtered_tx_event_attributes ftea3 WHERE ftea3.composite_key = $5 AND ftea3.value = $6 ) ",
+			expectedVals:  []interface{}{"wasm._contract_address", "foo", "account.number", int64(2), "account.owner", "bar"},
+		},
+	}
+
+	for _, tc := range testCases {
+		argsCount := 1
+		t.Run(tc.query, func(t *testing.T) {
+			conditions, err := syntax.Parse(tc.query)
+			if err != nil {
+				fmt.Println("err: ", err)
+				conditions = []syntax.Condition{}
+			}
+			q, vals, err := tx.CreateNonHeightConditionFilterTable(conditions, &argsCount)
+			re := regexp.MustCompile(`\s+`)
+			trimmedQuery := re.ReplaceAllString(q, " ")
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedQuery, trimmedQuery)
+			require.Equal(t, tc.expectedVals, vals)
 		})
 	}
 }

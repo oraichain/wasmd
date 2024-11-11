@@ -101,7 +101,6 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 	if err != nil {
 		return nil, 0, err
 	}
-	fmt.Println("args and filter args: ", args, filterArgs)
 	queryClause := fmt.Sprintf(`
 	-- get all heights <= x that have txs, and limit the number of heights to y
 	WITH filtered_heights AS (
@@ -138,7 +137,6 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 		join tx_results tr on tr.rowid = ftx.tx_id
 	ORDER BY ftx.tx_id DESC;
 	`, whereConditions, min(TxSearchLimit, limit), filterTableClause)
-	fmt.Println("query clause: ", queryClause)
 	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
 
 		// query txs. FIXME: Need filters and limit!
