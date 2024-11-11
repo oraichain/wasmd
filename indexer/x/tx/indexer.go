@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
-	indexerConfig "github.com/CosmWasm/wasmd/indexer/config"
 	redpanda "github.com/CosmWasm/wasmd/streaming/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
@@ -21,8 +21,6 @@ import (
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	cmttypes "github.com/cometbft/cometbft/types"
 )
-
-var ModuleName = indexerConfig.Tx
 
 // EventSink is an indexer backend providing the tx/block index services.  This
 // implementation stores records in a PostgreSQL database using the schema
@@ -42,7 +40,7 @@ var _ indexer.ModuleEventSinkIndexer = (*TxEventSink)(nil)
 func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig) *TxEventSink {
 	ri := &redpanda.RedpandaInfo{}
 	ri.SetBrokers()
-	ri.SetTopic(ModuleName)
+	ri.SetTopics()
 
 	return &TxEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
 }
@@ -199,27 +197,49 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 		admin = cs.ri.GetAdmin()
 	}
 
-	topic := cs.ri.GetTopic()
-	if !admin.IsTopicExist(topic) {
-		err := admin.CreateTopic(topic)
-		if err != nil {
-			return err
-		}
-	}
-
 	producer := cs.ri.GetProducer()
 	if producer == nil {
 		cs.ri.SetProducer()
 		producer = cs.ri.GetProducer()
 	}
 
-	err := producer.SendToRedpanda(req.Height)
+	for i, tx := range req.Txs {
+		cosmosTx, err := indexer.UnmarshalTxBz(cs, tx)
+		if err != nil {
+			return err
+		}
 
-	return err
+		// get topic for tx
+		var topics []string
+		for _, message := range cosmosTx.Body.Messages {
+			typeUrl := strings.Split(message.TypeUrl, "/")[1]
+			module := strings.Split(typeUrl, ".")[1]
+			topic := "REDPANDA_TOPIC_" + strings.ToUpper(module)
+
+			if !admin.IsTopicExist(topic) {
+				err := admin.CreateTopic(topic)
+				if err != nil {
+					return err
+				}
+			}
+
+			topics = append(topics, topic)
+		}
+
+		txHashBz := cmttypes.Tx(tx).Hash()
+		topicMsg := ctypes.ResultTx{Height: req.Height, Hash: txHashBz, TxResult: *res.TxResults[i], Index: uint32(i), Tx: tx, Timestamp: req.Time.Format(time.RFC3339)}
+
+		err = producer.SendToRedpanda(topics, topicMsg)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (cs *TxEventSink) ModuleName() string {
-	return string(ModuleName)
+	return "tx"
 }
 
 func (cs *TxEventSink) EventSink() *psql.EventSink {

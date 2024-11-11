@@ -4,20 +4,15 @@ import (
 	"context"
 	"encoding/json"
 
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-// FIXME: sample message to send to redpanda
-type Message struct {
-	Height int64 `json:"height"`
-}
-
 type Producer struct {
 	client *kgo.Client
-	topic  string
 }
 
-func NewProducer(brokers []string, topic string) *Producer {
+func NewProducer(brokers []string) *Producer {
 	client, err := kgo.NewClient(
 		kgo.SeedBrokers(brokers...),
 	)
@@ -25,22 +20,24 @@ func NewProducer(brokers []string, topic string) *Producer {
 		panic(err)
 	}
 
-	return &Producer{client: client, topic: topic}
+	return &Producer{client: client}
 }
 
-func (p *Producer) SendToRedpanda(height int64) error {
+func (p *Producer) SendToRedpanda(topics []string, tx ctypes.ResultTx) error {
 	// TODO: Need implement this function to
 	// send data to redpanda
 
 	ctx := context.Background()
-	b, _ := json.Marshal(Message{Height: height})
+	b, _ := json.Marshal(tx)
 
 	var err error
-	p.client.Produce(ctx, &kgo.Record{Topic: p.topic, Value: b}, func(_ *kgo.Record, e error) {
-		err = e
-	})
-	if err != nil {
-		return err
+	for _, topic := range topics {
+		p.client.Produce(ctx, &kgo.Record{Topic: topic, Value: b}, func(_ *kgo.Record, e error) {
+			err = e
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
