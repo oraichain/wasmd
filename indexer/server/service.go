@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -10,15 +11,15 @@ import (
 	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/indexer/codec"
 	"github.com/CosmWasm/wasmd/indexer/server/config"
-	"github.com/CosmWasm/wasmd/indexer/sinkreader"
 	"github.com/CosmWasm/wasmd/indexer/x/tx"
 	"github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/rs/cors"
+	"golang.org/x/sync/errgroup"
 
-	"cosmossdk.io/log"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
+	sdksvr "github.com/cosmos/cosmos-sdk/server"
 )
 
 // ServerStartTime defines the time duration that the server need to stay running after startup
@@ -33,27 +34,21 @@ func init() {
 	encodingConfig = codec.MakeEncodingConfig()
 }
 
-// StartIndexerService starts the JSON-RPC server
+// StartIndexerService starts the RPC server, this can be called in post setup of start cmd
 func StartIndexerService(
-	clientCtx client.Context,
-	logger log.Logger,
-) (*http.Server, chan struct{}, error) {
+	svrCtx *sdksvr.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group,
+) (func(), error) {
 
 	configPath := filepath.Join(clientCtx.HomeDir, "config")
 	indexerConfig, err := indexer.ReadServiceConfig(configPath, config.IndexerFileName, clientCtx.Viper)
 	if err != nil {
-		return nil, nil, err
+		return func() {}, err
 	}
 
 	r := http.NewServeMux()
-	sinkReader := sinkreader.NewEventSinkReaderFromIndexerService(clientCtx.Viper, clientCtx.ChainID, clientCtx.HomeDir)
-	conn, _, err := sinkReader.ReadEventSinkInfo()
+	eventSink, err := psql.NewEventSink(svrCtx.Config.TxIndex.PsqlConn, clientCtx.ChainID)
 	if err != nil {
-		return nil, nil, err
-	}
-	eventSink, err := psql.NewEventSink(conn, clientCtx.ChainID)
-	if err != nil {
-		return nil, nil, err
+		return func() {}, err
 	}
 	txEventSink := tx.NewTxEventSinkIndexer(eventSink, encodingConfig)
 	env := GetRoutes(txEventSink)
@@ -76,32 +71,44 @@ func StartIndexerService(
 
 	ln, err := Listen(httpSrv.Addr, indexerConfig)
 	if err != nil {
-		return nil, nil, err
+		return func() {}, err
 	}
 
 	errCh := make(chan error)
 	go func() {
-		logger.Info("Starting Indexer RPC server", "address", indexerConfig.IService.Address)
+		svrCtx.Logger.Info("Starting Indexer RPC server", "address", indexerConfig.IService.Address)
 		if err := httpSrv.Serve(ln); err != nil {
 			if err == http.ErrServerClosed {
 				close(httpSrvDone)
 				return
 			}
 
-			logger.Error("failed to start Indexer RPC server", "error", err.Error())
+			svrCtx.Logger.Error("failed to start Indexer RPC server", "error", err.Error())
 			errCh <- err
 		}
 	}()
 
 	select {
 	case err := <-errCh:
-		logger.Error("failed to boot Indexer RPC server", "error", err.Error())
-		return nil, nil, err
+		svrCtx.Logger.Error("failed to boot Indexer RPC server", "error", err.Error())
+		return func() {}, err
 	case <-time.After(ServerStartTime): // assume Indexer RPC server started successfully
 	}
 
-	// allocate separate WS connection to Tendermint
-	return httpSrv, httpSrvDone, nil
+	// defer func at the end
+	return func() {
+		shutdownCtx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancelFn()
+		if err := httpSrv.Shutdown(shutdownCtx); err != nil {
+			svrCtx.Logger.Error("HTTP server shutdown produced a warning", "error", err.Error())
+		} else {
+			svrCtx.Logger.Info("HTTP server shut down, waiting 5 sec")
+			select {
+			case <-time.Tick(5 * time.Second):
+			case <-httpSrvDone:
+			}
+		}
+	}, nil
 }
 
 // Listen starts a net.Listener on the tcp network on the given address.

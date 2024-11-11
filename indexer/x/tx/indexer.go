@@ -2,9 +2,9 @@ package tx
 
 import (
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/CosmWasm/wasmd/app/params"
@@ -12,13 +12,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	cometbftindexer "github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/state/txindex/kv"
-	"github.com/cometbft/cometbft/types"
-	cosmostypes "github.com/cosmos/cosmos-sdk/types"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/hashicorp/go-hclog"
 )
 
 // EventSink is an indexer backend providing the tx/block index services.  This
@@ -39,63 +37,31 @@ func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingCon
 	return &TxEventSink{es: es, encodingConfig: encodingConfig}
 }
 
-func (cs *TxEventSink) insertTxEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) ([]*abci.TxResult, error) {
-	txResults := []*abci.TxResult{}
-	for i, tx := range req.Txs {
-		txResult := &abci.TxResult{
-			Height: req.Height,
-			Index:  uint32(i),
-			Tx:     tx,
-			Result: *res.TxResults[i],
-			Time:   &req.Time,
-		}
-		txResults = append(txResults, txResult)
-	}
-	// we need tx events to get wasm txs. If the cometbft indexer already inserts it -> nothing will happen
-	err := cs.es.IndexTxEvents(txResults)
-	if err != nil {
-		return nil, err
-	}
-	return txResults, nil
-}
-
 func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
-	// unmarshal txs
-	hclog.Default().Debug("before unmarshal txs")
-	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
-
-		// just in case the cometbft indexer has not finished indexing block events, we index it by ourselves
-		if err := cs.es.IndexBlockEvents(types.EventDataNewBlockEvents{Height: req.Height, Events: res.Events, NumTxs: int64(len(req.Txs))}); err != nil {
-			return err
-		}
-		_, err := cs.insertTxEvents(req, res)
-		return err
-	}); err != nil {
-		return err
-	}
 	return nil
 }
 
-func (cs *TxEventSink) TxSearch(query string, limit string) (*ResultTxSearch, error) {
+// TODO: handle empty query, handle filter condition, handle query tx hash -> done
+func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int) (*ctypes.ResultTxSearch, error) {
 	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, err
 	}
-	lim, err := strconv.ParseUint(limit, 10, 16)
+	limit := TxSearchLimit
+	if _limit != nil {
+		limit = uint32(*_limit)
+	}
+	txResponses, count, err := cs.SearchTxs(q, limit)
 	if err != nil {
 		return nil, err
 	}
-	txResponses, count, err := cs.SearchTxs(q, uint32(lim))
-	if err != nil {
-		return nil, err
-	}
-	return &ResultTxSearch{Txs: txResponses, TotalCount: count}, nil
+	return &ctypes.ResultTxSearch{Txs: txResponses, TotalCount: int(count)}, nil
 }
 
 // TODO: add limit & filters based on non-height conditions
-func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*txtypes.GetTxResponse, uint64, error) {
+func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.ResultTx, uint64, error) {
 	count := uint64(0)
-	txResponses := []*txtypes.GetTxResponse{}
+	txResponses := []*ctypes.ResultTx{}
 
 	conditions := q.Syntax()
 	// conditions to skip because they're handled before "everything else"
@@ -180,17 +146,16 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*txtypes.Ge
 			if err := cs.encodingConfig.Codec.Unmarshal(txResultBz, &txResult); err != nil {
 				return err
 			}
-
-			cosmosTx, err := indexer.UnmarshalTxBz(cs, txResult.Tx)
+			txHashBz, err := hex.DecodeString(txHash)
 			if err != nil {
 				return err
 			}
 
-			txResponse := cosmostypes.TxResponse{Height: height, TxHash: txHash, Codespace: txResult.Result.Codespace, Code: txResult.Result.Code, Info: txResult.Result.Info, RawLog: txResult.Result.Log, GasWanted: txResult.Result.GasWanted, GasUsed: txResult.Result.GasUsed, Events: txResult.Result.Events}
+			txResponse := ctypes.ResultTx{Height: height, Hash: txHashBz, TxResult: txResult.Result, Index: txResult.Index, Tx: txResult.Tx}
 			if txResult.Time != nil {
 				txResponse.Timestamp = txResult.Time.Format(time.RFC3339)
 			}
-			txResponses = append(txResponses, &txtypes.GetTxResponse{Tx: cosmosTx, TxResponse: &txResponse})
+			txResponses = append(txResponses, &txResponse)
 		}
 		return nil
 	}); err != nil {

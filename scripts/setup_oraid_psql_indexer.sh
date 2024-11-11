@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ux
 
-CHAIN_ID=${CHAIN_ID:-testing}
+CHAINID=${CHAINID:-testing}
 USER=${USER:-tupt}
 MONIKER=${MONIKER:-node001}
 HIDE_LOGS="/dev/null"
@@ -13,7 +13,7 @@ PSQL_CONN=${PSQL_CONN:-"postgresql://admin:root@localhost:5432/node_indexer?sslm
 
 rm -rf $NODE_HOME
 
-oraid init --chain-id "$CHAIN_ID" "$MONIKER" --home $NODE_HOME >$HIDE_LOGS
+oraid init --chain-id "$CHAINID" "$MONIKER" --home $NODE_HOME >$HIDE_LOGS
 
 oraid keys add $USER $ARGS 2>&1 | tee account.txt
 oraid keys add $USER-eth $ARGS --eth 2>&1 | tee account-eth.txt
@@ -26,7 +26,7 @@ oraid genesis add-genesis-account orai1kzkf6gttxqar9yrkxfe34ye4vg5v4m588ew7c9 "1
 
 # submit a genesis validator tx
 # Workraround for https://github.com/cosmos/cosmos-sdk/issues/8251
-oraid genesis gentx $USER "250000000orai" --chain-id="$CHAIN_ID" -y $ARGS >$HIDE_LOGS
+oraid genesis gentx $USER "250000000orai" --chain-id="$CHAINID" -y $ARGS >$HIDE_LOGS
 
 oraid genesis collect-gentxs --home $NODE_HOME >$HIDE_LOGS
 
@@ -45,6 +45,13 @@ go build -o $PWD/streaming/streaming $PWD/streaming/streaming.go
 # add indexer info
 sed -i '' -E "s%^indexer *=.*%indexer = \"psql\"%; " $CONFIG_TOML
 sed -i '' -E "s%^psql-conn *=.*%psql-conn = \"$PSQL_CONN\"%; " $CONFIG_TOML
+
+# export PSQL conn and chain id
+export PSQL_CONN="postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
+export CHAIN_ID=$CHAINID
+
+# add indexer.toml file to enable indexer RPC
+cp $PWD/indexer.toml $NODE_HOME/config
 
 # clean old db
 docker-compose -f $PWD/indexer/docker-compose.yml down -v

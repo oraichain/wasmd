@@ -30,7 +30,7 @@ func init() {
 type ModsStreamingPlugin struct {
 	indexerManager *indexer.IndexerManager
 	es             *psql.EventSink
-	reader         sinkreader.EventSinkReader
+	reader         sinkreader.SinkReaderFromEnv
 }
 
 func (p *ModsStreamingPlugin) initStreamIndexerConn() error {
@@ -87,7 +87,7 @@ func main() {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: streamingabci.Handshake,
 		Plugins: map[string]plugin.Plugin{
-			"abci": &streamingabci.ListenerGRPCPlugin{Impl: &ModsStreamingPlugin{reader: sinkreader.NewEventSinkReader()}},
+			"abci": &streamingabci.ListenerGRPCPlugin{Impl: &ModsStreamingPlugin{reader: sinkreader.SinkReaderFromEnv{}}},
 		},
 
 		// A non-nil value here enables gRPC serving for this streaming...
