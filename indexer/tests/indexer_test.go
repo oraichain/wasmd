@@ -178,6 +178,44 @@ func TestIndexing(t *testing.T) {
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(2)))
 	})
 
+	t.Run("GetlatestBlock", func(t *testing.T) {
+		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+		latestBlock, err := customTxEventSink.GetLatestBlock()
+		require.NoError(t, err)
+		require.Equal(t, int64(2), latestBlock)
+	})
+
+	t.Run("GetTxByHash", func(t *testing.T) {
+		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
+
+		txResult := txResultWithEvents([]abci.Event{
+			psql.MakeIndexedEvent("account.number", "1"),
+			psql.MakeIndexedEvent("account.owner", "Ivan"),
+			psql.MakeIndexedEvent("account.owner", "Yulieta"),
+
+			{Type: "", Attributes: []abci.EventAttribute{
+				{
+					Key:   "not_allowed",
+					Value: "Vlad",
+					Index: true,
+				},
+			}},
+		}, 1, 0)
+		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
+
+		txHashBz := types.Tx(txResult.Tx).Hash()
+		txr, err := loadTxResult(txHashBz)
+		require.NoError(t, err)
+		assert.Equal(t, txResult, txr)
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+
+		txsByHash, err := customTxEventSink.GetTxByHash(fmt.Sprintf("%X", txHashBz))
+		require.NoError(t, err)
+		require.Equal(t, len(txsByHash), 1)
+		require.Equal(t, txsByHash[0].Hash.Bytes(), txHashBz)
+	})
+
 	t.Run("IndexTxEvents", func(t *testing.T) {
 		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
 
@@ -310,6 +348,121 @@ func TestIndexing(t *testing.T) {
 		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("hello.world > 1"), 1)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), count)
+	})
+
+	t.Run("IndexerService", func(t *testing.T) {
+		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
+
+		// event bus
+		eventBus := types.NewEventBus()
+		err := eventBus.Start()
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			if err := eventBus.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		service := txindex.NewIndexerService(indexer.TxIndexer(), indexer.BlockIndexer(), eventBus, true)
+		service.SetLogger(tmlog.TestingLogger())
+		err = service.Start()
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			if err := service.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		// publish block with txs
+		err = eventBus.PublishEventNewBlockEvents(types.EventDataNewBlockEvents{
+			Height: 1,
+			NumTxs: 2,
+		})
+		require.NoError(t, err)
+		txResult1 := &abci.TxResult{
+			Height: 1,
+			Index:  uint32(0),
+			Tx:     types.Tx("foo"),
+			Result: abci.ExecTxResult{Code: 0},
+		}
+		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
+		require.NoError(t, err)
+		txResult2 := &abci.TxResult{
+			Height: 1,
+			Index:  uint32(1),
+			Tx:     types.Tx("bar"),
+			Result: abci.ExecTxResult{Code: 1},
+		}
+		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
+		require.NoError(t, err)
+
+		time.Sleep(100 * time.Millisecond)
+		require.True(t, service.IsRunning())
+	})
+}
+
+func TestTxSearch(t *testing.T) {
+	t.Run("IndexBlockEvents", func(t *testing.T) {
+		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(1)))
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(2)))
+
+		verifyBlock(t, 1)
+		verifyBlock(t, 2)
+
+		verifyNotImplemented(t, "hasBlock", func() (bool, error) { return indexer.HasBlock(1) })
+		verifyNotImplemented(t, "hasBlock", func() (bool, error) { return indexer.HasBlock(2) })
+
+		verifyNotImplemented(t, "block search", func() (bool, error) {
+			v, err := indexer.SearchBlockEvents(context.Background(), nil)
+			return v != nil, err
+		})
+
+		require.NoError(t, verifyTimeStamp(psql.TableBlocks))
+
+		// Attempting to reindex the same events should gracefully succeed.
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(1)))
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(2)))
+	})
+
+	t.Run("TxSearch", func(t *testing.T) {
+		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
+
+		txResult := txResultWithEvents([]abci.Event{
+			psql.MakeIndexedEvent("account.number", "1"),
+			psql.MakeIndexedEvent("account.owner", "Ivan"),
+			psql.MakeIndexedEvent("account.owner", "Yulieta"),
+
+			{Type: "", Attributes: []abci.EventAttribute{
+				{
+					Key:   "not_allowed",
+					Value: "Vlad",
+					Index: true,
+				},
+			}},
+		}, 1, 0)
+		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
+
+		txHashBz := types.Tx(txResult.Tx).Hash()
+		txHash := fmt.Sprintf("%X", txHashBz)
+		txr, err := loadTxResult(txHashBz)
+		require.NoError(t, err)
+		assert.Equal(t, txResult, txr)
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+
+		// test query tx by hash
+		txs, err := customTxEventSink.TxSearch(nil, "", nil, txHash)
+		require.NoError(t, err)
+		require.Equal(t, len(txs.Txs), 1)
+		require.Equal(t, txs.TotalCount, 1)
+		require.Equal(t, txs.Txs[0].Hash.Bytes(), txHashBz)
+
+		// test nil query -> query latest 10 blocks
+		txs, err = customTxEventSink.TxSearch(nil, "", nil, "")
+		require.NoError(t, err)
+		require.Equal(t, len(txs.Txs), 1)
+		require.Equal(t, txs.TotalCount, 1)
+		require.Equal(t, txs.Txs[0].Hash.Bytes(), txHashBz)
 	})
 
 	t.Run("IndexerService", func(t *testing.T) {
