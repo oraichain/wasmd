@@ -4,12 +4,12 @@ import (
 	"os"
 	"strings"
 
-	indexerConfig "github.com/CosmWasm/wasmd/indexer/config"
+	config "github.com/CosmWasm/wasmd/streaming/config"
 )
 
 type RedpandaInfo struct {
 	brokers  []string
-	topic    string
+	topics   []string
 	admin    *Admin
 	producer *Producer
 }
@@ -32,17 +32,15 @@ func (ri *RedpandaInfo) GetBrockers() []string {
 	return ri.brokers
 }
 
-func (ri *RedpandaInfo) SetTopic(module indexerConfig.IndexerModule) {
-	topic := os.Getenv("REDPANDA_TOPIC_" + strings.ToUpper(string(module)))
-	if topic == "" {
-		panic("Topic must not be empty")
-	}
+func (ri *RedpandaInfo) SetTopics() {
+	wasmTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(config.Wasm))
+	bankTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(config.Bank))
 
-	ri.topic = topic
+	ri.topics = []string{wasmTopic, bankTopic}
 }
 
-func (ri *RedpandaInfo) GetTopic() string {
-	return ri.topic
+func (ri *RedpandaInfo) GetTopic() []string {
+	return ri.topics
 }
 
 func (ri *RedpandaInfo) SetAdmin() {
@@ -55,7 +53,7 @@ func (ri *RedpandaInfo) GetAdmin() *Admin {
 }
 
 func (ri *RedpandaInfo) SetProducer() {
-	producer := NewProducer(ri.brokers, ri.topic)
+	producer := NewProducer(ri.brokers)
 	ri.producer = producer
 }
 

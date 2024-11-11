@@ -3,13 +3,10 @@ package wasm
 import (
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
-	indexerConfig "github.com/CosmWasm/wasmd/indexer/config"
 	"github.com/CosmWasm/wasmd/streaming/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 )
-
-var ModuleName = indexerConfig.Wasm
 
 // EventSink is an indexer backend providing the tx/block index services.  This
 // implementation stores records in a PostgreSQL database using the schema
@@ -25,7 +22,7 @@ var _ indexer.ModuleEventSinkIndexer = (*WasmEventSink)(nil)
 func NewWasmEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig) *WasmEventSink {
 	ri := &redpanda.RedpandaInfo{}
 	ri.SetBrokers()
-	ri.SetTopic(ModuleName)
+	ri.SetTopics()
 
 	return &WasmEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
 }
@@ -39,7 +36,7 @@ func (cs *WasmEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *a
 }
 
 func (cs *WasmEventSink) ModuleName() string {
-	return string(ModuleName)
+	return "wasm"
 }
 
 func (cs *WasmEventSink) EventSink() *psql.EventSink {
