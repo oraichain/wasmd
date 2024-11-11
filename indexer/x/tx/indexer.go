@@ -210,10 +210,13 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 		}
 
 		// get topic for tx
-		var topics []string
+		var topicAndKeys []redpanda.TopicAndKey
 		for _, message := range cosmosTx.Body.Messages {
 			typeUrl := strings.Split(message.TypeUrl, "/")[1]
-			module := strings.Split(typeUrl, ".")[1]
+			typeUrlSplits := strings.Split(typeUrl, ".")
+			module := typeUrlSplits[1]
+
+			key := typeUrlSplits[len(typeUrlSplits)-1]
 			topic := "REDPANDA_TOPIC_" + strings.ToUpper(module)
 
 			if !admin.IsTopicExist(topic) {
@@ -221,15 +224,17 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 				if err != nil {
 					return err
 				}
+
+				cs.ri.SetTopics(module)
 			}
 
-			topics = append(topics, topic)
+			topicAndKeys = append(topicAndKeys, redpanda.TopicAndKey{Topic: topic, Key: key})
 		}
 
 		txHashBz := cmttypes.Tx(tx).Hash()
 		topicMsg := ctypes.ResultTx{Height: req.Height, Hash: txHashBz, TxResult: *res.TxResults[i], Index: uint32(i), Tx: tx, Timestamp: req.Time.Format(time.RFC3339)}
 
-		err = producer.SendToRedpanda(topics, topicMsg)
+		err = producer.SendToRedpanda(topicAndKeys, topicMsg)
 		if err != nil {
 			return err
 		}
