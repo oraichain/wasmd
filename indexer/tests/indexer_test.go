@@ -159,9 +159,11 @@ func TestIndexing(t *testing.T) {
 		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(1)))
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(2)))
+		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(3)))
 
 		verifyBlock(t, 1)
 		verifyBlock(t, 2)
+		verifyBlock(t, 3)
 
 		verifyNotImplemented(t, "hasBlock", func() (bool, error) { return indexer.HasBlock(1) })
 		verifyNotImplemented(t, "hasBlock", func() (bool, error) { return indexer.HasBlock(2) })
@@ -183,16 +185,16 @@ func TestIndexing(t *testing.T) {
 		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
 		latestBlock, err := customTxEventSink.GetLatestBlock()
 		require.NoError(t, err)
-		require.Equal(t, int64(2), latestBlock)
+		require.Equal(t, int64(3), latestBlock)
 	})
 
 	t.Run("GetTxByHash", func(t *testing.T) {
 		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
 
 		txResult := txResultWithEvents([]abci.Event{
-			psql.MakeIndexedEvent("account.number", "1"),
-			psql.MakeIndexedEvent("account.owner", "Ivan"),
-			psql.MakeIndexedEvent("account.owner", "Yulieta"),
+			psql.MakeIndexedEvent("account.number", "4"),
+			psql.MakeIndexedEvent("account.owner", "Duc"),
+			psql.MakeIndexedEvent("account.owner", "Einh"),
 
 			{Type: "", Attributes: []abci.EventAttribute{
 				{
@@ -201,7 +203,7 @@ func TestIndexing(t *testing.T) {
 					Index: true,
 				},
 			}},
-		}, 1, 0)
+		}, 3, 0)
 		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
 
 		txHashBz := types.Tx(txResult.Tx).Hash()
@@ -216,45 +218,6 @@ func TestIndexing(t *testing.T) {
 		require.Equal(t, txsByHash[0].Hash.Bytes(), txHashBz)
 	})
 
-	t.Run("IndexTxEvents", func(t *testing.T) {
-		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
-
-		txResult := txResultWithEvents([]abci.Event{
-			psql.MakeIndexedEvent("account.number", "1"),
-			psql.MakeIndexedEvent("account.owner", "Ivan"),
-			psql.MakeIndexedEvent("account.owner", "Yulieta"),
-
-			{Type: "", Attributes: []abci.EventAttribute{
-				{
-					Key:   "not_allowed",
-					Value: "Vlad",
-					Index: true,
-				},
-			}},
-		}, 1, 0)
-		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
-
-		txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
-		require.NoError(t, err)
-		assert.Equal(t, txResult, txr)
-
-		require.NoError(t, verifyTimeStamp(psql.TableTxResults))
-		require.NoError(t, verifyTimeStamp(viewTxEvents))
-
-		verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
-			txr, err := indexer.GetTxByHash(types.Tx(txResult.Tx).Hash())
-			return txr != nil, err
-		})
-		verifyNotImplemented(t, "tx search", func() (bool, error) {
-			txr, err := indexer.SearchTxEvents(context.Background(), nil)
-			return txr != nil, err
-		})
-
-		// try to insert the duplicate tx events.
-		err = indexer.IndexTxEvents([]*abci.TxResult{txResult})
-		require.NoError(t, err)
-	})
-
 	t.Run("IndexCosmWasmTxs", func(t *testing.T) {
 		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(1)))
@@ -264,7 +227,7 @@ func TestIndexing(t *testing.T) {
 			psql.MakeIndexedEvent("account.number", "1"),
 			psql.MakeIndexedEvent("account.owner", "Ivan"),
 			psql.MakeIndexedEvent("account.owner", "Yulieta"),
-			psql.MakeIndexedEvent("wasm.data", "Wasm data"),
+			psql.MakeIndexedEvent("wasm._contract_address", "some contract"),
 
 			{Type: "", Attributes: []abci.EventAttribute{
 				{
@@ -290,8 +253,8 @@ func TestIndexing(t *testing.T) {
 
 		nonWasmTxResultNextHeight := txResultWithEvents([]abci.Event{
 			psql.MakeIndexedEvent("account.number", "2"),
-			psql.MakeIndexedEvent("account.owner", "Duc"),
-			psql.MakeIndexedEvent("account.owner", "Pham"),
+			psql.MakeIndexedEvent("account.owner", "Oraichain"),
+			psql.MakeIndexedEvent("account.meta", "Labs"),
 
 			{Type: "", Attributes: []abci.EventAttribute{
 				{
@@ -319,35 +282,75 @@ func TestIndexing(t *testing.T) {
 		err = customTxEventSink.InsertModuleEvents(&abci.RequestFinalizeBlock{Height: 2, Txs: secBlockTxs, Time: time}, &abci.ResponseFinalizeBlock{Events: []abci.Event{}, TxResults: secExecTxResults})
 		require.NoError(t, err)
 
-		_, count, err := customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height <= 2 AND john.doe < 1 AND john.doe ='10'"), 10)
+		_, count, err := customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height <= 2"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(3), count)
 
-		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height < 2 AND wasm.foobar = 'x'"), 10)
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height < 2"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(2), count)
 
 		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1 AND tx.height > 1"), 10)
 		require.NoError(t, err)
-		require.Equal(t, uint64(3), count)
+		// 4 txs beacuse we also count the tx from the test GetTxByHash above, which has a tx at height 3, index 0
+		require.Equal(t, uint64(4), count)
 
 		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height < 1"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(0), count)
 
-		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height = 2 AND hello.world > 1"), 10)
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height = 2"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), count)
 
-		// no height clause, with limit 10 -> got all txs
-		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("hello.world > 1"), 10)
+		// limit 1 with no query clause -> only 1 txs
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("tx.height >= 1"), 1)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), count)
+
+		// filter by non-height condition
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("account.number = 2"), 10)
+		require.NoError(t, err)
+		require.Equal(t, uint64(2), count)
+
+		// filter by non-height condition
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("account.number <= 3"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(3), count)
 
-		// limit 1 with no query clause -> only 1 txs
-		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("hello.world > 1"), 1)
+		// filter by non-height condition
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("account.owner = 'Yulieta'"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), count)
+
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("wasm._contract_address = 'some contract'"), 10)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), count)
+
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("account.number >= 1 AND account.owner = 'Oraichain'"), 10)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), count)
+
+		// verify basic tx indexer events
+		txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
+		require.NoError(t, err)
+		assert.Equal(t, txResult, txr)
+
+		require.NoError(t, verifyTimeStamp(psql.TableTxResults))
+		require.NoError(t, verifyTimeStamp(viewTxEvents))
+
+		verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
+			txr, err := indexer.GetTxByHash(types.Tx(txResult.Tx).Hash())
+			return txr != nil, err
+		})
+		verifyNotImplemented(t, "tx search", func() (bool, error) {
+			txr, err := indexer.SearchTxEvents(context.Background(), nil)
+			return txr != nil, err
+		})
+
+		// try to insert the duplicate tx events.
+		err = indexer.IndexTxEvents([]*abci.TxResult{txResult})
+		require.NoError(t, err)
 	})
 
 	t.Run("IndexerService", func(t *testing.T) {
