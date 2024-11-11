@@ -11,9 +11,11 @@ Oraichain Labs leverages the power of Cosmos SDK's state streaming to index cust
 ## Prerequisites
 
 To start streaming data to Redpanda locally, you need:
+
 - Docker-compose. It's convenient to use docker-compose to quickly start the Redpanda docker container.
 
 ## Quick start
+
 Please follow [Redpanda quickstart](https://docs.redpanda.com/current/get-started/quick-start/?tab=tabs-2-macos) to setup local Redpanda service by docker.
 
 ## Configuration
@@ -66,10 +68,4 @@ export COSMOS_SDK_WASM="{path to}/streaming/wasm_streaming"
 # export your redpanda brokers
 export REDPANDA_BROKERS=<your_redpanda_brokers>
 # example: export REDPANDA_BROKERS="localhost:19092"
-
-# export ypur redpanda topic
-export REDPANDA_TOPIC_TX=<tx_topic>
-export REDPANDA_TOPIC_WASM=<wasm_topic>
-# example: export REDPANDA_TOPIC_TX="topic_tx"
-# example: export REDPANDA_TOPIC_WASM="topic_wasm"
 ```
