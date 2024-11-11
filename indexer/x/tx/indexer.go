@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	cometbftindexer "github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
@@ -29,8 +30,7 @@ type TxEventSink struct {
 }
 
 const (
-	TableTxRequests = "tx_requests"
-	TxSearchLimit   = uint16(5000)
+	TxSearchLimit = uint32(100000)
 )
 
 var _ indexer.ModuleEventSinkIndexer = (*TxEventSink)(nil)
@@ -39,66 +39,61 @@ func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingCon
 	return &TxEventSink{es: es, encodingConfig: encodingConfig}
 }
 
+func (cs *TxEventSink) insertTxEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) ([]*abci.TxResult, error) {
+	txResults := []*abci.TxResult{}
+	for i, tx := range req.Txs {
+		txResult := &abci.TxResult{
+			Height: req.Height,
+			Index:  uint32(i),
+			Tx:     tx,
+			Result: *res.TxResults[i],
+			Time:   &req.Time,
+		}
+		txResults = append(txResults, txResult)
+	}
+	// we need tx events to get wasm txs. If the cometbft indexer already inserts it -> nothing will happen
+	err := cs.es.IndexTxEvents(txResults)
+	if err != nil {
+		return nil, err
+	}
+	return txResults, nil
+}
+
 func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
 	// unmarshal txs
 	hclog.Default().Debug("before unmarshal txs")
-	for i, txBz := range req.Txs {
-		cosmosTx, err := indexer.UnmarshalTxBz(cs, txBz)
-		if err != nil {
+	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
+
+		// just in case the cometbft indexer has not finished indexing block events, we index it by ourselves
+		if err := cs.es.IndexBlockEvents(types.EventDataNewBlockEvents{Height: req.Height, Events: res.Events, NumTxs: int64(len(req.Txs))}); err != nil {
 			return err
 		}
-		fullMsgsBz, err := indexer.MarshalMsgsAny(cs.encodingConfig, cosmosTx.Body.Messages)
-		if err != nil {
-			return err
-		}
-		feeBz, err := cs.encodingConfig.Codec.MarshalJSON(cosmosTx.AuthInfo.Fee)
-		if err != nil {
-			return err
-		}
-
-		// Index the hash of the underlying transaction as a hex string.
-		txHash := fmt.Sprintf("%X", types.Tx(txBz).Hash())
-		if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
-
-			// just in case the cometbft indexer has not finished indexing block events, we index it by ourselves
-			err := cs.es.IndexBlockEvents(types.EventDataNewBlockEvents{Height: req.Height, Events: res.Events, NumTxs: int64(len(req.Txs))})
-			if err != nil {
-				return err
-			}
-
-			// Find the block associated with this transaction. The block header
-			// must have been indexed prior to the transactions belonging to it.
-			blockID, err := psql.QueryWithID(dbtx, `
-SELECT rowid FROM `+psql.TableBlocks+` WHERE height = $1 AND chain_id = $2;
-`, req.Height, cs.es.ChainID())
-			if err != nil {
-				return err
-			}
-
-			// Insert a record for this tx_requests and capture its ID for indexing events.
-			// NOTE: for tx index, it is the tx index in the list of txs. Ref: https://github.com/oraichain/cometbft/blob/5c0462aa0de4250a0c1ab43a80f8ea8adb84fa33/state/execution.go#L710; https://github.com/oraichain/cometbft/blob/5c0462aa0de4250a0c1ab43a80f8ea8adb84fa33/state/execution.go#L749
-			_, err = psql.QueryWithID(dbtx, `
-INSERT INTO `+TableTxRequests+` (block_id, index, height, created_at, tx_hash, messages, fee, memo)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-ON CONFLICT DO NOTHING
-RETURNING rowid;
-`, blockID, i, req.Height, req.Time, txHash, fullMsgsBz, string(feeBz), cosmosTx.Body.Memo)
-			if err == sql.ErrNoRows {
-				return nil // we already saw this transaction; quietly succeed
-			} else if err != nil {
-				return fmt.Errorf("indexing tx_requests: %w", err)
-			}
-
-			return nil
-		}); err != nil {
-			return err
-		}
+		_, err := cs.insertTxEvents(req, res)
+		return err
+	}); err != nil {
+		return err
 	}
 	return nil
 }
 
+func (cs *TxEventSink) TxSearch(query string, limit string) (*ResultTxSearch, error) {
+	q, err := cmtquery.New(query)
+	if err != nil {
+		return nil, err
+	}
+	lim, err := strconv.ParseUint(limit, 10, 16)
+	if err != nil {
+		return nil, err
+	}
+	txResponses, count, err := cs.SearchTxs(q, uint32(lim))
+	if err != nil {
+		return nil, err
+	}
+	return &ResultTxSearch{Txs: txResponses, TotalCount: count}, nil
+}
+
 // TODO: add limit & filters based on non-height conditions
-func (cs *TxEventSink) SearchTxs(q *query.Query, limit uint16) ([]*txtypes.GetTxResponse, uint64, error) {
+func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*txtypes.GetTxResponse, uint64, error) {
 	count := uint64(0)
 	txResponses := []*txtypes.GetTxResponse{}
 
@@ -151,17 +146,10 @@ func (cs *TxEventSink) SearchTxs(q *query.Query, limit uint16) ([]*txtypes.GetTx
 		tr.height,
 		tr.created_at,
 		tr.tx_hash,
-		messages,
-		memo,
-		fee,
 		tr.tx_result
 	from
 		filtered_tx_ids ftx
 		join tx_results tr on tr.rowid = ftx.tx_id
-		join tx_requests on (
-			tx_requests.block_id = tr.block_id
-			and tx_requests.index = tr.index
-		)
 	ORDER BY ftx.tx_id DESC;
 	`, whereConditions, min(TxSearchLimit, limit), filterTableClause)
 	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
@@ -181,36 +169,28 @@ func (cs *TxEventSink) SearchTxs(q *query.Query, limit uint16) ([]*txtypes.GetTx
 			var height int64
 			var createdAt time.Time
 			var txHash string
-			var messages []byte
-			var memo string
-			var fee string
 			var txResultBz []byte
 			var txResult abci.TxResult
 
-			err = row.Scan(&height, &createdAt, &txHash, &messages, &memo, &fee, &txResultBz)
+			err = row.Scan(&height, &createdAt, &txHash, &txResultBz)
 			if err != nil {
 				return err
 			}
-			msgsAny, err := indexer.UnmarshalMsgsBz(cs.encodingConfig, messages)
-			if err != nil {
-				return err
-			}
+
 			if err := cs.encodingConfig.Codec.Unmarshal(txResultBz, &txResult); err != nil {
 				return err
 			}
 
-			var feeProto txtypes.Fee
-			if err := cs.encodingConfig.Codec.UnmarshalJSON([]byte(fee), &feeProto); err != nil {
+			cosmosTx, err := indexer.UnmarshalTxBz(cs, txResult.Tx)
+			if err != nil {
 				return err
 			}
 
-			txBody := txtypes.TxBody{
-				Messages: msgsAny,
-				Memo:     memo,
-			}
-			cosmosTx := txtypes.Tx{Body: &txBody, AuthInfo: &txtypes.AuthInfo{Fee: &feeProto}}
 			txResponse := cosmostypes.TxResponse{Height: height, TxHash: txHash, Codespace: txResult.Result.Codespace, Code: txResult.Result.Code, Info: txResult.Result.Info, RawLog: txResult.Result.Log, GasWanted: txResult.Result.GasWanted, GasUsed: txResult.Result.GasUsed, Events: txResult.Result.Events}
-			txResponses = append(txResponses, &txtypes.GetTxResponse{Tx: &cosmosTx, TxResponse: &txResponse})
+			if txResult.Time != nil {
+				txResponse.Timestamp = txResult.Time.Format(time.RFC3339)
+			}
+			txResponses = append(txResponses, &txtypes.GetTxResponse{Tx: cosmosTx, TxResponse: &txResponse})
 		}
 		return nil
 	}); err != nil {

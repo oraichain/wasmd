@@ -33,16 +33,20 @@ type ModsStreamingPlugin struct {
 	reader         sinkreader.EventSinkReader
 }
 
-func (p *ModsStreamingPlugin) initStreamIndexerConn() {
+func (p *ModsStreamingPlugin) initStreamIndexerConn() error {
 	// init psql conn for indexing complex ops if is nil
 	if p.es == nil {
-		psqlConn, chainID := p.reader.ReadEventSinkInfo()
+		psqlConn, chainID, err := p.reader.ReadEventSinkInfo()
+		if err != nil {
+			return err
+		}
 		es, err := psql.NewEventSink(psqlConn, chainID)
 		if err != nil {
 			panic(err)
 		}
 		p.es = es
 	}
+	return nil
 }
 
 func (p *ModsStreamingPlugin) initIndexerManager() {
@@ -56,7 +60,9 @@ func (p *ModsStreamingPlugin) initIndexerManager() {
 }
 
 func (a *ModsStreamingPlugin) ListenFinalizeBlock(ctx context.Context, req abci.RequestFinalizeBlock, res abci.ResponseFinalizeBlock) error {
-	a.initStreamIndexerConn()
+	if err := a.initStreamIndexerConn(); err != nil {
+		return err
+	}
 	a.initIndexerManager()
 	for _, indexer := range a.indexerManager.Modules {
 		err := indexer.InsertModuleEvents(&req, &res)
