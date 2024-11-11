@@ -8,6 +8,11 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
+type TopicAndKey struct {
+	Topic string `json:"topic"`
+	Key   string `json:"key"`
+}
+
 type Producer struct {
 	client *kgo.Client
 }
@@ -23,16 +28,22 @@ func NewProducer(brokers []string) *Producer {
 	return &Producer{client: client}
 }
 
-func (p *Producer) SendToRedpanda(topics []string, tx ctypes.ResultTx) error {
-	// TODO: Need implement this function to
-	// send data to redpanda
-
+func (p *Producer) SendToRedpanda(topicAndKeys []TopicAndKey, tx ctypes.ResultTx) error {
 	ctx := context.Background()
-	b, _ := json.Marshal(tx)
+	valueBz, err := json.Marshal(tx)
+	if err != nil {
+		return err
+	}
 
-	var err error
-	for _, topic := range topics {
-		p.client.Produce(ctx, &kgo.Record{Topic: topic, Value: b}, func(_ *kgo.Record, e error) {
+	for _, topicAndKey := range topicAndKeys {
+		topic := topicAndKey.Topic
+		key := topicAndKey.Key
+		keyBz, err := json.Marshal(key)
+		if err != nil {
+			return err
+		}
+
+		p.client.Produce(ctx, &kgo.Record{Topic: topic, Key: keyBz, Value: valueBz}, func(_ *kgo.Record, e error) {
 			err = e
 		})
 		if err != nil {

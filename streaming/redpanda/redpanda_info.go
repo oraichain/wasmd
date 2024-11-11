@@ -32,11 +32,23 @@ func (ri *RedpandaInfo) GetBrockers() []string {
 	return ri.brokers
 }
 
-func (ri *RedpandaInfo) SetTopics() {
-	wasmTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(config.Wasm))
-	bankTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(config.Bank))
+func (ri *RedpandaInfo) SetTopics(topics ...string) {
+	if len(topics) == 0 {
+		wasmTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(config.Wasm))
+		bankTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(config.Bank))
+		topics = []string{wasmTopic, bankTopic}
+		ri.topics = append(ri.topics, topics...)
 
-	ri.topics = []string{wasmTopic, bankTopic}
+		return
+	}
+
+	for _, topic := range topics {
+		if topic == "" {
+			panic("Topic must not empty")
+		}
+
+		ri.topics = append(ri.topics, "REDPANDA_TOPIC_"+strings.ToUpper(topic))
+	}
 }
 
 func (ri *RedpandaInfo) GetTopic() []string {
