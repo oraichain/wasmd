@@ -63,7 +63,7 @@ psql-conn = "postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable
 
 ### Testing
 
-Run the following script to test the indexer locally: `./scripts/setup_oraid_psql_indexer.sh`
+Run the following script to start the indexer locally: `./scripts/setup_oraid_psql_indexer.sh`
 
 ### Search for txs
 
@@ -72,6 +72,20 @@ Example:
 ```bash
 # query: tx.height >= 2760 AND tx.height <= 2761
 curl "http://localhost:5050/tx_search?query=\"tx.height%20%3E%3D%202760%20AND%20tx.height%20%3C%3D%202761\""
+# browser
+http://localhost:5050/tx_search?query=%22tx.height%20%3E%3D%202760%20AND%20tx.height%20%3C%3D%202761%22
+
+# query by tx hash:
+curl "http://localhost:5050/tx_search?hash=\"E53292A4CAE48C347CDE93CF2FDD5C8511A56889EC6B0B0DD5221FF13ED2D5C8\""
+# browser
+http://localhost:5050/tx_search?hash=%22E53292A4CAE48C347CDE93CF2FDD5C8511A56889EC6B0B0DD5221FF13ED2D5C8%22
+
+# filter by instantiate code id (browser)
+http://localhost:5050/tx_search?query=%22instantiate.code_id%20>2%22
+# >= 2
+http://localhost:5050/tx_search?query=%22instantiate.code_id%20%3E=2%22
+# >= 1 & < 3
+http://localhost:5050/tx_search?query=%22instantiate.code_id%20%3E=1%20AND%20instantiate.code_id%3C3%22
 ```
 
-Note that it must be `AND`, not `and`
+Note that the query must use `AND` uppercase letter, not `and`
