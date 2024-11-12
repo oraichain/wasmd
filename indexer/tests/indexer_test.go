@@ -182,7 +182,7 @@ func TestIndexing(t *testing.T) {
 
 	t.Run("GetlatestBlock", func(t *testing.T) {
 		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
-		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig, nil)
 		latestBlock, err := customTxEventSink.GetLatestBlock()
 		require.NoError(t, err)
 		require.Equal(t, int64(3), latestBlock)
@@ -210,7 +210,7 @@ func TestIndexing(t *testing.T) {
 		txr, err := loadTxResult(txHashBz)
 		require.NoError(t, err)
 		assert.Equal(t, txResult, txr)
-		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig, nil)
 
 		txsByHash, err := customTxEventSink.GetTxByHash(fmt.Sprintf("%X", txHashBz))
 		require.NoError(t, err)
@@ -276,7 +276,7 @@ func TestIndexing(t *testing.T) {
 		firstExecTxResults := []*abci.ExecTxResult{&abciTxResults[0].Result, &abciTxResults[1].Result}
 		secExecTxResults := []*abci.ExecTxResult{&abciTxResults[2].Result}
 
-		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig, nil)
 		err := customTxEventSink.InsertModuleEvents(&abci.RequestFinalizeBlock{Height: 1, Txs: firstBlockTxs, Time: time}, &abci.ResponseFinalizeBlock{Events: []abci.Event{}, TxResults: firstExecTxResults})
 		require.NoError(t, err)
 		err = customTxEventSink.InsertModuleEvents(&abci.RequestFinalizeBlock{Height: 2, Txs: secBlockTxs, Time: time}, &abci.ResponseFinalizeBlock{Events: []abci.Event{}, TxResults: secExecTxResults})
@@ -372,7 +372,7 @@ func TestIndexing(t *testing.T) {
 
 		txHashBz := types.Tx(txResult.Tx).Hash()
 		txHash := fmt.Sprintf("%X", txHashBz)
-		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig)
+		customTxEventSink := indexertx.NewTxEventSinkIndexer(indexer, encodingConfig, nil)
 
 		// test query tx by hash
 		txs, err := customTxEventSink.TxSearch(nil, "", nil, txHash)

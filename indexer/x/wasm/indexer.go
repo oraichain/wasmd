@@ -4,6 +4,7 @@ import (
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/streaming/redpanda"
+	"github.com/CosmWasm/wasmd/x/wasm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 )
@@ -19,11 +20,7 @@ type WasmEventSink struct {
 
 var _ indexer.ModuleEventSinkIndexer = (*WasmEventSink)(nil)
 
-func NewWasmEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig) *WasmEventSink {
-	ri := &redpanda.RedpandaInfo{}
-	ri.SetBrokers()
-	ri.SetTopics()
-
+func NewWasmEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig, ri *redpanda.RedpandaInfo) *WasmEventSink {
 	return &WasmEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
 }
 
@@ -36,7 +33,7 @@ func (cs *WasmEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *a
 }
 
 func (cs *WasmEventSink) ModuleName() string {
-	return "wasm"
+	return types.ModuleName
 }
 
 func (cs *WasmEventSink) EventSink() *psql.EventSink {

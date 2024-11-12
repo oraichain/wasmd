@@ -20,6 +20,7 @@ import (
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	cmttypes "github.com/cometbft/cometbft/types"
+	"github.com/hashicorp/go-hclog"
 )
 
 // EventSink is an indexer backend providing the tx/block index services.  This
@@ -37,11 +38,7 @@ const (
 
 var _ indexer.ModuleEventSinkIndexer = (*TxEventSink)(nil)
 
-func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig) *TxEventSink {
-	ri := &redpanda.RedpandaInfo{}
-	ri.SetBrokers()
-	ri.SetTopics()
-
+func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig, ri *redpanda.RedpandaInfo) *TxEventSink {
 	return &TxEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
 }
 
@@ -83,7 +80,6 @@ func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int, 
 	return &ctypes.ResultTxSearch{Txs: txResponses, TotalCount: int(count)}, nil
 }
 
-// TODO: handle filter condition -> done
 func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.ResultTx, uint64, error) {
 	count := uint64(0)
 	txResponses := []*ctypes.ResultTx{}
@@ -191,17 +187,12 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 }
 
 func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
+	if cs.ri == nil {
+		hclog.Default().Warn("Redpanda info is empty. Won't emit any events...")
+		return nil
+	}
 	admin := cs.ri.GetAdmin()
-	if admin == nil {
-		cs.ri.SetAdmin()
-		admin = cs.ri.GetAdmin()
-	}
-
 	producer := cs.ri.GetProducer()
-	if producer == nil {
-		cs.ri.SetProducer()
-		producer = cs.ri.GetProducer()
-	}
 
 	for i, tx := range req.Txs {
 		cosmosTx, err := indexer.UnmarshalTxBz(cs, tx)
