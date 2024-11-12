@@ -32,7 +32,7 @@ func (ri *RedpandaInfo) SetBrokers() {
 	ri.brokers = brokers
 }
 
-func (ri *RedpandaInfo) GetBrockers() []string {
+func (ri *RedpandaInfo) GetBrokers() []string {
 	return ri.brokers
 }
 
