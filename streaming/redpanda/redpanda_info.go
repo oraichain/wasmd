@@ -4,7 +4,8 @@ import (
 	"os"
 	"strings"
 
-	config "github.com/CosmWasm/wasmd/streaming/config"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 type RedpandaInfo struct {
@@ -17,6 +18,9 @@ type RedpandaInfo struct {
 func (ri *RedpandaInfo) SetBrokers() {
 	var brokers []string
 	brokersEnv := os.Getenv("REDPANDA_BROKERS")
+	if brokersEnv == "" {
+		panic("Empty REDPANDA_BROKERS env!")
+	}
 
 	for _, broker := range strings.Split(brokersEnv, ",") {
 		brokers = append(brokers, strings.TrimSpace(broker))
@@ -34,8 +38,8 @@ func (ri *RedpandaInfo) GetBrockers() []string {
 
 func (ri *RedpandaInfo) SetTopics(topics ...string) {
 	if len(topics) == 0 {
-		wasmTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(config.Wasm))
-		bankTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(config.Bank))
+		wasmTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(wasmtypes.ModuleName))
+		bankTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(banktypes.ModuleName))
 		topics = []string{wasmTopic, bankTopic}
 		ri.topics = append(ri.topics, topics...)
 
