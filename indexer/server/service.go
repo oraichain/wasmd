@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	cmtlog "github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/node"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdksvr "github.com/cosmos/cosmos-sdk/server"
 )
@@ -36,22 +38,29 @@ func init() {
 
 // StartIndexerService starts the RPC server, this can be called in post setup of start cmd
 func StartIndexerService(
-	svrCtx *sdksvr.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group,
+	svrCtx *sdksvr.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group, tmNode *node.Node,
 ) (func(), error) {
 
 	configPath := filepath.Join(clientCtx.HomeDir, "config")
 	indexerConfig, err := indexer.ReadServiceConfig(configPath, config.IndexerFileName, clientCtx.Viper)
 	if err != nil {
-		return func() {}, err
+		svrCtx.Logger.Warn(fmt.Sprintf("Couldn't find the %s.toml file with err: %v. The Indexer RPC won't run", err, config.IndexerFileName))
+		return func() {}, nil
 	}
 
 	r := http.NewServeMux()
 	eventSink, err := psql.NewEventSink(svrCtx.Config.TxIndex.PsqlConn, clientCtx.ChainID)
 	if err != nil {
-		return func() {}, err
+		svrCtx.Logger.Warn(fmt.Sprintf("Couldn't create a new connection to the Postgres DB with err: %v. The Indexer RPC won't run", err))
+		return func() {}, nil
 	}
 	txEventSink := tx.NewTxEventSinkIndexer(eventSink, encodingConfig)
-	env := GetRoutes(txEventSink)
+	// init node env to setup indexer RPC
+	nodeEnv, err := tmNode.ConfigureRPC()
+	if err != nil {
+		return func() {}, err
+	}
+	env := GetRoutes(txEventSink, nodeEnv)
 	server.RegisterRPCFuncs(r, env, cmtlog.NewNopLogger())
 
 	handlerWithCors := cors.Default()
