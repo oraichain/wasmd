@@ -9,6 +9,7 @@ import (
 	"github.com/CosmWasm/wasmd/indexer/sinkreader"
 	"github.com/CosmWasm/wasmd/indexer/x/tx"
 	"github.com/CosmWasm/wasmd/indexer/x/wasm"
+	"github.com/CosmWasm/wasmd/streaming/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/hashicorp/go-plugin"
@@ -51,10 +52,11 @@ func (p *ModsStreamingPlugin) initStreamIndexerConn() error {
 
 func (p *ModsStreamingPlugin) initIndexerManager() {
 	if p.indexerManager == nil {
+		ri := redpanda.NewRedPandaInfo([]string{}, []string{})
 		// orders matter! the tx indexer must always be at the top to insert tx requests & block events into postgres
 		p.indexerManager = indexer.NewIndexerManager(
-			tx.NewTxEventSinkIndexer(p.es, encodingConfig),
-			wasm.NewWasmEventSinkIndexer(p.es, encodingConfig),
+			tx.NewTxEventSinkIndexer(p.es, encodingConfig, ri),
+			wasm.NewWasmEventSinkIndexer(p.es, encodingConfig, ri),
 		)
 	}
 }

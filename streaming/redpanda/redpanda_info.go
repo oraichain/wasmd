@@ -15,12 +15,28 @@ type RedpandaInfo struct {
 	producer *Producer
 }
 
-func (ri *RedpandaInfo) SetBrokers() {
+func NewRedPandaInfo(brokers []string, topics []string) *RedpandaInfo {
+	info := &RedpandaInfo{}
+	info.SetBrokers(brokers)
+	info.SetTopics(topics...)
+	info.SetAdmin()
+	info.SetProducer()
+	return info
+}
+
+func DefaultTopics() []string {
+	wasmTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(wasmtypes.ModuleName))
+	bankTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(banktypes.ModuleName))
+	return []string{wasmTopic, bankTopic}
+}
+
+func (ri *RedpandaInfo) SetBrokers(initialBrokers []string) {
+	if len(initialBrokers) != 0 {
+		ri.brokers = initialBrokers
+		return
+	}
 	var brokers []string
 	brokersEnv := os.Getenv("REDPANDA_BROKERS")
-	if brokersEnv == "" {
-		panic("Empty REDPANDA_BROKERS env!")
-	}
 
 	for _, broker := range strings.Split(brokersEnv, ",") {
 		brokers = append(brokers, strings.TrimSpace(broker))
@@ -38,10 +54,8 @@ func (ri *RedpandaInfo) GetBrokers() []string {
 
 func (ri *RedpandaInfo) SetTopics(topics ...string) {
 	if len(topics) == 0 {
-		wasmTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(wasmtypes.ModuleName))
-		bankTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(banktypes.ModuleName))
-		topics = []string{wasmTopic, bankTopic}
-		ri.topics = append(ri.topics, topics...)
+		defaultTopics := DefaultTopics()
+		ri.topics = append(ri.topics, defaultTopics...)
 
 		return
 	}
