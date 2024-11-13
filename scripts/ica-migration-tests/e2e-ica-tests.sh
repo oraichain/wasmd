@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u
+set -ux
 
 BINARY=oraid
 
@@ -35,7 +35,7 @@ export WALLET_4=$($BINARY keys show wallet4 -a --keyring-backend test --home $DA
 $BINARY tx intertx register --from $WALLET_1 --connection-id connection-0 --chain-id test-1 --home $DATA_DIR/test-1 --node tcp://localhost:16657 --keyring-backend test -y -b block
 
 # wait for rly to craete new interchain acc
-sleep 3
+sleep 5
 
 # Query the address of the interchain account
 $BINARY query intertx interchainaccounts connection-0 $WALLET_1 --home $DATA_DIR/test-1 --node tcp://localhost:16657
@@ -52,3 +52,29 @@ $BINARY tx send $WALLET_3 $ICA_ADDR 10000orai --chain-id test-2 --home $DATA_DIR
 
 # Query the balance once again and observe the changes
 $BINARY q bank balances $ICA_ADDR --chain-id test-2 --node tcp://localhost:26657
+
+######### Test interchain txs
+# Submit a bank send tx using the interchain account via ibc
+$BINARY tx intertx submit \
+'{
+    "@type":"/cosmos.bank.v1beta1.MsgSend",
+    "from_address":"cosmos15ccshhmp0gsx29qpqq6g4zmltnnvgmyu9ueuadh9y2nc5zj0szls5gtddz",
+    "to_address":"cosmos10h9stc5v6ntgeygf5xf945njqq5h32r53uquvw",
+    "amount": [
+        {
+            "denom": "orai",
+            "amount": "1000"
+        }
+    ]
+}' --connection-id connection-0 --from $WALLET_1 --chain-id test-1 --home $DATA_DIR/test-1 --node tcp://localhost:16657 --keyring-backend test -y -b block
+
+# Wait until the relayer has relayed the packet
+sleep 5
+
+Query the interchain account balance on the host chain
+amount=$($BINARY q bank balances $ICA_ADDR --chain-id test-2 --node tcp://localhost:26657 --denom orai --output json | jq '.amount | tonumber')
+
+if [ $amount -ne 10000 ] ; then
+  echo "ICA MsgSend Failed: $*"
+  exit 1
+fi
