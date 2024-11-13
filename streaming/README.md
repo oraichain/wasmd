@@ -49,11 +49,12 @@ plugin = "abci"
 # stop-node-on-err specifies whether to stop the node when the plugin has problems
 stop-node-on-err = false
 
-# streaming.wasm specifies the configuration for the ABCI Listener streaming service, for the wasm module
-[streaming.wasm]
+# uncomment the lines below if you want to have more plugins
+# # streaming.wasm specifies the configuration for the ABCI Listener streaming service, for the wasm module
+# [streaming.wasm]
 
-# The plugin name used for streaming via gRPC
-plugin = "wasm"
+# # The plugin name used for streaming via gRPC
+# plugin = "wasm"
 ```
 
 Note that the ABCI plugin is a must-have. You can add additional plugins, but the `keys` and `stop-node-on-err` fields in `app.toml` only take values from the ABCI plugin.
