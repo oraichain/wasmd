@@ -22,7 +22,7 @@ Follow the below steps to start the indexer:
 cd indexer/
 
 # Start postgres
-docker-compose up -d
+docker-compose -f indexer/docker-compose.yml up -d
 ```
 
 ### Interacting with the DBMS
