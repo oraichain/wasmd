@@ -5,7 +5,7 @@ set -e
 display_usage() {
 	echo "\nMissing $1 parameter. Please check if all parameters were specified."
 	echo "\nUsage: ./one-chain [BINARY] [CHAIN_ID] [CHAIN_DIR] [RPC_PORT] [P2P_PORT] [PROFILING_PORT] [GRPC_PORT]"
-  echo "\nExample: ./one-chain $BINARY test-chain-id ./data 26657 26656 6060 9090 \n"
+  echo "\nExample: ./one-chain $BINARY test-chain-id $PWD/data 26657 26656 6060 9090 \n"
   exit 1
 }
 
