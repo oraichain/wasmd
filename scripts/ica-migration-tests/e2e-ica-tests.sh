@@ -71,7 +71,7 @@ $BINARY tx intertx submit \
 # Wait until the relayer has relayed the packet
 sleep 5
 
-Query the interchain account balance on the host chain
+# Query the interchain account balance on the host chain
 amount=$($BINARY q bank balances $ICA_ADDR --chain-id test-2 --node tcp://localhost:26657 --denom orai --output json | jq '.amount | tonumber')
 
 if [ $amount -ne 10000 ] ; then
