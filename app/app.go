@@ -789,6 +789,7 @@ func NewWasmApp(
 	)
 
 	app.ContractKeeper = wasmkeeper.NewDefaultPermissionKeeper(app.WasmKeeper)
+	app.Ics20WasmHooks.ContractKeeper = &app.WasmKeeper
 	app.ClockKeeper = clockkeeper.NewKeeper(
 		app.keys[clocktypes.StoreKey],
 		appCodec,
