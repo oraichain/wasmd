@@ -73,8 +73,9 @@ export COSMOS_SDK_ABCI="{path to}/streaming/streaming"
 # build another plugin
 go build -o streaming/streaming streaming/wasm_streaming.go
 
-# export env variable so the plugin can be seen by the node
-export COSMOS_SDK_WASM="{path to}/streaming/wasm_streaming"
+# uncomment the below lines if you want to export more plugins
+# # export env variable so the plugin can be seen by the node
+# export COSMOS_SDK_WASM="{path to}/streaming/wasm_streaming"
 
 # export your redpanda brokers
 export REDPANDA_BROKERS=<your_redpanda_brokers>
