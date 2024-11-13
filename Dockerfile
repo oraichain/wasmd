@@ -2,6 +2,7 @@
 
 # Please, when adding/editing this Dockerfile also take care of Dockerfile.cosmovisor as well
 ARG GO_VERSION="1.22"
+ARG RUNNER_IMAGE="alpine:3.18"
 ARG BUILD_TAGS="netgo,ledger,muslc"
 
 
@@ -9,7 +10,7 @@ ARG BUILD_TAGS="netgo,ledger,muslc"
 # Builder
 # --------------------------------------------------------
 
-FROM golang:1.21-alpine3.18 AS builder
+FROM golang:${GO_VERSION}-alpine3.20 as builder
 ENV GO_PATH="/go"
 ARG GIT_VERSION
 ARG GIT_COMMIT
@@ -40,14 +41,17 @@ COPY . .
 
 # Build oraid binary
 RUN LEDGER_ENABLED=false BUILD_TAGS=muslc LINK_STATICALLY=true make build
+RUN echo "Ensuring binary is statically linked ..." \
+  && (file /go/bin/oraid | grep "statically linked")
+
 # --------------------------------------------------------
 # Runner
 # --------------------------------------------------------
 
-FROM alpine:3.18
+FROM ${RUNNER_IMAGE}
 
 COPY --from=builder /go/bin/oraid /bin/oraid
-
+ENV HOME=/oraichain
 WORKDIR /oraichain
 
 EXPOSE 26656
