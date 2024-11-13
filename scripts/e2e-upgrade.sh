@@ -4,10 +4,10 @@ set -eu
 
 # setup the network using the old binary
 
-OLD_VERSION=${OLD_VERSION:-"v0.42.4"}
+OLD_VERSION=${OLD_VERSION:-"v0.50.0"}
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/oraiswap-token.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
-NEW_VERSION=${NEW_VERSION:-"v0.50.0"}
+NEW_VERSION=${NEW_VERSION:-"v0.50.1"}
 VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
 MIGRATE_MSG=${MIGRATE_MSG:-'{}'}
 EXECUTE_MSG=${EXECUTE_MSG:-'{"ping":{}}'}
@@ -22,7 +22,7 @@ current_dir=$PWD
 
 # clone or pull latest repo
 if ! [ -d "../orai-old" ]; then
-  git clone https://github.com/oraichain/orai.git ../orai-old
+  git clone https://github.com/oraichain/wasmd.git ../orai-old
 fi
 
 # build old binary
@@ -34,7 +34,7 @@ go mod tidy && GOTOOLCHAIN=$GO_VERSION make install
 cd $current_dir
 
 # setup local network
-sh $PWD/scripts/multinode-local-testnet-v0.42.4.sh
+sh $PWD/scripts/multinode-local-testnet.sh
 
 # deploy new contract
 store_ret=$(oraid tx wasm store $WASM_PATH --from validator1 --home $VALIDATOR_HOME $ARGS -b block --output json)

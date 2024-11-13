@@ -36,13 +36,14 @@ import (
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	"github.com/CosmWasm/wasmd/app/upgrades/noop"
 	v050 "github.com/CosmWasm/wasmd/app/upgrades/v050"
+	v0501 "github.com/CosmWasm/wasmd/app/upgrades/v0501"
 	v2 "github.com/CosmWasm/wasmd/x/wasm/migrations/v2"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v050.Upgrade}
+var Upgrades = []upgrades.Upgrade{v0501.Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *WasmApp) RegisterUpgradeHandlers() {
@@ -128,6 +129,8 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 				app.ModuleManager,
 				app.configurator,
 				&keepers,
+				app.keys,
+				app.appCodec,
 			),
 		)
 	}

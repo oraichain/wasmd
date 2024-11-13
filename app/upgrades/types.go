@@ -39,6 +39,6 @@ type Upgrade struct {
 	UpgradeName string
 
 	// CreateUpgradeHandler defines the function that creates an upgrade handler
-	CreateUpgradeHandler func(ModuleManager, module.Configurator, *AppKeepers) upgradetypes.UpgradeHandler
+	CreateUpgradeHandler func(ModuleManager, module.Configurator, *AppKeepers, map[string]*storetypes.KVStoreKey, codec.BinaryCodec) upgradetypes.UpgradeHandler
 	StoreUpgrades        storetypes.StoreUpgrades
 }
