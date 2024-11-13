@@ -89,3 +89,31 @@ http://localhost:5050/tx_search?query=%22instantiate.code_id%20%3E=1%20AND%20ins
 ```
 
 Note that the query must use `AND` uppercase letter, not `and`
+
+### Integration with Cosmjs
+
+The Indexer RPC works out-of-the-box with Cosmjs. You only need to replace the RPC endpoint with the Indexer RPC endpoint, and it should work:
+
+```ts
+import { GasPrice, SigningStargateClient } from "@cosmjs/stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import dotenv from "dotenv";
+import { ORAI } from "@oraichain/common";
+dotenv.config();
+
+(async () => {
+  const signer = await DirectSecp256k1HdWallet.fromMnemonic(
+    process.env.EXAMPLES_MNEMONIC,
+    { prefix: ORAI }
+  ); // replace your mnemonic here
+  const accounts = await signer.getAccounts();
+  const address = accounts[0].address;
+  const client = await SigningStargateClient.connectWithSigner(
+    "http://localhost:5050", // -> new Indexer RPC
+    // "https://rpc.orai.io" -> original CometBFT RPC
+    signer,
+    { gasPrice: GasPrice.fromString("0.001orai") }
+  );
+})();
+
+```

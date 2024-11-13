@@ -14,7 +14,11 @@ To start streaming data to Redpanda locally, you need:
 
 - Docker-compose. It's convenient to use docker-compose to quickly start the Redpanda docker container.
 
-## Quick start
+# Quick start
+
+This section provides a basic guideline to enable Oraichain Indexer with fast tx searching and Oraichain fast & real-time transaction streaming via RedPanda.
+
+## Real-time streaming with RedPanda
 
 Start a simple RedPanda's set of brokers:
 
@@ -24,7 +28,7 @@ docker-compose -f streaming/docker-compose.yml up -d
 
 For more information, please read [Redpanda quickstart](https://docs.redpanda.com/current/get-started/quick-start/?tab=tabs-2-macos) to setup local Redpanda service by docker.
 
-## Configuration
+### Configuration
 
 Update the streaming section in `app.toml` to enable ABCI state streaming
 
@@ -54,7 +58,7 @@ plugin = "wasm"
 
 Note that the ABCI plugin is a must-have. You can add additional plugins, but the `keys` and `stop-node-on-err` fields in `app.toml` only take values from the ABCI plugin.
 
-## Build the plugin
+### Build the plugin
 
 In the base directory (wasmd/), run the following command to build the plugin:
 
@@ -75,3 +79,7 @@ export COSMOS_SDK_WASM="{path to}/streaming/wasm_streaming"
 export REDPANDA_BROKERS=<your_redpanda_brokers>
 # example: export REDPANDA_BROKERS="localhost:19092"
 ```
+
+## Oraichain Indexer
+
+We have a seperate documentation for this sub-section. Please read the [Indexer documentation](../indexer/README.md).
