@@ -220,6 +220,20 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 			}
 
 			topicAndKeys = append(topicAndKeys, redpanda.TopicAndKey{Topic: topic, Key: key})
+
+			if module == "wasm" && key == "MsgExecuteContract" {
+				topic = "REDPANDA_TOPIC_MSGEXECUTECONTRACT"
+				if !admin.IsTopicExist(topic) {
+					err := admin.CreateTopic(topic)
+					if err != nil {
+						return err
+					}
+
+					cs.ri.SetTopics(module)
+				}
+
+				topicAndKeys = append(topicAndKeys, redpanda.TopicAndKey{Topic: topic, Key: key})
+			}
 		}
 
 		txHashBz := cmttypes.Tx(tx).Hash()
