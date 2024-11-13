@@ -16,7 +16,13 @@ To start streaming data to Redpanda locally, you need:
 
 ## Quick start
 
-Please follow [Redpanda quickstart](https://docs.redpanda.com/current/get-started/quick-start/?tab=tabs-2-macos) to setup local Redpanda service by docker.
+Start a simple RedPanda's set of brokers:
+
+```bash
+docker-compose -f streaming/docker-compose.yml up -d
+```
+
+For more information, please read [Redpanda quickstart](https://docs.redpanda.com/current/get-started/quick-start/?tab=tabs-2-macos) to setup local Redpanda service by docker.
 
 ## Configuration
 
