@@ -49,6 +49,25 @@ echo "Initializing $CHAINID_2..."
 $BINARY init test --home $CHAIN_DIR/$CHAINID_1 --chain-id=$CHAINID_1
 $BINARY init test --home $CHAIN_DIR/$CHAINID_2 --chain-id=$CHAINID_2
 
+# Update host chain genesis to allow x/bank/MsgSend ICA tx execution
+cat $CHAIN_DIR/$CHAINID_2/config/genesis.json | jq '(.app_state.interchainaccounts.host_genesis_state.params.allow_messages) |= ["/cosmos.bank.v1beta1.MsgSend", "/cosmos.staking.v1beta1.MsgDelegate"]' > $CHAIN_DIR/$CHAINID_2/config/genesis.json.tmp && mv $CHAIN_DIR/$CHAINID_2/config/genesis.json.tmp $CHAIN_DIR/$CHAINID_2/config/genesis.json
+
+update_genesis () {
+    cat $2/config/genesis.json | jq "$1" > $2/config/tmp_genesis.json && mv $2/config/tmp_genesis.json $2/config/genesis.json
+}
+
+# update crisis variable to orai
+update_genesis '.app_state["crisis"]["constant_fee"]["denom"]="orai"' $CHAIN_DIR/$CHAINID_2
+update_genesis '.app_state["crisis"]["constant_fee"]["denom"]="orai"' $CHAIN_DIR/$CHAINID_1
+# udpate gov genesis
+update_genesis '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="orai"' $CHAIN_DIR/$CHAINID_2
+update_genesis '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="orai"' $CHAIN_DIR/$CHAINID_1
+update_genesis '.app_state["gov"]["voting_params"]["voting_period"]="6s"' $CHAIN_DIR/$CHAINID_2
+update_genesis '.app_state["gov"]["voting_params"]["voting_period"]="6s"' $CHAIN_DIR/$CHAINID_1
+# update mint genesis
+update_genesis '.app_state["mint"]["params"]["mint_denom"]="orai"' $CHAIN_DIR/$CHAINID_2
+update_genesis '.app_state["mint"]["params"]["mint_denom"]="orai"' $CHAIN_DIR/$CHAINID_1
+
 echo "Adding genesis accounts..."
 echo $VAL_MNEMONIC_1 | $BINARY keys add val1 --home $CHAIN_DIR/$CHAINID_1 --recover --keyring-backend=test
 echo $VAL_MNEMONIC_2 | $BINARY keys add val2 --home $CHAIN_DIR/$CHAINID_2 --recover --keyring-backend=test
@@ -84,6 +103,9 @@ sed -i '' -E 's/enable = false/enable = true/g' $CHAIN_DIR/$CHAINID_1/config/app
 sed -i '' -E 's/swagger = false/swagger = true/g' $CHAIN_DIR/$CHAINID_1/config/app.toml
 sed -i '' -E 's/1317/'"$RESTPORT_1"'/g' $CHAIN_DIR/$CHAINID_1/config/app.toml
 sed -i '' -E 's/":8080"/":'"$ROSETTA_1"'"/g' $CHAIN_DIR/$CHAINID_1/config/app.toml
+sed -i '' -E "s%^minimum-gas-prices *=.*%minimum-gas-prices = \"0orai\"%; " $CHAIN_DIR/$CHAINID_1/config/app.toml
+sed -i '' -E 's|0.0.0.0:9090|0.0.0.0:8090|g' $CHAIN_DIR/$CHAINID_1/config/app.toml
+sed -i '' -E 's|0.0.0.0:9091|0.0.0.0:8091|g' $CHAIN_DIR/$CHAINID_1/config/app.toml
 
 sed -i '' -E 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2PPORT_2"'"#g' $CHAIN_DIR/$CHAINID_2/config/config.toml
 sed -i '' -E 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:'"$RPCPORT_2"'"#g' $CHAIN_DIR/$CHAINID_2/config/config.toml
@@ -97,6 +119,4 @@ sed -i '' -E 's/":8080"/":'"$ROSETTA_2"'"/g' $CHAIN_DIR/$CHAINID_2/config/app.to
 # modify jsonrpc ports to avoid clashing
 sed -i '' -E 's|0.0.0.0:8545|0.0.0.0:7545|g' $CHAIN_DIR/$CHAINID_2/config/app.toml
 sed -i '' -E "s%^ws-address *=.*%ws-address = \"0.0.0.0:7546\"%; " $CHAIN_DIR/$CHAINID_2/config/app.toml
-
-# Update host chain genesis to allow x/bank/MsgSend ICA tx execution
-cat $CHAIN_DIR/$CHAINID_2/config/genesis.json | jq '(.app_state.interchainaccounts.host_genesis_state.params.allow_messages) |= ["/cosmos.bank.v1beta1.MsgSend", "/cosmos.staking.v1beta1.MsgDelegate"]' > $CHAIN_DIR/$CHAINID_2/config/genesis.json.tmp && mv $CHAIN_DIR/$CHAINID_2/config/genesis.json.tmp $CHAIN_DIR/$CHAINID_2/config/genesis.json
+sed -i '' -E "s%^minimum-gas-prices *=.*%minimum-gas-prices = \"0orai\"%; " $CHAIN_DIR/$CHAINID_2/config/app.toml

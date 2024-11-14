@@ -23,12 +23,12 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	v6 "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/migrations/v6"
 	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
-	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
@@ -43,7 +43,7 @@ import (
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v0501.Upgrade}
+var Upgrades = []upgrades.Upgrade{v050.Upgrade, v0501.Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *WasmApp) RegisterUpgradeHandlers() {
@@ -105,16 +105,14 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 
 					sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-					// upgrade ica capability
-					err = app.upgradeIcaController(sdkCtx)
-					if err != nil {
-						panic(err)
-					}
-
 					// upgrade mint module params
 					err = app.upgradeMintParams(sdkCtx)
 					if err != nil {
 						panic(err)
+					}
+
+					if err := v6.MigrateICS27ChannelCapability(sdkCtx, app.appCodec, app.keys[capabilitytypes.ModuleName], app.CapabilityKeeper, "intertx"); err != nil {
+						return nil, err
 					}
 
 					return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
@@ -151,24 +149,6 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 			break
 		}
 	}
-}
-
-func (app *WasmApp) upgradeIcaController(ctx sdk.Context) error {
-	chanels := app.IBCKeeper.ChannelKeeper.GetAllChannelsWithPortPrefix(ctx, icatypes.ControllerPortPrefix)
-	for _, ch := range chanels {
-		name := host.ChannelCapabilityPath(ch.PortId, ch.ChannelId)
-		_, found := app.ScopedICAControllerKeeper.GetCapability(ctx, name)
-
-		// if not found then try to add capability for chanel
-		if !found {
-			_, err := app.ScopedICAControllerKeeper.NewCapability(ctx, name)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 func (app *WasmApp) upgradeMintParams(ctx sdk.Context) error {
