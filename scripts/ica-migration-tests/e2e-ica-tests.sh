@@ -121,8 +121,8 @@ CHAINID=test-2 BINARY=$OLD_BINARY bash $CONFIG_DIR/start-single.sh
 sleep 5
 
 ################################ upgrade again to v0501
-UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-100}
 NEW_VERSION=${NEW_VERSION:-"v0.50.1"}
+UPGRADE_HEIGHT=85
 $BINARY tx gov submit-proposal $CONFIG_DIR/proposal.json --from $VAL_1 --chain-id test-1 --home $DATA_DIR/test-1 --node tcp://localhost:16657 --keyring-backend test -y
 sleep 2
 $BINARY tx gov vote 2 yes --from $VAL_1 --chain-id test-1 --home $DATA_DIR/test-1 --node tcp://localhost:16657 --keyring-backend test -y
