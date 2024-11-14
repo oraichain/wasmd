@@ -26,9 +26,11 @@ import (
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	v6 "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/migrations/v6"
 	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
+	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
@@ -105,8 +107,19 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 
 					sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+					// upgrade ica capability
+					err = app.upgradeIcaController(sdkCtx)
+					if err != nil {
+						panic(err)
+					}
+
 					// upgrade mint module params
 					err = app.upgradeMintParams(sdkCtx)
+					if err != nil {
+						panic(err)
+					}
+
+					err = v0501.ReleaseWrongIcaControllerCaps(sdkCtx, app.IBCKeeper.ChannelKeeper, &app.ScopedICAControllerKeeper)
 					if err != nil {
 						panic(err)
 					}
@@ -149,6 +162,24 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 			break
 		}
 	}
+}
+
+func (app *WasmApp) upgradeIcaController(ctx sdk.Context) error {
+	chanels := app.IBCKeeper.ChannelKeeper.GetAllChannelsWithPortPrefix(ctx, icatypes.ControllerPortPrefix)
+	for _, ch := range chanels {
+		name := host.ChannelCapabilityPath(ch.PortId, ch.ChannelId)
+		_, found := app.ScopedICAControllerKeeper.GetCapability(ctx, name)
+
+		// if not found then try to add capability for chanel
+		if !found {
+			_, err := app.ScopedICAControllerKeeper.NewCapability(ctx, name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (app *WasmApp) upgradeMintParams(ctx sdk.Context) error {

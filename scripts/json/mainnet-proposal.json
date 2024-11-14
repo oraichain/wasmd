@@ -1,0 +1,20 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade",
+      "authority": "orai10d07y265gmmuvt4z0w9aw880jnsr700jf39xhq",
+      "plan": {
+        "name": "v0.50.1",
+        "time": "0001-01-01T00:00:00Z",
+        "height": "39720039",
+        "info": "Upgrade Oraichain to v0.50.1. Please refer to the CHANGELOG: https://github.com/oraichain/wasmd/releases/tag/v0.50.1 for more details about the upgrade",
+        "upgraded_client_state": null
+      }
+    }
+  ],
+  "metadata": "",
+  "deposit": "10000000orai",
+  "title": "Upgrade Oraichain to v0.50.1",
+  "summary": "Please refer to the CHANGELOG: https://github.com/oraichain/wasmd/releases/tag/v0.50.1 for more details about the upgrade",
+  "expedited": false
+}

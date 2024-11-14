@@ -6,9 +6,9 @@ import (
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 
-	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -18,14 +18,15 @@ import (
 )
 
 type AppKeepers struct {
-	AccountKeeper         *authkeeper.AccountKeeper
-	ParamsKeeper          *paramskeeper.Keeper
-	ConsensusParamsKeeper *consensusparamkeeper.Keeper
-	Codec                 codec.Codec
-	GetStoreKey           func(storeKey string) *storetypes.KVStoreKey
-	CapabilityKeeper      *capabilitykeeper.Keeper
-	GovKeeper             *govkeeper.Keeper
-	IBCKeeper             *ibckeeper.Keeper
+	AccountKeeper             *authkeeper.AccountKeeper
+	ParamsKeeper              *paramskeeper.Keeper
+	ConsensusParamsKeeper     *consensusparamkeeper.Keeper
+	Codec                     codec.Codec
+	GetStoreKey               func(storeKey string) *storetypes.KVStoreKey
+	CapabilityKeeper          *capabilitykeeper.Keeper
+	ScopedICAControllerKeeper *capabilitykeeper.ScopedKeeper
+	GovKeeper                 *govkeeper.Keeper
+	IBCKeeper                 *ibckeeper.Keeper
 }
 type ModuleManager interface {
 	RunMigrations(ctx context.Context, cfg module.Configurator, fromVM module.VersionMap) (module.VersionMap, error)
