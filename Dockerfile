@@ -24,7 +24,8 @@ RUN apk add --no-cache \
 
 # Download go dependencies
 WORKDIR /oraichain
-COPY debug debug
+## debug only
+# COPY debug debug
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
   --mount=type=cache,target=/root/go/pkg/mod \
