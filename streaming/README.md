@@ -85,3 +85,9 @@ export REDPANDA_BROKERS=<your_redpanda_brokers>
 ## Oraichain Indexer
 
 We have a seperate documentation for this sub-section. Please read the [Indexer documentation](../indexer/README.md).
+
+# Start everything
+
+After setting up the indexer and the streaming plugin, simply start the Oraichain node to enable them. Eg: oraid start
+
+
