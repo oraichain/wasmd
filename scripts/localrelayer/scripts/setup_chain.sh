@@ -105,4 +105,4 @@ if [[ ! -d $CONFIG_FOLDER ]]; then
 fi
 
 echo "🏁 Starting $CHAIN_ID..."
-oraid start --home $ORAICHAIN_HOME
+oraid start --home $ORAICHAIN_HOME --log_level=debug

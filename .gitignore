@@ -48,3 +48,6 @@ dependency-graph.png
 *.synctex.gz
 
 .oraid
+
+# debug
+debug/

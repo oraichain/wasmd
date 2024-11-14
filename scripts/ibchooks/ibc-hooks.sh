@@ -19,7 +19,7 @@ echo "increase bread alpha rigid glide amused approve oblige print asset idea en
 
 VALIDATOR=$(oraid keys show validator -a --keyring-backend test)
 
-args="--keyring-backend test --gas auto --gas-prices 0.1orai --gas-adjustment 1.3 --broadcast-mode sync --yes"
+args="--keyring-backend test --log_level=debug --gas auto --gas-prices 0.1orai --gas-adjustment 1.3 --broadcast-mode sync --yes"
 TX_FLAGS=($args)
 
 # send money to the validator on both chains
@@ -38,25 +38,27 @@ sleep 3
 # get the contract address
 export CONTRACT_ADDRESS=$(chainAWithoutChainId query wasm list-contract-by-code 1 -o json | jq -r '.contracts | [last][0]')
 
-denom=$(chainAWithoutChainId query bank balances "$CONTRACT_ADDRESS" -o json | jq -r '.balances[0].denom')
+origin_denom=$(chainAWithoutChainId query bank balances "$CONTRACT_ADDRESS" -o json | jq -r '.balances[0].denom')
 balance=$(chainAWithoutChainId query bank balances "$CONTRACT_ADDRESS" -o json | jq -r '.balances[0].amount')
 
 # send ibc transaction to execite the contract
-MEMO='{"wasm":{"contract":$CONTRACT_ADDRESS,"msg": {"increment": {}} }}'
+MEMO='{"wasm":{"contract":"'"$CONTRACT_ADDRESS"'","msg": {"increment": {}} }}'
 chainB tx ibc-transfer transfer transfer channel-0 $CONTRACT_ADDRESS 10orai \
-       --keyring-backend test \
-       --from validator -y \
+       --from validator \
+       "${TX_FLAGS[@]}" \
        --memo "$MEMO"
 
 # wait for the ibc round trip
 sleep 16
 
 new_balance=$(chainAWithoutChainId query bank balances "$CONTRACT_ADDRESS" -o json | jq -r '.balances[0].amount')
+denom=$(chainAWithoutChainId query bank balances "$CONTRACT_ADDRESS" -o json | jq -r '.balances[0].denom')
+
 export ADDR_IN_CHAIN_A=$(chainAWithoutChainId q ibchooks wasm-sender channel-0 "$VALIDATOR")
-QUERY="{\"get_total_funds\": {\"addr\": \"$ADDR_IN_CHAIN_A\"}}"
-funds=$(chainAWithoutChainId query wasm contract-state smart "$CONTRACT_ADDRESS" "$QUERY" -o json | jq -c -r '.data.total_funds[]')
-QUERY="{\"get_count\": {\"addr\": \"$ADDR_IN_CHAIN_A\"}}"
+# QUERY="{\"get_total_funds\": {\"addr\": \"$ADDR_IN_CHAIN_A\"}}"
+# funds=$(chainAWithoutChainId query wasm contract-state smart "$CONTRACT_ADDRESS" "$QUERY" -o json | jq -c -r '.data.total_funds[]')
+QUERY="{\"get_count\": { }}"
 count=$(chainAWithoutChainId query wasm contract-state smart "$CONTRACT_ADDRESS" "$QUERY" -o json | jq -r '.data.count')
 
-echo "funds: $funds, count: $count"
-echo "denom: $denom, old balance: $balance, new balance: $new_balance"
+echo "count: $count"
+echo "origin_denom: $origin_denom, old balance: $balance, denom: $denom, new balance: $new_balance"
