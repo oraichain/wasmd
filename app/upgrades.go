@@ -70,6 +70,7 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 		ScopedICAControllerKeeper: &app.ScopedICAControllerKeeper,
 		IBCKeeper:                 app.IBCKeeper,
 		MintKeeper:                &app.MintKeeper,
+		GovKeeper:                 &app.GovKeeper,
 		Codec:                     app.appCodec,
 		GetStoreKey:               app.GetKey,
 	}

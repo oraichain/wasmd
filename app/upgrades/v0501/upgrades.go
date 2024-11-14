@@ -3,6 +3,7 @@ package v050
 import (
 	"context"
 	"errors"
+	"time"
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
@@ -15,6 +16,8 @@ import (
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	"github.com/CosmWasm/wasmd/cmd/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	gov1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
@@ -60,7 +63,7 @@ func CreateUpgradeHandler(
 			return nil, err
 		}
 
-		if err := upgradeGovParams(sdkCtx, ak.ParamsKeeper); err != nil {
+		if err := upgradeGovParams(sdkCtx, ak.GovKeeper); err != nil {
 			return nil, err
 		}
 
@@ -83,18 +86,18 @@ func ReleaseWrongIcaControllerCaps(ctx sdk.Context, channelKeeper channelkeeper.
 	return nil
 }
 
-func upgradeGovParams(ctx sdk.Context, paramsKeeper *paramskeeper.Keeper) error {
-	// govSubspace, exist := paramsKeeper.GetSubspace(govtypes.ModuleName)
-	// if !exist {
-	// 	return errors.New("gov params space must existed")
-	// }
+func upgradeGovParams(ctx sdk.Context, govKeeper *govkeeper.Keeper) error {
 
-	// var govParams govv1beta1.VotingParams
-	// govSubspace.GetParamSet(ctx, &govParams)
-	// if mintParams.InflationMin.GT(mintParams.InflationMax) {
-	// 	mintParams.InflationMin = mintParams.InflationMax
-	// 	mintSpace.SetParamSet(ctx, &mintParams)
-	// }
+	govParams := gov1.DefaultParams()
+	govParams.BurnVoteVeto = true
+	govParams.ExpeditedMinDeposit = sdk.NewCoins(sdk.NewCoin(config.MinimalDenom, gov1.DefaultMinExpeditedDepositTokens))
+	govParams.MinDeposit = sdk.NewCoins(sdk.NewCoin(config.MinimalDenom, gov1.DefaultMinDepositTokens))
+	votingPeriod := time.Hour * 24 * 5 // 5 days
+	depositPeriod := time.Hour * 24 * 7 // 7 days
+	govParams.VotingPeriod = &votingPeriod
+	govParams.MaxDepositPeriod = &depositPeriod
+
+	govKeeper.Params.Set(ctx, govParams)
 
 	return nil
 }
@@ -107,7 +110,7 @@ func UpgradeMintParams(ctx sdk.Context, paramsKeeper *paramskeeper.Keeper, mintK
 	mintParams.InflationRateChange = math.LegacyMustNewDecFromStr("0.13")
 	mintParams.InflationMin = math.LegacyMustNewDecFromStr("0.085")
 	mintParams.InflationMax = mintParams.InflationMin
-	mintParams.MintDenom = config.CosmosDenom
+	mintParams.MintDenom = config.MinimalDenom
 
 	mintSpace, exist := paramsKeeper.GetSubspace(minttypes.ModuleName)
 	if !exist {

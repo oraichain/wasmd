@@ -1,7 +1,7 @@
 #!/bin/bash
 # Before running this script, you must setup local network:
 
-set -eux
+set -e
 
 HIDE_LOGS="/dev/null"
 
