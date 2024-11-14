@@ -2,7 +2,9 @@ package v050
 
 import (
 	"context"
+	"errors"
 
+	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
@@ -11,7 +13,10 @@ import (
 	v6 "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/migrations/v6"
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
+	"github.com/CosmWasm/wasmd/cmd/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
@@ -51,6 +56,10 @@ func CreateUpgradeHandler(
 			return nil, err
 		}
 
+		if err := UpgradeMintParams(sdkCtx, ak.ParamsKeeper, ak.MintKeeper); err != nil {
+			return nil, err
+		}
+
 		if err := upgradeGovParams(sdkCtx, ak.ParamsKeeper); err != nil {
 			return nil, err
 		}
@@ -86,6 +95,27 @@ func upgradeGovParams(ctx sdk.Context, paramsKeeper *paramskeeper.Keeper) error 
 	// 	mintParams.InflationMin = mintParams.InflationMax
 	// 	mintSpace.SetParamSet(ctx, &mintParams)
 	// }
+
+	return nil
+}
+
+func UpgradeMintParams(ctx sdk.Context, paramsKeeper *paramskeeper.Keeper, mintKeeper *mintkeeper.Keeper) error {
+
+	mintParams := minttypes.DefaultParams()
+	mintParams.BlocksPerYear = 39420000
+	mintParams.GoalBonded = math.LegacyMustNewDecFromStr("0.67")
+	mintParams.InflationRateChange = math.LegacyMustNewDecFromStr("0.13")
+	mintParams.InflationMin = math.LegacyMustNewDecFromStr("0.085")
+	mintParams.InflationMax = mintParams.InflationMin
+	mintParams.MintDenom = config.CosmosDenom
+
+	mintSpace, exist := paramsKeeper.GetSubspace(minttypes.ModuleName)
+	if !exist {
+		return errors.New("mint space must existed")
+	}
+	mintSpace.SetParamSet(ctx, &mintParams)
+
+	mintKeeper.Params.Set(ctx, mintParams)
 
 	return nil
 }

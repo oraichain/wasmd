@@ -9,6 +9,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -27,6 +28,7 @@ type AppKeepers struct {
 	ScopedICAControllerKeeper *capabilitykeeper.ScopedKeeper
 	GovKeeper                 *govkeeper.Keeper
 	IBCKeeper                 *ibckeeper.Keeper
+	MintKeeper                *mintkeeper.Keeper
 }
 type ModuleManager interface {
 	RunMigrations(ctx context.Context, cfg module.Configurator, fromVM module.VersionMap) (module.VersionMap, error)
