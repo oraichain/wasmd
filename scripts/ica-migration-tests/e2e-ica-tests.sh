@@ -120,6 +120,39 @@ CHAINID=test-2 BINARY=$OLD_BINARY bash $CONFIG_DIR/start-single.sh
 
 sleep 5
 
+################################ upgrade again to v0501
+UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-100}
+NEW_VERSION=${NEW_VERSION:-"v0.50.1"}
+$BINARY tx gov submit-proposal $CONFIG_DIR/proposal.json --from $VAL_1 --chain-id test-1 --home $DATA_DIR/test-1 --node tcp://localhost:16657 --keyring-backend test -y
+sleep 2
+$BINARY tx gov vote 2 yes --from $VAL_1 --chain-id test-1 --home $DATA_DIR/test-1 --node tcp://localhost:16657 --keyring-backend test -y
+
+# sleep to wait til the proposal passes
+echo "Sleep til the proposal passes..."
+
+# Check if latest height is less than the upgrade height
+latest_height=$(curl --no-progress-meter http://localhost:1316/cosmos/base/tendermint/v1beta1/blocks/latest | jq '.block.header.height | tonumber')
+while [ $latest_height -lt $UPGRADE_HEIGHT ];
+do
+   sleep 5
+   ((latest_height=$(curl --no-progress-meter http://localhost:1316/cosmos/base/tendermint/v1beta1/blocks/latest | jq '.block.header.height | tonumber')))
+   echo $latest_height
+done
+
+# kill all processes
+pkill $BINARY
+
+# install new binary for the upgrade
+echo "install new binary"
+GOTOOLCHAIN=$GO_VERSION make build
+
+# re-run the nodes
+bash $CONFIG_DIR/start-single.sh
+# start node 2 using different binary
+CHAINID=test-2 BINARY=$OLD_BINARY bash $CONFIG_DIR/start-single.sh
+
+sleep 5
+
 # gen new ica message
 oraid tx ica host generate-packet-data \
 "{

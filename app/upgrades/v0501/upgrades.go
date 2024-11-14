@@ -3,11 +3,8 @@ package v050
 import (
 	"context"
 
-	// govv1beta1 "cosmossdk.io/api/cosmos/gov/v1beta1"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
-
-	// govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -45,11 +42,12 @@ func CreateUpgradeHandler(
 	return func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
-		if err := v6.MigrateICS27ChannelCapability(sdkCtx, cdc, keys[capabilitytypes.ModuleName], ak.CapabilityKeeper, "intertx"); err != nil {
+
+		if err := ReleaseWrongIcaControllerCaps(sdkCtx, ak.IBCKeeper.ChannelKeeper, ak.ScopedICAControllerKeeper); err != nil {
 			return nil, err
 		}
 
-		if err := ReleaseWrongIcaControllerCaps(sdkCtx, ak.IBCKeeper.ChannelKeeper, ak.ScopedICAControllerKeeper); err != nil {
+		if err := v6.MigrateICS27ChannelCapability(sdkCtx, cdc, keys[capabilitytypes.ModuleName], ak.CapabilityKeeper, "intertx"); err != nil {
 			return nil, err
 		}
 

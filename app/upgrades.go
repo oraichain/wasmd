@@ -23,8 +23,6 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	v6 "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/migrations/v6"
 	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
 	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
@@ -56,13 +54,14 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 	}
 
 	keepers := upgrades.AppKeepers{
-		AccountKeeper:         &app.AccountKeeper,
-		ParamsKeeper:          &app.ParamsKeeper,
-		ConsensusParamsKeeper: &app.ConsensusParamsKeeper,
-		CapabilityKeeper:      app.CapabilityKeeper,
-		IBCKeeper:             app.IBCKeeper,
-		Codec:                 app.appCodec,
-		GetStoreKey:           app.GetKey,
+		AccountKeeper:             &app.AccountKeeper,
+		ParamsKeeper:              &app.ParamsKeeper,
+		ConsensusParamsKeeper:     &app.ConsensusParamsKeeper,
+		CapabilityKeeper:          app.CapabilityKeeper,
+		ScopedICAControllerKeeper: &app.ScopedICAControllerKeeper,
+		IBCKeeper:                 app.IBCKeeper,
+		Codec:                     app.appCodec,
+		GetStoreKey:               app.GetKey,
 	}
 
 	app.GetStoreKeys()
@@ -117,15 +116,6 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 					err = app.upgradeMintParams(sdkCtx)
 					if err != nil {
 						panic(err)
-					}
-
-					err = v0501.ReleaseWrongIcaControllerCaps(sdkCtx, app.IBCKeeper.ChannelKeeper, &app.ScopedICAControllerKeeper)
-					if err != nil {
-						panic(err)
-					}
-
-					if err := v6.MigrateICS27ChannelCapability(sdkCtx, app.appCodec, app.keys[capabilitytypes.ModuleName], app.CapabilityKeeper, "intertx"); err != nil {
-						return nil, err
 					}
 
 					return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
