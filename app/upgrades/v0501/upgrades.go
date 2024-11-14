@@ -40,6 +40,15 @@ func CreateUpgradeHandler(
 		if err := v6.MigrateICS27ChannelCapability(sdkCtx, cdc, keys[capabilitytypes.ModuleName], ak.CapabilityKeeper, "intertx"); err != nil {
 			return nil, err
 		}
+		govParams, err := ak.GovKeeper.Params.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+		govParams.ExpeditedMinDeposit = govParams.MinDeposit
+		err = ak.GovKeeper.Params.Set(ctx, govParams)
+		if err != nil {
+			return nil, err
+		}
 
 		return mm.RunMigrations(ctx, configurator, fromVM)
 	}
