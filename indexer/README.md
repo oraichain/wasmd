@@ -61,6 +61,38 @@ indexer = "psql"
 psql-conn = "postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
 ```
 
+you also need to create a new file called indexer.toml like follows: 
+
+```toml
+###############################################################################
+###                           JSON RPC Configuration                        ###
+###############################################################################
+
+[indexer-service]
+
+# Enable defines if the gRPC server should be enabled.
+enable = true
+
+# Address defines the EVM RPC HTTP server address to bind to.
+address = "127.0.0.1:5050"
+
+# MaxOpenConnections sets the maximum number of simultaneous connections
+# for the server listener.
+max-open-connections = 0
+
+# HTTPTimeout is the read/write timeout of http json-rpc server.
+http-timeout = "30s"
+
+# HTTPIdleTimeout is the idle timeout of http json-rpc server.
+http-idle-timeout = "2m0s"
+
+# MetricsAddress defines the EVM Metrics server address to bind to. Pass --metrics in CLI to enable
+# Prometheus metrics path: /debug/metrics/prometheus
+metrics-address = "127.0.0.1:5051"
+```
+
+you should adjust the fields to suite your use cases.
+
 ### Testing
 
 Run the following script to start the indexer locally: `./scripts/setup_oraid_psql_indexer.sh`
