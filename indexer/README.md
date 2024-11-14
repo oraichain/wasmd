@@ -61,7 +61,7 @@ indexer = "psql"
 psql-conn = "postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
 ```
 
-you also need to create a new file called indexer.toml like follows: 
+you also need to create a new file called `indexer.toml` like follows in .oraid/config dir: 
 
 ```toml
 ###############################################################################
