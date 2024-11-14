@@ -270,7 +270,7 @@ replace (
 	// indexer and timestamp added
 	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241016192914-5c0462aa0de4
 	// go list -m -json github.com/oraichain/cosmos-sdk@cae2f186c240bed6f0244eab0fae42b3cb6f504f | jq '.|"\(.Path) \(.Version)"' -r
-	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241009233931-82ce436cb389
+	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241114003258-bef8b864b9a0
 
 	// github.com/cosmos/ibc-apps/modules/ibc-hooks/v8 => ./debug/v8@v8.0.0-20240705203905-bd592a21cacf
 
