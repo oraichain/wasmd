@@ -18,6 +18,10 @@ To start streaming data to Redpanda locally, you need:
 
 This section provides a basic guideline to enable Oraichain Indexer with fast tx searching and Oraichain fast & real-time transaction streaming via RedPanda.
 
+## Build the latest binary
+
+Run: `make build` to build the latest binary, which will allow the streaming indexer to work well.
+
 ## Real-time streaming with RedPanda
 
 Start a simple RedPanda's set of brokers:
@@ -65,13 +69,13 @@ In the base directory (wasmd/), run the following command to build the plugin:
 
 ```shell
 # build the plugin
-go build -o streaming/streaming streaming/streaming.go
+go build -o $PWD/streaming/streaming $PWD/streaming/streaming.go
 
 # export env variable so the plugin can be seen by the node. Ref: https://github.com/oraichain/cosmos-sdk/blob/f503e9b2186f54e8480dd35e5033a03ebc8e8dac/baseapp/streaming.go#L35. The method initializes a new streaming plugin and runs it using an env variable path COSMOS_SDK_<plugin-name>
 export COSMOS_SDK_ABCI="{path to}/streaming/streaming"
 
 # build another plugin
-go build -o streaming/streaming streaming/wasm_streaming.go
+# go build -o streaming/streaming streaming/wasm_streaming.go
 
 # uncomment the below lines if you want to export more plugins
 # # export env variable so the plugin can be seen by the node
@@ -90,4 +94,12 @@ We have a seperate documentation for this sub-section. Please read the [Indexer 
 
 After setting up the indexer and the streaming plugin, simply start the Oraichain node to enable them. Eg: oraid start
 
+When there's an update, please rebuild the streaming and the chain binary:
 
+```bash
+# re-build streaming
+go build -o $PWD/streaming/streaming $PWD/streaming/streaming.go
+
+# re-build chain binary
+make build
+```

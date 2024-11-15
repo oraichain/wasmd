@@ -958,8 +958,8 @@ github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.5/go.mod h1:/wsWhb9smxS
 github.com/openzipkin/zipkin-go v0.1.6/go.mod h1:QgAqvLzwWbR/WpD4A3cGpPtJrZXNIiJc5AZX7/PBEpw=
 github.com/openzipkin/zipkin-go v0.2.1/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
 github.com/openzipkin/zipkin-go v0.2.2/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
-github.com/oraichain/cometbft v0.38.6-0.20241109003345-6f5c865b689d h1:4D2yB/2eBPGTk4uYPWKxaLF8ox5Sub++cMF6ZgFO9KQ=
-github.com/oraichain/cometbft v0.38.6-0.20241109003345-6f5c865b689d/go.mod h1:GPHp3/pehPqgX1930HmK1BpBLZPxB75v/dZg8Viwy+o=
+github.com/oraichain/cometbft v0.38.6-0.20241115014122-7c469976640a h1:SIGXtpT9QSn66AvxnpQ6cHjGfMEv3sFeQLCepxyfm+E=
+github.com/oraichain/cometbft v0.38.6-0.20241115014122-7c469976640a/go.mod h1:GPHp3/pehPqgX1930HmK1BpBLZPxB75v/dZg8Viwy+o=
 github.com/oraichain/cosmos-sdk v0.50.5-0.20241114003258-bef8b864b9a0 h1:XzjJWf12keGjBsdgRImERu/CthEPn3LVN+228fUGbAk=
 github.com/oraichain/cosmos-sdk v0.50.5-0.20241114003258-bef8b864b9a0/go.mod h1:6Eesrx3ZE7vxBZWpK++30H+Uc7Q4ahQWCL7JKU/LEdU=
 github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20241112074159-1d969f3946ea h1:KmcratbKNYsEpFDCMUlQ1jHWan/0tooTSKBKZczSJDM=
