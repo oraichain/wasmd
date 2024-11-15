@@ -63,8 +63,7 @@ func UnmarshalTxBz(indexer ModuleEventSinkIndexer, txBz []byte) (*cosmostx.Tx, e
 	config := indexer.EncodingConfig()
 	tx, err := config.TxConfig.TxDecoder()(txBz)
 	if err != nil {
-		fmt.Println("err decoder: ", err)
-		hclog.Default().Debug("err decoder: ", err)
+		hclog.Default().Error(fmt.Sprintf("err decoder: %v", err))
 		tx, err = config.TxConfig.TxJSONDecoder()(txBz)
 		if err != nil {
 			panic(err)

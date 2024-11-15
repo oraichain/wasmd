@@ -19,10 +19,8 @@ To start indexing blocks and txs to Postgres locally, you need:
 Follow the below steps to start the indexer:
 
 ```bash
-cd indexer/
-
 # Start postgres
-docker-compose up -d
+docker-compose -f indexer/docker-compose.yml up -d
 ```
 
 ### Interacting with the DBMS
@@ -61,7 +59,7 @@ indexer = "psql"
 psql-conn = "postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
 ```
 
-you also need to create a new file called `indexer.toml` like follows in .oraid/config dir: 
+we also need to create a new file called `indexer.toml` like follows in .oraid/config dir: 
 
 ```toml
 ###############################################################################
@@ -91,7 +89,13 @@ http-idle-timeout = "2m0s"
 metrics-address = "127.0.0.1:5051"
 ```
 
-you should adjust the fields to suite your use cases.
+Lastly, we need to export the Postgres connection as well as our chain id so that the streaming can initialize the postgres connection:
+
+```bash
+export PSQL_CONN="postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
+export CHAIN_ID="Oraichain"
+```
+
 
 ### Testing
 
