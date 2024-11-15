@@ -51,11 +51,11 @@ func CreateUpgradeHandler(
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-		if err := ReleaseWrongIcaControllerCaps(sdkCtx, ak.IBCKeeper.ChannelKeeper, ak.ScopedICAControllerKeeper, ak.ScopedIBCKeeper); err != nil {
+		if err := v6.MigrateICS27ChannelCapability(sdkCtx, cdc, keys[capabilitytypes.ModuleName], ak.CapabilityKeeper, "intertx"); err != nil {
 			return nil, err
 		}
 
-		if err := v6.MigrateICS27ChannelCapability(sdkCtx, cdc, keys[capabilitytypes.ModuleName], ak.CapabilityKeeper, "intertx"); err != nil {
+		if err := ReleaseWrongIcaControllerCaps(sdkCtx, ak.IBCKeeper.ChannelKeeper, ak.ScopedICAControllerKeeper, ak.ScopedIBCKeeper); err != nil {
 			return nil, err
 		}
 
