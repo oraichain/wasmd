@@ -85,6 +85,7 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 
 	"github.com/cosmos/cosmos-sdk/x/group"
 	groupkeeper "github.com/cosmos/cosmos-sdk/x/group/keeper"
@@ -1206,6 +1207,22 @@ func (app *WasmApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*
 
 // BeginBlocker application updates every begin block
 func (app *WasmApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	chanels := app.IBCKeeper.ChannelKeeper.GetAllChannelsWithPortPrefix(ctx, icatypes.ControllerPortPrefix)
+	for _, ch := range chanels {
+		name := host.ChannelCapabilityPath(ch.PortId, ch.ChannelId)
+		ctx.Logger().Error(fmt.Sprintf("name here: %v", name))
+
+		capICA, _ := app.ScopedICAControllerKeeper.GetCapability(ctx, name)
+		ownerICA, _ := app.CapabilityKeeper.GetOwners(ctx, capICA.GetIndex())
+		ctx.Logger().Error(fmt.Sprintf("cap ICA here: %v", capICA))
+		ctx.Logger().Error(fmt.Sprintf("cap ICA owner here: %v", ownerICA))
+
+		capIBC, _ := app.ScopedIBCKeeper.GetCapability(ctx, name)
+		ownerIBC, _ := app.CapabilityKeeper.GetOwners(ctx, capIBC.GetIndex())
+		ctx.Logger().Error(fmt.Sprintf("cap IBC here: %v", capIBC))
+		ctx.Logger().Error(fmt.Sprintf("cap IBC owner here: %v", ownerIBC))
+
+	}
 	return app.ModuleManager.BeginBlock(ctx)
 }
 

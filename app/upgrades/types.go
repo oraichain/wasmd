@@ -26,6 +26,7 @@ type AppKeepers struct {
 	GetStoreKey               func(storeKey string) *storetypes.KVStoreKey
 	CapabilityKeeper          *capabilitykeeper.Keeper
 	ScopedICAControllerKeeper *capabilitykeeper.ScopedKeeper
+	ScopedIBCKeeper           *capabilitykeeper.ScopedKeeper
 	GovKeeper                 *govkeeper.Keeper
 	IBCKeeper                 *ibckeeper.Keeper
 	MintKeeper                *mintkeeper.Keeper

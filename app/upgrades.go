@@ -68,6 +68,7 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 		ConsensusParamsKeeper:     &app.ConsensusParamsKeeper,
 		CapabilityKeeper:          app.CapabilityKeeper,
 		ScopedICAControllerKeeper: &app.ScopedICAControllerKeeper,
+		ScopedIBCKeeper:           &app.ScopedIBCKeeper,
 		IBCKeeper:                 app.IBCKeeper,
 		MintKeeper:                &app.MintKeeper,
 		GovKeeper:                 &app.GovKeeper,

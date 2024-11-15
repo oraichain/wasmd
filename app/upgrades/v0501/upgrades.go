@@ -51,7 +51,7 @@ func CreateUpgradeHandler(
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-		if err := ReleaseWrongIcaControllerCaps(sdkCtx, ak.IBCKeeper.ChannelKeeper, ak.ScopedICAControllerKeeper); err != nil {
+		if err := ReleaseWrongIcaControllerCaps(sdkCtx, ak.IBCKeeper.ChannelKeeper, ak.ScopedICAControllerKeeper, ak.ScopedIBCKeeper); err != nil {
 			return nil, err
 		}
 
@@ -71,13 +71,20 @@ func CreateUpgradeHandler(
 	}
 }
 
-func ReleaseWrongIcaControllerCaps(ctx sdk.Context, channelKeeper channelkeeper.Keeper, scopedICAControllerKeeper *capabilitykeeper.ScopedKeeper) error {
+func ReleaseWrongIcaControllerCaps(ctx sdk.Context, channelKeeper channelkeeper.Keeper, scopedICAControllerKeeper *capabilitykeeper.ScopedKeeper, scopedIBCKeeper *capabilitykeeper.ScopedKeeper) error {
 	chanels := channelKeeper.GetAllChannelsWithPortPrefix(ctx, icatypes.ControllerPortPrefix)
 	for _, ch := range chanels {
 		name := host.ChannelCapabilityPath(ch.PortId, ch.ChannelId)
 		cap, found := scopedICAControllerKeeper.GetCapability(ctx, name)
 		if found {
 			if err := scopedICAControllerKeeper.ReleaseCapability(ctx, cap); err != nil {
+				return err
+			}
+		}
+
+		ibcCap, ibcCapFound := scopedIBCKeeper.GetCapability(ctx, name)
+		if found && ibcCapFound {
+			if err := scopedICAControllerKeeper.SetCapability(ctx, ibcCap, name); err != nil {
 				return err
 			}
 		}

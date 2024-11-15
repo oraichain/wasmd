@@ -272,7 +272,9 @@ replace (
 	// go list -m -json github.com/oraichain/cosmos-sdk@cae2f186c240bed6f0244eab0fae42b3cb6f504f | jq '.|"\(.Path) \(.Version)"' -r
 	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241114003258-bef8b864b9a0
 
-	// github.com/cosmos/ibc-apps/modules/ibc-hooks/v8 => ./debug/v8@v8.0.0-20240705203905-bd592a21cacf
+	// ibc-go
+	github.com/cosmos/ibc-go/v8 => github.com/ledanghuy1811/ibc-go/v8 v8.0.0-20241114170540-866225970705
+	github.com/cosmos/ibc-go/modules/capability => github.com/ledanghuy1811/ibc-go/modules/capability v0.0.0-20241114170540-866225970705
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/13134
