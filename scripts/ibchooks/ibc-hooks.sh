@@ -41,6 +41,9 @@ export CONTRACT_ADDRESS=$(chainAWithoutChainId query wasm list-contract-by-code 
 origin_denom=$(chainAWithoutChainId query bank balances "$CONTRACT_ADDRESS" -o json | jq -r '.balances[0].denom')
 balance=$(chainAWithoutChainId query bank balances "$CONTRACT_ADDRESS" -o json | jq -r '.balances[0].amount')
 
+QUERY="{\"get_count\": { }}"
+count_before=$(chainAWithoutChainId query wasm contract-state smart "$CONTRACT_ADDRESS" "$QUERY" -o json | jq -r '.data.count')
+
 # send ibc transaction to execite the contract
 MEMO='{"wasm":{"contract":"'"$CONTRACT_ADDRESS"'","msg": {"increment": {}} }}'
 chainB tx ibc-transfer transfer transfer channel-0 $CONTRACT_ADDRESS 10orai \
@@ -57,8 +60,8 @@ denom=$(chainAWithoutChainId query bank balances "$CONTRACT_ADDRESS" -o json | j
 export ADDR_IN_CHAIN_A=$(chainAWithoutChainId q ibchooks wasm-sender channel-0 "$VALIDATOR")
 # QUERY="{\"get_total_funds\": {\"addr\": \"$ADDR_IN_CHAIN_A\"}}"
 # funds=$(chainAWithoutChainId query wasm contract-state smart "$CONTRACT_ADDRESS" "$QUERY" -o json | jq -c -r '.data.total_funds[]')
-QUERY="{\"get_count\": { }}"
 count=$(chainAWithoutChainId query wasm contract-state smart "$CONTRACT_ADDRESS" "$QUERY" -o json | jq -r '.data.count')
 
-echo "count: $count"
+echo "count before: $count_before"
+echo "count after: $count"
 echo "origin_denom: $origin_denom, old balance: $balance, denom: $denom, new balance: $new_balance"
