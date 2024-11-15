@@ -67,6 +67,10 @@ See also the list of [contributors](https://github.com/oraichain/orai/contributo
 
 This project is licensed under the Apache 2.0 license - see the [LICENSE](LICENSE) file for details.
 
+## Build CHANGELOG
+
+Please use `unclog` to write changelogs.
+
 <!-- ## Acknowledgments
 
 * Hat tip to anyone whose code was used

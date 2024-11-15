@@ -36,13 +36,14 @@ import (
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	"github.com/CosmWasm/wasmd/app/upgrades/noop"
 	v050 "github.com/CosmWasm/wasmd/app/upgrades/v050"
+	v0501 "github.com/CosmWasm/wasmd/app/upgrades/v0501"
 	v2 "github.com/CosmWasm/wasmd/x/wasm/migrations/v2"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v050.Upgrade}
+var Upgrades = []upgrades.Upgrade{v050.Upgrade, v0501.Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *WasmApp) RegisterUpgradeHandlers() {
@@ -52,19 +53,35 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 		Upgrades = append(Upgrades, noop.NewUpgrade(app.Version()))
 	}
 
-	keepers := upgrades.AppKeepers{
-		AccountKeeper:         &app.AccountKeeper,
-		ParamsKeeper:          &app.ParamsKeeper,
-		ConsensusParamsKeeper: &app.ConsensusParamsKeeper,
-		CapabilityKeeper:      app.CapabilityKeeper,
-		IBCKeeper:             app.IBCKeeper,
-		Codec:                 app.appCodec,
-		GetStoreKey:           app.GetKey,
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
 	}
 
-	app.GetStoreKeys()
+	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		return
+	}
+
+	keepers := upgrades.AppKeepers{
+		AccountKeeper:             &app.AccountKeeper,
+		ParamsKeeper:              &app.ParamsKeeper,
+		ConsensusParamsKeeper:     &app.ConsensusParamsKeeper,
+		CapabilityKeeper:          app.CapabilityKeeper,
+		ScopedICAControllerKeeper: &app.ScopedICAControllerKeeper,
+		ScopedIBCKeeper:           &app.ScopedIBCKeeper,
+		IBCKeeper:                 app.IBCKeeper,
+		MintKeeper:                &app.MintKeeper,
+		GovKeeper:                 &app.GovKeeper,
+		Codec:                     app.appCodec,
+		GetStoreKey:               app.GetKey,
+	}
+
 	// register all upgrade handlers
 	for _, upgrade := range Upgrades {
+		// ignore upgrade if not in the upgrade info
+		if upgradeInfo.Name != upgrade.UpgradeName {
+			continue
+		}
 		if upgrade.UpgradeName == v050.Upgrade.UpgradeName {
 			app.UpgradeKeeper.SetUpgradeHandler(
 				upgrade.UpgradeName,
@@ -128,17 +145,10 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 				app.ModuleManager,
 				app.configurator,
 				&keepers,
+				app.keys,
+				app.appCodec,
 			),
 		)
-	}
-
-	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
-	if err != nil {
-		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
-	}
-
-	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		return
 	}
 
 	// register store loader for current upgrade

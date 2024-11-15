@@ -12,8 +12,8 @@ update_proposal() {
 }
 
 # update authority proposal.json
-MODULE_ACCOUNT=$(oraid query auth module-account gov)
-update_proposal ".messages[0][\"authority\"]=\"$MODULE_ACCOUNT\""
+MODULE_ACCOUNT=$(oraid query auth module-account gov --output json | jq '.account.value.address')
+update_proposal ".messages[0][\"authority\"]=$MODULE_ACCOUNT"
 # update plan -> name proposal.json
 update_proposal ".messages[0][\"plan\"][\"name\"]=\"$VERSION\""
 # update plan -> height proposal.json

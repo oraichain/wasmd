@@ -42,8 +42,8 @@ chainid1=ibc-1
 
 echo "Generating wasmd configurations..."
 mkdir -p $WASMD_DATA && cd $WASMD_DATA && cd ../
-./one_chain.sh wasmd $chainid0 ./data 26657 26656 6060 9090
-./one_chain.sh wasmd $chainid1 ./data 26557 26556 6061 9091
+./one_chain.sh wasmd $chainid0 $PWD/data 26657 26656 6060 9090
+./one_chain.sh wasmd $chainid1 $PWD/data 26557 26556 6061 9091
 
 [ -f $WASMD_DATA/$chainid0.log ] && echo "$chainid0 initialized. Watch file $WASMD_DATA/$chainid0.log to see its execution."
 [ -f $WASMD_DATA/$chainid1.log ] && echo "$chainid1 initialized. Watch file $WASMD_DATA/$chainid1.log to see its execution."

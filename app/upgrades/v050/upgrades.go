@@ -7,6 +7,7 @@ import (
 	circuittypes "cosmossdk.io/x/circuit/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
@@ -38,6 +39,8 @@ func CreateUpgradeHandler(
 	mm upgrades.ModuleManager,
 	configurator module.Configurator,
 	ak *upgrades.AppKeepers,
+	keys map[string]*storetypes.KVStoreKey,
+	cdc codec.BinaryCodec,
 ) upgradetypes.UpgradeHandler {
 	// sdk 47 to sdk 50
 	return func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {

@@ -1,0 +1,85 @@
+# The global section has parameters that apply globally to the relayer operation.
+[global]
+
+log_level = 'info'
+
+[telemetry]
+enabled = false
+host = '0.0.0.0'
+port = 3001
+
+[mode.clients]
+enabled = true
+misbehaviour = true
+refresh = true
+
+[mode.connections]
+enabled = true
+
+[mode.channels]
+enabled = true
+
+# Specify the packets mode.
+[mode.packets]
+enabled = true
+clear_interval = 0
+clear_on_start = false
+tx_confirmation = true
+
+[rest]
+enabled = false
+host = '0.0.0.0'
+port = 3000
+
+
+[[chains]]
+id = 'Oraichain'
+rpc_addr = 'https://orai-rpc-in.owallet.io:443'
+grpc_addr = 'http://mainnet-orai.konsortech.xyz:33090'
+rpc_timeout = '60s'
+account_prefix = 'orai'
+key_name = 'oraidex-cosmos'
+store_prefix = 'ibc'
+max_gas = 2000000
+gas_price = { price = 0.005, denom = 'orai' }
+gas_multiplier = 1.5
+clock_drift = '20s'
+trusting_period = '8days'
+trust_threshold = { numerator = '1', denominator = '3' }
+event_source = { mode = 'pull' }
+
+[chains.packet_filter]
+policy = 'allow'
+list = [
+  [
+    'wasm.orai195269awwnt5m6c843q6w7hp8rt0k7syfu9de4h0wz384slshuzps8y7ccm',
+    'channel-147',
+  ],
+]
+
+# tendermint client: 07-tendermint-58
+# connection: connection-29
+
+
+[[chains]]
+id = 'noble-1'
+rpc_addr = 'https://noble-rpc-in.owallet.io:443'
+grpc_addr = 'http://noble-grpc.polkachu.com:21590'
+rpc_timeout = '60s'
+account_prefix = 'noble'
+key_name = 'oraidex-noble'
+store_prefix = 'ibc'
+max_gas = 2000000
+gas_price = { price = 0.0005, denom = 'uusdc' }
+gas_multiplier = 1.5
+clock_drift = '20s'
+trusting_period = '8 days'
+trust_threshold = { numerator = '1', denominator = '3' }
+event_source = { mode = 'pull' }
+
+[chains.packet_filter]
+policy = 'allow'
+list = [['transfer', 'channel-34']]
+
+# tendermint client: 07-tendermint-0
+# connection: connection-0

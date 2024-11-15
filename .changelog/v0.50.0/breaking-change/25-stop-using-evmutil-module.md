@@ -1,0 +1,1 @@
+- Stop using `evmutil` module ([\#25](https://github.com/oraichain/wasmd/issues/25))
