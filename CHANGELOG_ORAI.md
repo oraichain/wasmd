@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## v0.50.1
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+
+Upgrade Oraichain mainnet to v0.50.1 to fix some IBC and cosmos sdk bugs.
+
+### BUG FIXES
+
+- Can't broadcast certain transactions (eg: `slashing unjail`) when using oraid CLI
+  ([\#30](https://github.com/oraichain/wasmd/issues/30))
+- Cannot use IBC Hooks
+  ([\#28](https://github.com/oraichain/wasmd/issues/28))
+- ICA module caller does not own capability for channel, port ID
+  ([\#29](https://github.com/oraichain/wasmd/issues/29))
+
 ## v0.50.0
 
 <!--
