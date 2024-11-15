@@ -2,7 +2,6 @@ package v050
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"cosmossdk.io/math"
@@ -95,14 +94,18 @@ func ReleaseWrongIcaControllerCaps(ctx sdk.Context, channelKeeper channelkeeper.
 
 func upgradeGovParams(ctx sdk.Context, govKeeper *govkeeper.Keeper) error {
 
-	govParams := gov1.DefaultParams()
-	govParams.BurnVoteVeto = true
+	govParams, err := govKeeper.Params.Get(ctx)
+	if err != nil {
+		govParams = gov1.DefaultParams()
+		govParams.BurnVoteVeto = true
+		votingPeriod := time.Hour * 24 * 5  // 5 days
+		depositPeriod := time.Hour * 24 * 7 // 7 days
+		govParams.VotingPeriod = &votingPeriod
+		govParams.MaxDepositPeriod = &depositPeriod
+	}
+
 	govParams.ExpeditedMinDeposit = sdk.NewCoins(sdk.NewCoin(config.MinimalDenom, gov1.DefaultMinExpeditedDepositTokens))
 	govParams.MinDeposit = sdk.NewCoins(sdk.NewCoin(config.MinimalDenom, gov1.DefaultMinDepositTokens))
-	votingPeriod := time.Hour * 24 * 5 // 5 days
-	depositPeriod := time.Hour * 24 * 7 // 7 days
-	govParams.VotingPeriod = &votingPeriod
-	govParams.MaxDepositPeriod = &depositPeriod
 
 	govKeeper.Params.Set(ctx, govParams)
 
@@ -111,21 +114,23 @@ func upgradeGovParams(ctx sdk.Context, govKeeper *govkeeper.Keeper) error {
 
 func UpgradeMintParams(ctx sdk.Context, paramsKeeper *paramskeeper.Keeper, mintKeeper *mintkeeper.Keeper) error {
 
-	mintParams := minttypes.DefaultParams()
+	mintParams, err := mintKeeper.Params.Get(ctx)
+	if err != nil {
+		mintParams = minttypes.DefaultParams()
+		mintParams.GoalBonded = math.LegacyMustNewDecFromStr("0.67")
+		mintParams.InflationRateChange = math.LegacyMustNewDecFromStr("0.13")
+		mintParams.MintDenom = config.MinimalDenom
+	}
+
 	mintParams.BlocksPerYear = 39420000
-	mintParams.GoalBonded = math.LegacyMustNewDecFromStr("0.67")
-	mintParams.InflationRateChange = math.LegacyMustNewDecFromStr("0.13")
 	mintParams.InflationMin = math.LegacyMustNewDecFromStr("0.085")
 	mintParams.InflationMax = mintParams.InflationMin
-	mintParams.MintDenom = config.MinimalDenom
 
 	mintSpace, exist := paramsKeeper.GetSubspace(minttypes.ModuleName)
-	if !exist {
-		return errors.New("mint space must existed")
+	if exist {
+		mintSpace.SetParamSet(ctx, &mintParams)
+		mintKeeper.Params.Set(ctx, mintParams)
 	}
-	mintSpace.SetParamSet(ctx, &mintParams)
-
-	mintKeeper.Params.Set(ctx, mintParams)
 
 	return nil
 }

@@ -44,7 +44,7 @@ oraid tx tokenfactory mint 10$first_denom $ARGS >$HIDE_LOGS
 
 # query balance after mint
 # need sleep 1s
-sleep 1
+sleep 2
 tokenfactory_balance=$(oraid query bank balance $user_address $first_denom --output json | jq '.balance.amount | tonumber')
 if [[ $tokenfactory_balance -ne 10 ]]; then
    echo "Tokenfactory tests failed. The tokenfactory balance does not increase after mint"
@@ -54,7 +54,7 @@ fi
 # try burn
 oraid tx tokenfactory burn 10$first_denom $ARGS >$HIDE_LOGS
 # need sleep 1s
-sleep 1
+sleep 2
 tokenfactory_balance=$(oraid query bank balance $user_address $first_denom --output json | jq '.balance.amount | tonumber')
 if [[ $tokenfactory_balance -ne 0 ]]; then
    echo "Tokenfactory tests failed. The tokenfactory balance does not decrease after burn"

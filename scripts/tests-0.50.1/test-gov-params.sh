@@ -1,7 +1,7 @@
 #!/bin/bash
 # Before running this script, you must setup local network:
 
-set -eux
+set -e
 
 burn_vote_veto=$(oraid query gov params --output json | jq -r '.params.burn_vote_veto')
 expedited_min_deposit_amount=$(oraid query gov params --output json | jq -r '.params.expedited_min_deposit[0].amount | tonumber')
@@ -24,8 +24,6 @@ expected_burn_vote_veto="true"
 expected_expedited_min_deposit_amount="50000000"
 expected_expedited_min_deposit_denom="orai"
 expected_expedited_threshold="0.667000000000000000"
-expected_expedited_voting_period="24h0m0s"
-expected_max_deposit_period="168h0m0s"
 expected_min_deposit_amount="10000000"
 expected_min_deposit_denom="orai"
 expected_min_deposit_ratio="0.010000000000000000"
@@ -34,7 +32,6 @@ expected_proposal_cancel_ratio="0.500000000000000000"
 expected_quorum="0.334000000000000000"
 expected_threshold="0.500000000000000000"
 expected_veto_threshold="0.334000000000000000"
-expected_voting_period="120h0m0s"
 
 # Comparison without quotes on right-hand side
 if [[ $burn_vote_veto != $expected_burn_vote_veto ]]; then
@@ -51,14 +48,6 @@ fi
 
 if [[ $expedited_threshold != $expected_expedited_threshold ]]; then
   echo "gov params Upgrade Failed: expedited_threshold mismatch" >&2; exit 1
-fi
-
-if [[ $expedited_voting_period != $expected_expedited_voting_period ]]; then
-  echo "gov params Upgrade Failed: expedited_voting_period mismatch" >&2; exit 1
-fi
-
-if [[ $max_deposit_period != $expected_max_deposit_period ]]; then
-  echo "gov params Upgrade Failed: max_deposit_period mismatch" >&2; exit 1
 fi
 
 if [[ $min_deposit_amount != $expected_min_deposit_amount ]]; then
@@ -91,10 +80,6 @@ fi
 
 if [[ $veto_threshold != $expected_veto_threshold ]]; then
   echo "gov params Upgrade Failed: veto_threshold mismatch" >&2; exit 1
-fi
-
-if [[ $voting_period != $expected_voting_period ]]; then
-  echo "gov params Upgrade Failed: voting_period mismatch" >&2; exit 1
 fi
 
 echo "gov params Upgrade Succeeded"
