@@ -397,7 +397,7 @@ func matchNonHeightCondition(condition syntax.Condition, completeTableName strin
 	clause := fmt.Sprintf("AND %s.value %s $%d \n", completeTableName, opStr, *argsCount)
 	// for numbers, we cast value as numeric
 	if condition.Arg.Type == syntax.TNumber {
-		clause = fmt.Sprintf(`AND %s.value ~ '^\d+$' AND cast(%s.value as numeric) %s $%d \n`, completeTableName, completeTableName, opStr, *argsCount)
+		clause = fmt.Sprintf(`AND %s.value ~ '^\d+$' AND cast(%s.value as numeric) %s $%d `+"\n", completeTableName, completeTableName, opStr, *argsCount)
 	}
 	*argsCount++
 	return clause, val, nil
