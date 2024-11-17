@@ -71,6 +71,11 @@ CREATE TABLE attributes (
 -- Index attributes composite key & value so we can filter attributes easier
 CREATE INDEX idx_attributes_composite_key_value ON attributes(composite_key, value);
 
+-- index key-value pairs with value as numeric so when we do non-height range filter -> can enable indexing 
+CREATE INDEX idx_attributes_value_cast ON attributes (composite_key, (CAST(value AS numeric)))
+WHERE
+  value ~ '^\d+$';
+
 -- A joined view of events and their attributes. Events that do not have any
 -- attributes are represented as a single row with empty key and value fields.
 CREATE VIEW event_attributes AS

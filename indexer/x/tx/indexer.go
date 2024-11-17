@@ -393,9 +393,14 @@ func matchNonHeightCondition(condition syntax.Condition, completeTableName strin
 	if err != nil {
 		return "", nil, err
 	}
+	val = conditionArg(condition)
 	clause := fmt.Sprintf("AND %s.value %s $%d \n", completeTableName, opStr, *argsCount)
+	// for numbers, we cast value as numeric
+	if condition.Arg.Type == syntax.TNumber {
+		clause = fmt.Sprintf(`AND %s.value ~ '^\d+$' AND cast(%s.value as numeric) %s $%d \n`, completeTableName, completeTableName, opStr, *argsCount)
+	}
 	*argsCount++
-	return clause, conditionArg(condition), nil
+	return clause, val, nil
 }
 
 func detectQueryRangeBound(value cometbftindexer.QueryRange) (ops []string, vals []interface{}) {
