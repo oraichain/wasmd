@@ -64,8 +64,7 @@ CREATE TABLE attributes (
   -- bare key
   composite_key VARCHAR NOT NULL,
   -- composed type.key
-  value VARCHAR NULL,
-  UNIQUE (event_id, key)
+  value VARCHAR NULL
 );
 
 -- Index attributes composite key & value so we can filter attributes easier
@@ -118,45 +117,3 @@ FROM
   JOIN event_attributes ON (tx_results.rowid = event_attributes.tx_id)
 WHERE
   event_attributes.tx_id IS NOT NULL;
-
--- with filtered_tx_event_attributes as (
---   SELECT
---     events.block_id,
---     height,
---     tx_id,
---     type,
---     key,
---     composite_key,
---     value
---   FROM
---     events
---     JOIN attributes ON (events.rowid = attributes.event_id)
---     join blocks on (events.block_id = blocks.rowid)
---   where
---     tx_id is NOT null -- and filter based on heights here
---     and height > 30
---     and height < 40
---   ORDER BY
---     tx_id desc
--- ),
--- filtered_tx_ids as (
---   select
---     tx_id
---   from
---     filtered_tx_event_attributes te2
---   where
---     te2.composite_key = 'message.module'
---     AND te2.value = 'bank'
--- )
--- select
---   tx.height,
---   tx.created_at,
---   tx.tx_hash,
---   messages,
---   memo,
---   fee,
---   tr.tx_result
--- from
---   filtered_tx_ids ftx
---   join tx_results tr on tr.rowid = ftx.tx_id
---   );
