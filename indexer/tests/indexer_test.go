@@ -241,6 +241,7 @@ func TestIndexing(t *testing.T) {
 			psql.MakeIndexedEvent("account.number", "2"),
 			psql.MakeIndexedEvent("account.owner", "Duc"),
 			psql.MakeIndexedEvent("account.owner", "Pham"),
+			psql.MakeIndexedEvent("wasm.hello", "world"),
 
 			{Type: "", Attributes: []abci.EventAttribute{
 				{
@@ -255,6 +256,7 @@ func TestIndexing(t *testing.T) {
 			psql.MakeIndexedEvent("account.number", "2"),
 			psql.MakeIndexedEvent("account.owner", "Oraichain"),
 			psql.MakeIndexedEvent("account.meta", "Labs"),
+			psql.MakeIndexedEvent("wasm.hello", "world"),
 
 			{Type: "", Attributes: []abci.EventAttribute{
 				{
@@ -330,6 +332,14 @@ func TestIndexing(t *testing.T) {
 		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("account.number >= 1 AND account.owner = 'Oraichain'"), 10)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), count)
+
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("account.number = 2 AND account.owner = 'Oraichain' AND account.meta = 'Labs' AND wasm.hello = 'world'"), 10)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), count)
+
+		_, count, err = customTxEventSink.SearchTxs(query.MustCompile("account.number = 2 AND wasm.hello = 'world'"), 10)
+		require.NoError(t, err)
+		require.Equal(t, uint64(2), count)
 
 		// verify basic tx indexer events
 		txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())

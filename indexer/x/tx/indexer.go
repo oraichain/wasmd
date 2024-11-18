@@ -112,19 +112,6 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
     ORDER BY height desc
 		LIMIT %d
 	),
-	-- filter all attributes within the filtered heights. This makes sure we still have limit & pagination without filtering out events
-	filtered_tx_event_attributes as (
-  SELECT
-    events.block_id,
-    height,
-    tx_id,
-		attributes.composite_key,
-		attributes.value
-  FROM
-    events
-		JOIN filtered_heights fh on (fh.rowid = events.tx_id)
-    JOIN attributes ON (events.rowid = attributes.event_id)
-	),
 	-- filter txs based on input composite key conditions
 	%s
 	-- join everything to get the final table with sufficient data
@@ -134,7 +121,7 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 		tr.tx_hash,
 		tr.tx_result
 	from
-		filtered_tx_ids ftx
+		filtered_tx_event_attributes ftx
 		join tx_results tr on tr.rowid = ftx.tx_id
 	ORDER BY ftx.tx_id DESC;
 	`, whereConditions, min(TxSearchLimit, limit), filterTableClause)
@@ -364,25 +351,24 @@ func (cs *TxEventSink) GetTxByHash(txHash string) ([]*ctypes.ResultTx, error) {
 }
 
 func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, argsCount *int) (filterTableClause string, vals []interface{}, err error) {
-	tableName := "ftea"
-	filterTableClause += "filtered_tx_ids as ("
-	filterTxs := func(tableName string) string {
-		return fmt.Sprintf("\nselect distinct tx_id \nfrom filtered_tx_event_attributes %s \n", tableName)
+	filterTableClause += "filtered_tx_event_attributes as ("
+	filterTxs := func() string {
+		return fmt.Sprintln(`select distinct tx_id 
+		FROM events 
+		JOIN filtered_heights fh ON (fh.rowid = events.tx_id) 
+		JOIN attributes ON (events.rowid = attributes.event_id)`)
 	}
-	tableNameDelta := int8(1)
 	hasNonheightCondition := false
 	for i, condition := range conditions {
 		// ignore since we already covered tx.height elsewhere
 		if condition.Tag == cmttypes.TxHeightKey {
 			continue
 		}
-		completeTableName := fmt.Sprintf("%s%d", tableName, tableNameDelta)
-		tableNameDelta++
 		hasNonheightCondition = true
-		whereClause := fmt.Sprintf("%sWHERE %s.composite_key = $%d \n", filterTxs(completeTableName), completeTableName, *argsCount)
+		whereClause := fmt.Sprintf("%sWHERE composite_key = $%d \n", filterTxs(), *argsCount)
 		*argsCount++
 		vals = append(vals, condition.Tag)
-		whereValueClause, val, err := matchNonHeightCondition(condition, completeTableName, argsCount)
+		whereValueClause, val, err := matchNonHeightCondition(condition, argsCount)
 		if err != nil {
 			return "", vals, err
 		}
@@ -393,26 +379,26 @@ func CreateNonHeightConditionFilterTable(conditions []syntax.Condition, argsCoun
 		// if it's not the last condition -> add INTERSECT keyword to intersect the tables for AND condition
 		// TODO: If we allow OR keyword -> switch case to UNION
 		if i < len(conditions)-1 {
-			filterTableClause += "INTERSECT"
+			filterTableClause += "INTERSECT\n"
 		}
 	}
 	// empty table clause, meaning that there are no other clauses -> return filtered_tx_ids bare minimum
 	if !hasNonheightCondition {
-		return fmt.Sprintf("%s\n%s)", filterTableClause, filterTxs(tableName)), vals, nil
+		return fmt.Sprintf("%s\n%s)", filterTableClause, filterTxs()), vals, nil
 	}
 	return fmt.Sprintf("%s)\n", filterTableClause), vals, nil
 }
 
-func matchNonHeightCondition(condition syntax.Condition, completeTableName string, argsCount *int) (whereClause string, val interface{}, err error) {
+func matchNonHeightCondition(condition syntax.Condition, argsCount *int) (whereClause string, val interface{}, err error) {
 	opStr, err := convertOpToOpStr(condition.Op)
 	if err != nil {
 		return "", nil, err
 	}
 	val = conditionArg(condition)
-	clause := fmt.Sprintf("AND %s.value %s $%d \n", completeTableName, opStr, *argsCount)
+	clause := fmt.Sprintf("AND value %s $%d \n", opStr, *argsCount)
 	// for numbers, we cast value as numeric
 	if condition.Arg.Type == syntax.TNumber {
-		clause = fmt.Sprintf("AND %s.value::numeric %s $%d \n", completeTableName, opStr, *argsCount)
+		clause = fmt.Sprintf("AND value::numeric %s $%d \n", opStr, *argsCount)
 	}
 	*argsCount++
 	return clause, val, nil
