@@ -124,8 +124,6 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
     events
 		JOIN filtered_heights fh on (fh.rowid = events.tx_id)
     JOIN attributes ON (events.rowid = attributes.event_id)
-  WHERE tx_id is NOT null 
-	ORDER BY tx_id DESC 
 	),
 	-- filter txs based on input composite key conditions
 	%s
@@ -140,6 +138,23 @@ func (cs *TxEventSink) SearchTxs(q *cmtquery.Query, limit uint32) ([]*ctypes.Res
 		join tx_results tr on tr.rowid = ftx.tx_id
 	ORDER BY ftx.tx_id DESC;
 	`, whereConditions, min(TxSearchLimit, limit), filterTableClause)
+
+	// if there's no non-height condition -> we can simplify and optimize our query clause
+	if len(filterArgs) == 0 {
+		queryClause = fmt.Sprintf(`
+		select distinct
+			tr.height,
+			tr.created_at,
+			tr.tx_hash,
+			tr.tx_result
+		from
+			tx_results tr 
+		%s
+		ORDER BY tr.height DESC
+		LIMIT %d;
+		`, whereConditions, min(TxSearchLimit, limit))
+	}
+
 	if err := psql.RunInTransaction(cs.es.DB(), func(dbtx *sql.Tx) error {
 
 		// query txs. FIXME: Need filters and limit!
@@ -397,7 +412,7 @@ func matchNonHeightCondition(condition syntax.Condition, completeTableName strin
 	clause := fmt.Sprintf("AND %s.value %s $%d \n", completeTableName, opStr, *argsCount)
 	// for numbers, we cast value as numeric
 	if condition.Arg.Type == syntax.TNumber {
-		clause = fmt.Sprintf(`AND %s.value ~ '^\d+$' AND cast(%s.value as numeric) %s $%d `+"\n", completeTableName, completeTableName, opStr, *argsCount)
+		clause = fmt.Sprintf("AND %s.value::numeric %s $%d \n", completeTableName, opStr, *argsCount)
 	}
 	*argsCount++
 	return clause, val, nil
