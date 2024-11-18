@@ -6,8 +6,10 @@
 *.swm
 *.swn
 *.txt
+*.csv
 .vscode
 .idea
+*.venv
 
 # Build
 vendor

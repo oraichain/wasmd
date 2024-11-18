@@ -285,7 +285,7 @@ replace (
 
 	// indexer and timestamp added
 	// go list -m -json github.com/oraichain/cometbft@ee1321d28d8ce7633e9a229b7175f6571629f917 | jq '.|"\(.Path) \(.Version)"' -r
-	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241115042945-3e65f0b7d8f3
+	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241118005435-06fc84e2a7d8
 	// go list -m -json github.com/oraichain/cosmos-sdk@cae2f186c240bed6f0244eab0fae42b3cb6f504f | jq '.|"\(.Path) \(.Version)"' -r
 	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241114003258-bef8b864b9a0
 

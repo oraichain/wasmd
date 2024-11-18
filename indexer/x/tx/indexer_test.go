@@ -144,17 +144,17 @@ func TestCreateNonHeightConditionFilterTable(t *testing.T) {
 	}{
 		{
 			query:         "account.number >= 2",
-			expectedQuery: `filtered_tx_ids as ( select distinct tx_id from filtered_tx_event_attributes ftea1 WHERE ftea1.composite_key = $1 AND ftea1.value ~ '^\d+$' AND cast(ftea1.value as numeric) >= $2 ) `,
+			expectedQuery: `filtered_tx_ids as ( select distinct tx_id from filtered_tx_event_attributes ftea1 WHERE ftea1.composite_key = $1 AND ftea1.value::numeric >= $2 ) `,
 			expectedVals:  []interface{}{"account.number", int64(2)},
 		},
 		{
 			query:         "account.number >= 2 AND account.number < 5",
-			expectedQuery: `filtered_tx_ids as ( select distinct tx_id from filtered_tx_event_attributes ftea1 WHERE ftea1.composite_key = $1 AND ftea1.value ~ '^\d+$' AND cast(ftea1.value as numeric) >= $2 INTERSECT select distinct tx_id from filtered_tx_event_attributes ftea2 WHERE ftea2.composite_key = $3 AND ftea2.value ~ '^\d+$' AND cast(ftea2.value as numeric) < $4 ) `,
+			expectedQuery: `filtered_tx_ids as ( select distinct tx_id from filtered_tx_event_attributes ftea1 WHERE ftea1.composite_key = $1 AND ftea1.value::numeric >= $2 INTERSECT select distinct tx_id from filtered_tx_event_attributes ftea2 WHERE ftea2.composite_key = $3 AND ftea2.value::numeric < $4 ) `,
 			expectedVals:  []interface{}{"account.number", int64(2), "account.number", int64(5)},
 		},
 		{
 			query:         "wasm._contract_address = 'foo' AND account.number <= 2 AND account.owner = 'bar'",
-			expectedQuery: `filtered_tx_ids as ( select distinct tx_id from filtered_tx_event_attributes ftea1 WHERE ftea1.composite_key = $1 AND ftea1.value = $2 INTERSECT select distinct tx_id from filtered_tx_event_attributes ftea2 WHERE ftea2.composite_key = $3 AND ftea2.value ~ '^\\d+$' AND cast(ftea2.value as numeric) <= $4 INTERSECT select distinct tx_id from filtered_tx_event_attributes ftea3 WHERE ftea3.composite_key = $5 AND ftea3.value = $6 )`,
+			expectedQuery: `filtered_tx_ids as ( select distinct tx_id from filtered_tx_event_attributes ftea1 WHERE ftea1.composite_key = $1 AND ftea1.value = $2 INTERSECT select distinct tx_id from filtered_tx_event_attributes ftea2 WHERE ftea2.composite_key = $3 AND ftea2.value::numeric <= $4 INTERSECT select distinct tx_id from filtered_tx_event_attributes ftea3 WHERE ftea3.composite_key = $5 AND ftea3.value = $6 ) `,
 			expectedVals:  []interface{}{"wasm._contract_address", "foo", "account.number", int64(2), "account.owner", "bar"},
 		},
 	}
