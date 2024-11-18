@@ -285,9 +285,9 @@ replace (
 
 	// indexer and timestamp added
 	// go list -m -json github.com/oraichain/cometbft@ee1321d28d8ce7633e9a229b7175f6571629f917 | jq '.|"\(.Path) \(.Version)"' -r
-	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241118080013-d8702112864f
+	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241118083456-dedce198d0f3
 	// go list -m -json github.com/oraichain/cosmos-sdk@cae2f186c240bed6f0244eab0fae42b3cb6f504f | jq '.|"\(.Path) \(.Version)"' -r
-	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241118080043-f47b766ef2dc
+	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241115211416-da07f8fc9695
 	github.com/cosmos/ibc-go/modules/capability => github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241115043303-2a541bfe28fc
 
 	// ibc-go
