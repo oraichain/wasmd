@@ -207,9 +207,18 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 		for _, message := range cosmosTx.Body.Messages {
 			typeUrl := strings.Split(message.TypeUrl, "/")[1]
 			typeUrlSplits := strings.Split(typeUrl, ".")
-			module := typeUrlSplits[1]
 
-			key := typeUrlSplits[len(typeUrlSplits)-1]
+			var module, key string
+			typeUrlLen := len(typeUrlSplits)
+			// if typeUrl length is larger than 4 then is ibc message
+			// else is cosmos message
+			if typeUrlLen > 4 {
+				module = typeUrlSplits[0]
+			} else {
+				module = typeUrlSplits[1]
+			}
+
+			key = typeUrlSplits[typeUrlLen-1]
 			topic := "REDPANDA_TOPIC_" + strings.ToUpper(module)
 
 			if !admin.IsTopicExist(topic) {
