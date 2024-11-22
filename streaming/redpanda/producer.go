@@ -3,6 +3,7 @@ package redpanda
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -20,6 +21,7 @@ type Producer struct {
 func NewProducer(brokers []string) *Producer {
 	client, err := kgo.NewClient(
 		kgo.SeedBrokers(brokers...),
+		kgo.ProduceRequestTimeout(5*time.Second),
 	)
 	if err != nil {
 		panic(err)
