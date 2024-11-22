@@ -3,6 +3,7 @@ package redpanda
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/pkg/errors"
@@ -17,6 +18,7 @@ type Admin struct {
 func NewAdmin(brokers []string) *Admin {
 	client, err := kgo.NewClient(
 		kgo.SeedBrokers(brokers...),
+		kgo.ProduceRequestTimeout(5*time.Second),
 	)
 	if err != nil {
 		panic(err)
