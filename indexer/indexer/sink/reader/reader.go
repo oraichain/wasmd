@@ -1,4 +1,4 @@
-package sinkreader
+package reader
 
 import (
 	"fmt"

@@ -6,7 +6,7 @@ import (
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/indexer/codec"
-	"github.com/CosmWasm/wasmd/indexer/sinkreader"
+	sinkreader "github.com/CosmWasm/wasmd/indexer/indexer/sink/reader"
 	"github.com/CosmWasm/wasmd/indexer/x/tx"
 	"github.com/CosmWasm/wasmd/indexer/x/wasm"
 	"github.com/CosmWasm/wasmd/streaming/redpanda"

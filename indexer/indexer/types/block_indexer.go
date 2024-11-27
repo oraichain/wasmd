@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	es "github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/types"
@@ -28,6 +29,12 @@ type BlockIndexer interface {
 // PsqlBlockIndexer implements the BlockIndexer interface by
 // delegating indexing operations to an underlying PostgreSQL event sink.
 type PsqlBlockIndexer struct {
+	psql *es.EventSink
+}
+
+// NewBlockIndexer returns instance of PsqlBlockIndexer.
+func NewBlockIndexer(es *es.EventSink) PsqlBlockIndexer {
+	return PsqlBlockIndexer{psql: es}
 }
 
 // Has is implemented to satisfy the BlockIndexer interface, but it is not
@@ -39,8 +46,7 @@ func (PsqlBlockIndexer) Has(_ int64) (bool, error) {
 // Index indexes block begin and end events for the specified block.  It is
 // part of the BlockIndexer interface.
 func (p PsqlBlockIndexer) Index(block types.EventDataNewBlockEvents) error {
-	return nil
-	// return p.psql.IndexBlockEvents(block)
+	return p.psql.IndexBlockEvents(block)
 }
 
 // Search is implemented to satisfy the BlockIndexer interface, but it is not

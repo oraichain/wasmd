@@ -6,6 +6,7 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 
+	es "github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 )
@@ -58,18 +59,23 @@ type TxIndexer interface {
 
 // PsqlTxIndexer implements the TxIndexer interface by delegating
 // indexing operations to an underlying PostgreSQL event sink.
-type PsqlTxIndexer struct{}
+type PsqlTxIndexer struct {
+	psql *es.EventSink
+}
+
+// NewTxIndexer returns instance of PsqlTxIndexer.
+func NewTxIndexer(es *es.EventSink) PsqlTxIndexer {
+	return PsqlTxIndexer{psql: es}
+}
 
 // AddBatch indexes a batch of transactions in Postgres, as part of TxIndexer.
 func (p PsqlTxIndexer) AddBatch(batch Batch) error {
-	// return p.psql.IndexTxEvents(batch.Ops)
-	return nil
+	return p.psql.IndexTxEvents(batch.Ops)
 }
 
 // Index indexes a single transaction result in Postgres, as part of TxIndexer.
 func (p PsqlTxIndexer) Index(txr *abci.TxResult) error {
-	// return p.psql.IndexTxEvents([]*abci.TxResult{txr})
-	return nil
+	return p.psql.IndexTxEvents([]*abci.TxResult{txr})
 }
 
 // Get is implemented to satisfy the TxIndexer interface, but is not supported
