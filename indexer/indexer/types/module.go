@@ -1,4 +1,4 @@
-package indexer
+package types
 
 import (
 	"github.com/CosmWasm/wasmd/app/params"

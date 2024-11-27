@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/CosmWasm/wasmd/app/params"
-	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/indexer/codec"
 	sinkreader "github.com/CosmWasm/wasmd/indexer/indexer/sink/reader"
-	"github.com/CosmWasm/wasmd/indexer/x/tx"
-	"github.com/CosmWasm/wasmd/indexer/x/wasm"
+	indexerType "github.com/CosmWasm/wasmd/indexer/indexer/types"
+	"github.com/CosmWasm/wasmd/indexer/indexer/x/tx"
+	"github.com/CosmWasm/wasmd/indexer/indexer/x/wasm"
 	"github.com/CosmWasm/wasmd/streaming/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/state/indexer/sink/psql"
@@ -29,7 +29,7 @@ func init() {
 // ModsStreamingPlugin is the implementation of the ABCIListener interface
 // For Go plugins this is all that is required to process data sent over gRPC.
 type ModsStreamingPlugin struct {
-	indexerManager *indexer.IndexerManager
+	indexerManager *indexerType.IndexerManager
 	es             *psql.EventSink
 	reader         sinkreader.SinkReaderFromEnv
 }
@@ -54,7 +54,7 @@ func (p *ModsStreamingPlugin) initIndexerManager() {
 	if p.indexerManager == nil {
 		ri := redpanda.NewRedPandaInfo([]string{}, []string{})
 		// orders matter! the tx indexer must always be at the top to insert tx requests & block events into postgres
-		p.indexerManager = indexer.NewIndexerManager(
+		p.indexerManager = indexerType.NewIndexerManager(
 			tx.NewTxEventSinkIndexer(p.es, encodingConfig, ri),
 			wasm.NewWasmEventSinkIndexer(p.es, encodingConfig, ri),
 		)

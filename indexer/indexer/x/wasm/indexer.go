@@ -2,7 +2,7 @@ package wasm
 
 import (
 	"github.com/CosmWasm/wasmd/app/params"
-	"github.com/CosmWasm/wasmd/indexer"
+	indexerType "github.com/CosmWasm/wasmd/indexer/indexer/types"
 	"github.com/CosmWasm/wasmd/streaming/redpanda"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -18,7 +18,7 @@ type WasmEventSink struct {
 	ri             *redpanda.RedpandaInfo
 }
 
-var _ indexer.ModuleEventSinkIndexer = (*WasmEventSink)(nil)
+var _ indexerType.ModuleEventSinkIndexer = (*WasmEventSink)(nil)
 
 func NewWasmEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig, ri *redpanda.RedpandaInfo) *WasmEventSink {
 	return &WasmEventSink{es: es, encodingConfig: encodingConfig, ri: ri}

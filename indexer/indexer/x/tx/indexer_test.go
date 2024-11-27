@@ -9,7 +9,7 @@ import (
 	"cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/app/params"
 	indexercodec "github.com/CosmWasm/wasmd/indexer/codec"
-	"github.com/CosmWasm/wasmd/indexer/x/tx"
+	"github.com/CosmWasm/wasmd/indexer/indexer/x/tx"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	cometbftindexer "github.com/cometbft/cometbft/state/indexer"
