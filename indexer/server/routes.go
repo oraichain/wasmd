@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/CosmWasm/wasmd/indexer/x/tx"
+	"github.com/CosmWasm/wasmd/indexer/indexer/x/tx"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
 	rpc "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 )

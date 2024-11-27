@@ -1,9 +1,10 @@
-package indexer
+package utils
 
 import (
 	"fmt"
 
 	"github.com/CosmWasm/wasmd/app/params"
+	indexerType "github.com/CosmWasm/wasmd/indexer/indexer/types"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	cosmostx "github.com/cosmos/cosmos-sdk/types/tx"
@@ -58,7 +59,7 @@ func UnmarshalMsgsBz(config params.EncodingConfig, msgsBz []byte) ([]*types.Any,
 	return msgsAny, nil
 }
 
-func UnmarshalTxBz(indexer ModuleEventSinkIndexer, txBz []byte) (*cosmostx.Tx, error) {
+func UnmarshalTxBz(indexer indexerType.ModuleEventSinkIndexer, txBz []byte) (*cosmostx.Tx, error) {
 	// tx proto
 	config := indexer.EncodingConfig()
 	tx, err := config.TxConfig.TxDecoder()(txBz)

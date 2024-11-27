@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/CosmWasm/wasmd/app/params"
-	"github.com/CosmWasm/wasmd/indexer"
+	indexerType "github.com/CosmWasm/wasmd/indexer/indexer/types"
+	indexerUtil "github.com/CosmWasm/wasmd/indexer/indexer/utils"
 	redpanda "github.com/CosmWasm/wasmd/streaming/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
@@ -36,7 +37,7 @@ const (
 	TxSearchLimit = uint32(100000)
 )
 
-var _ indexer.ModuleEventSinkIndexer = (*TxEventSink)(nil)
+var _ indexerType.ModuleEventSinkIndexer = (*TxEventSink)(nil)
 
 func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig, ri *redpanda.RedpandaInfo) *TxEventSink {
 	return &TxEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
@@ -197,7 +198,7 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 	producer := cs.ri.GetProducer()
 
 	for i, tx := range req.Txs {
-		cosmosTx, err := indexer.UnmarshalTxBz(cs, tx)
+		cosmosTx, err := indexerUtil.UnmarshalTxBz(cs, tx)
 		if err != nil {
 			return err
 		}
