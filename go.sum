@@ -942,10 +942,10 @@ github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20241016192656-999e8b68a7a2 h1
 github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20241016192656-999e8b68a7a2/go.mod h1:Qo/mdpsOXOcwIe/QfF//cnJDliBnZMDeNOSfPxgyX3I=
 github.com/oraichain/go-ethereum v0.0.0-20240919025041-184f816b9d65 h1:oumbt8qiUC1AAt9MgHHnn/deseV5oYdg3T/PoYqsGeM=
 github.com/oraichain/go-ethereum v0.0.0-20240919025041-184f816b9d65/go.mod h1:/6CsT5Ceen2WPLI/oCA3xMcZ5sWMF/D46SjM/ayY0Oo=
-github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241115043303-2a541bfe28fc h1:T1TCWwAp9ybmLooWqWVI6HZtqXUpC6mOqAzHSXSdkWA=
-github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241115043303-2a541bfe28fc/go.mod h1:NzIQLyMWg07HJkjnVLsvOJIJYmafN/KDpr3J8O2ABAk=
-github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241115043303-2a541bfe28fc h1:AP5XDeQINqULsR9of47wTXj5r33bW8az50f4gjXqvkk=
-github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241115043303-2a541bfe28fc/go.mod h1:zh6x1osR0hNvEcFrC/lhGD08sMfQmr9wHVvZ/mRWMCs=
+github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705 h1:K/PQ2Ca4UrrT3+zzwa9Ifjf+Q6Hkteh34pfqF1sTLJM=
+github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705/go.mod h1:NzIQLyMWg07HJkjnVLsvOJIJYmafN/KDpr3J8O2ABAk=
+github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705 h1:++dP96551V3FxJGaCCHFrHESz8WH6MnJlhDNKUNVwv4=
+github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705/go.mod h1:zh6x1osR0hNvEcFrC/lhGD08sMfQmr9wHVvZ/mRWMCs=
 github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597 h1:vFCKH25Q+BVNWRImFym0rYzno6BW8+l9GplszOdZ9no=
 github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597/go.mod h1:JAaOF+0j23OoyEgd6uhE3cgNDpZcfVZx4/DBbnMjUsc=
 github.com/oraichain/juno/x/globalfee v0.0.0-20240925043856-fe3d1d8b9ad3 h1:/Um//l2b6eGaAcVRwkzv2U7xTAqlYfiyaqG71bUyyac=
