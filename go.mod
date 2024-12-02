@@ -288,10 +288,10 @@ replace (
 	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241118181625-b3b894a9fc5d
 	// go list -m -json github.com/oraichain/cosmos-sdk@cae2f186c240bed6f0244eab0fae42b3cb6f504f | jq '.|"\(.Path) \(.Version)"' -r
 	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241115211416-da07f8fc9695
-	github.com/cosmos/ibc-go/modules/capability => github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241115043303-2a541bfe28fc
+	github.com/cosmos/ibc-go/modules/capability => github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705
 
 	// ibc-go
-	github.com/cosmos/ibc-go/v8 => github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241115043303-2a541bfe28fc
+	github.com/cosmos/ibc-go/v8 => github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/13134
