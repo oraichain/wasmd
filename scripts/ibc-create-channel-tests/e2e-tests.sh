@@ -43,8 +43,6 @@ sleep 5
 export WALLET_1=$($BINARY keys show wallet1 -a --keyring-backend test --home $DATA_DIR/test-1) && echo $WALLET_1
 export WALLET_2=$($BINARY keys show wallet2 -a --keyring-backend test --home $DATA_DIR/test-1) && echo $WALLET_2
 export VAL_1=$($BINARY keys show val1 -a --keyring-backend test --home $DATA_DIR/test-1) && echo $VAL_1
-export WALLET_3=$($BINARY keys show wallet3 -a --keyring-backend test --home $DATA_DIR/test-2) && echo $WALLET_3
-export WALLET_4=$($BINARY keys show wallet4 -a --keyring-backend test --home $DATA_DIR/test-2) && echo $WALLET_4
 
 # register ICA account
 # Register an interchain account on behalf of WALLET_1 where chain test-2 is the interchain accounts host
@@ -132,10 +130,6 @@ pkill $BINARY
 
 # install new binary for the upgrade
 echo "install new binary"
-# clone or pull latest repo
-if ! [ -d "$PWD/../orai-050" ]; then
-    git clone https://github.com/oraichain/wasmd.git $PWD/../orai-050
-fi
 CUR_DIR=$PWD && cd $PWD/../orai-050 && git checkout $NEW_VERSION && go mod tidy && GOTOOLCHAIN=$GO_VERSION make build && cd $CUR_DIR
 
 # re-run the nodes
