@@ -3,8 +3,8 @@
 set -ux
 
 CHAIN_ID=${CHAIN_ID:-testing}
-USER="validator1"
-NODE_HOME=${NODE_HOME:-"$HOME/.oraid/validator1"}
+USER=${USER:-"validator1"}
+NODE_HOME=${NODE_HOME:-"$PWD/.oraid"}
 ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $NODE_HOME"
 VALIDATOR2_ARGS="--from validator2 --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $HOME/.oraid/validator2"
 HIDE_LOGS="/dev/null"
