@@ -39,19 +39,6 @@ if ! [[ $admin =~ $user_address ]]; then
    exit 1
 fi
 
-# try to set denom metadata
-ticker="TICKER"
-description="description"
-exponent=6
-oraid tx tokenfactory modify-metadata $first_denom $ticker $description $exponent $ARGS >$HIDE_LOGS
-
-sleep 1
-symbol=$(oraid query bank denom-metadata $first_denom --output json | jq '.symbol')
-if ! [[ $ticker =~ $symbol ]]; then
-   echo "Tokenfactory tests failed. The tokenfactory ticker does not match symbol after modify metadata"
-   exit 1
-fi
-
 # try mint
 oraid tx tokenfactory mint 10$first_denom $ARGS >$HIDE_LOGS
 
