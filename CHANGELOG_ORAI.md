@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## v0.50.2
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+
+Upgrade Oraichain mainnet to v0.50.2 to fix some IBC, cosmos sdk and iavl bugs.
+
+### BUG FIXES
+
+- Failed ChanOpenInit ChannelSide: channel open init
+  callback failed for port ID: cannot claim nil capability
+  ([\#34](https://github.com/oraichain/wasmd/issues/34))
+- Failed to prune store err=Value missing for key
+  ([\#27](https://github.com/oraichain/wasmd/issues/27))
+- No cosmos.msg.v1.signer option found for message
+  cosmwasm.tokenfactory.v1beta1.MsgSetDenomMetadata
+  ([\#33](https://github.com/oraichain/wasmd/issues/33))
+
 ## v0.50.1
 
 <!--
