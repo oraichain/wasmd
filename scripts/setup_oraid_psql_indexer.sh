@@ -44,7 +44,7 @@ export REDPANDA_BROKERS="localhost:19092"
 go build -o $PWD/streaming/streaming $PWD/streaming/streaming.go
 
 # add indexer info
-sed -i '' -E "s%^indexer *=.*%indexer = \"psql\"%; " $CONFIG_TOML
+sed -i '' -E "s%^indexer *=.*%indexer = \"null\"%; " $CONFIG_TOML
 sed -i '' -E "s%^psql-conn *=.*%psql-conn = \"$PSQL_CONN\"%; " $CONFIG_TOML
 
 # export PSQL conn and chain id
