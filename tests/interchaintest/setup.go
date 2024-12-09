@@ -13,18 +13,6 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 )
 
-type HasPacketForwarding struct {
-	Chain string `json:"chain"`
-}
-
-type QuerySmartMsg struct {
-	Packet HasPacketForwarding `json:"has_packet_forwarding"`
-}
-
-type QuerySmartMsgResponse struct {
-	Data bool `json:"data"`
-}
-
 const (
 	votingPeriod     = "10s"
 	maxDepositPeriod = "10s"
