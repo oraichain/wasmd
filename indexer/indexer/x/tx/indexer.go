@@ -51,7 +51,7 @@ func NewTxEventSinkIndexer(
 }
 
 func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
-	return nil
+	return cs.is.IndexBlockAndTxs(req, res)
 }
 
 func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int, txHash string) (*ctypes.ResultTxSearch, error) {
