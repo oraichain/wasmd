@@ -11,7 +11,7 @@ import (
 	"github.com/CosmWasm/wasmd/indexer/indexer/x/wasm"
 	"github.com/CosmWasm/wasmd/streaming/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/state/indexer/sink/psql"
+	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 	"github.com/hashicorp/go-plugin"
 
 	streamingabci "cosmossdk.io/store/streaming/abci"

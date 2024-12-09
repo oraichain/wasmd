@@ -11,10 +11,10 @@ import (
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/indexer/codec"
+	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 	"github.com/CosmWasm/wasmd/indexer/indexer/x/tx"
 	"github.com/CosmWasm/wasmd/indexer/server/config"
 	"github.com/cometbft/cometbft/rpc/jsonrpc/server"
-	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/rs/cors"
 	"golang.org/x/sync/errgroup"
 
