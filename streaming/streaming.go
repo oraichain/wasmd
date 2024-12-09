@@ -5,13 +5,13 @@ import (
 
 	"github.com/CosmWasm/wasmd/app/params"
 	"github.com/CosmWasm/wasmd/indexer/codec"
+	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 	sinkreader "github.com/CosmWasm/wasmd/indexer/indexer/sink/reader"
 	indexerType "github.com/CosmWasm/wasmd/indexer/indexer/types"
 	"github.com/CosmWasm/wasmd/indexer/indexer/x/tx"
 	"github.com/CosmWasm/wasmd/indexer/indexer/x/wasm"
 	"github.com/CosmWasm/wasmd/streaming/redpanda"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 	"github.com/hashicorp/go-plugin"
 
 	streamingabci "cosmossdk.io/store/streaming/abci"
@@ -53,10 +53,12 @@ func (p *ModsStreamingPlugin) initStreamIndexerConn() error {
 func (p *ModsStreamingPlugin) initIndexerManager() {
 	if p.indexerManager == nil {
 		ri := redpanda.NewRedPandaInfo([]string{}, []string{})
+		is := indexerType.NewIndexerService(p.es)
+
 		// orders matter! the tx indexer must always be at the top to insert tx requests & block events into postgres
 		p.indexerManager = indexerType.NewIndexerManager(
-			tx.NewTxEventSinkIndexer(p.es, encodingConfig, ri),
-			wasm.NewWasmEventSinkIndexer(p.es, encodingConfig, ri),
+			tx.NewTxEventSinkIndexer(p.es, encodingConfig, ri, is),
+			wasm.NewWasmEventSinkIndexer(p.es, encodingConfig, ri, is),
 		)
 	}
 }

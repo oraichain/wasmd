@@ -54,7 +54,7 @@ func StartIndexerService(
 		svrCtx.Logger.Warn(fmt.Sprintf("Couldn't create a new connection to the Postgres DB with err: %v. The Indexer RPC won't run", err))
 		return func() {}, nil
 	}
-	txEventSink := tx.NewTxEventSinkIndexer(eventSink, encodingConfig, nil)
+	txEventSink := tx.NewTxEventSinkIndexer(eventSink, encodingConfig, nil, nil)
 	// init node env to setup indexer RPC
 	nodeEnv, err := tmNode.ConfigureRPC()
 	if err != nil {

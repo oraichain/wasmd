@@ -69,7 +69,7 @@ func NewTxIndexer(es *es.EventSink) PsqlTxIndexer {
 }
 
 // AddBatch indexes a batch of transactions in Postgres, as part of TxIndexer.
-func (p PsqlTxIndexer) AddBatch(batch Batch) error {
+func (p PsqlTxIndexer) AddBatch(batch *Batch) error {
 	return p.psql.IndexTxEvents(batch.Ops)
 }
 
