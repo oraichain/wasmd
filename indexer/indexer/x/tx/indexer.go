@@ -32,6 +32,7 @@ type TxEventSink struct {
 	es             *psql.EventSink
 	encodingConfig params.EncodingConfig
 	ri             *redpanda.RedpandaInfo
+	is             *indexerType.IndexerService
 }
 
 const (
@@ -40,8 +41,13 @@ const (
 
 var _ indexerType.ModuleEventSinkIndexer = (*TxEventSink)(nil)
 
-func NewTxEventSinkIndexer(es *psql.EventSink, encodingConfig params.EncodingConfig, ri *redpanda.RedpandaInfo) *TxEventSink {
-	return &TxEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
+func NewTxEventSinkIndexer(
+	es *psql.EventSink,
+	encodingConfig params.EncodingConfig,
+	ri *redpanda.RedpandaInfo,
+	is *indexerType.IndexerService,
+) *TxEventSink {
+	return &TxEventSink{es: es, encodingConfig: encodingConfig, ri: ri, is: is}
 }
 
 func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
