@@ -66,7 +66,7 @@ var (
 	amountToSend        = math.NewInt(1_000_000_000)
 )
 
-// feeabsEncoding registers the feeabs specific module codecs so that the associated types and msgs
+// oraiEncoding registers the Orai specific module codecs so that the associated types and msgs
 // will be supported when writing to the blocksdb sqlite database.
 func oraiEncoding() *moduletestutil.TestEncodingConfig {
 	cfg := wasm.WasmEncoding()

@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-// TestStartFeeabs is a basic test to assert that spinning up a Feeabs network with 1 validator works properly.
+// TestStartOrai is a basic test to assert that spinning up a Orai network with 1 validator works properly.
 func TestStartOrai(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
