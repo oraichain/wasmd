@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/CosmWasm/wasmd/app/params"
+	indexerCfg "github.com/CosmWasm/wasmd/indexer/indexer/config"
+	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 	indexerType "github.com/CosmWasm/wasmd/indexer/indexer/types"
 	indexerUtil "github.com/CosmWasm/wasmd/indexer/indexer/utils"
 	redpanda "github.com/CosmWasm/wasmd/streaming/redpanda"
@@ -18,7 +20,6 @@ import (
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	cometbftindexer "github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/hashicorp/go-hclog"
@@ -308,7 +309,7 @@ func (cs *TxEventSink) GetLatestBlock() (int64, error) {
 		// Find the block associated with this transaction. The block header
 		// must have been indexed prior to the transactions belonging to it.
 		if err := dbtx.QueryRow(`
-SELECT height FROM ` + psql.TableBlocks + ` order by height desc limit 1;
+SELECT height FROM ` + indexerCfg.TableBlocks + ` order by height desc limit 1;
 `).Scan(&height); err != nil {
 			return fmt.Errorf("error finding latest block: %w", err)
 		}
@@ -335,7 +336,7 @@ func (cs *TxEventSink) GetTxByHash(txHash string) ([]*ctypes.ResultTx, error) {
 		tx_results.created_at,
 		tx_results.tx_result
  	FROM %s
-	WHERE tx_results.tx_hash = '%s'`, psql.TableTxResults, txHash)).Scan(&height, &createdAt, &txResultBz); err != nil {
+	WHERE tx_results.tx_hash = '%s'`, indexerCfg.TableTxResults, txHash)).Scan(&height, &createdAt, &txResultBz); err != nil {
 			return fmt.Errorf("error finding tx by hash: %w with hash: %s", err, txHash)
 		}
 

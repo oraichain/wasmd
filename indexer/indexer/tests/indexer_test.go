@@ -28,9 +28,11 @@ import (
 	// Register the Postgres database driver.
 	"github.com/CosmWasm/wasmd/app/params"
 	indexercodec "github.com/CosmWasm/wasmd/indexer/codec"
+	indexerCfg "github.com/CosmWasm/wasmd/indexer/indexer/config"
+	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 	indexertx "github.com/CosmWasm/wasmd/indexer/indexer/x/tx"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	"github.com/cometbft/cometbft/state/indexer/sink/psql"
+	cmtPsql "github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/state/txindex"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -173,7 +175,7 @@ func TestIndexing(t *testing.T) {
 			return v != nil, err
 		})
 
-		require.NoError(t, verifyTimeStamp(psql.TableBlocks))
+		require.NoError(t, verifyTimeStamp(indexerCfg.TableBlocks))
 
 		// Attempting to reindex the same events should gracefully succeed.
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents(1)))
@@ -346,7 +348,7 @@ func TestIndexing(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, txResult, txr)
 
-		require.NoError(t, verifyTimeStamp(psql.TableTxResults))
+		require.NoError(t, verifyTimeStamp(indexerCfg.TableTxResults))
 		require.NoError(t, verifyTimeStamp(viewTxEvents))
 
 		verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
@@ -400,7 +402,7 @@ func TestIndexing(t *testing.T) {
 	})
 
 	t.Run("IndexerService", func(t *testing.T) {
-		indexer := psql.NewEventSinkFromDB(testDB(), chainID)
+		indexer := cmtPsql.NewEventSinkFromDB(testDB(), chainID)
 
 		// event bus
 		eventBus := types.NewEventBus()
@@ -577,7 +579,7 @@ func loadTxResult(hash []byte) (*abci.TxResult, error) {
 	hashString := fmt.Sprintf("%X", hash)
 	var resultData []byte
 	if err := testDB().QueryRow(`
-SELECT tx_result FROM `+psql.TableTxResults+` WHERE tx_hash = $1;
+SELECT tx_result FROM `+indexerCfg.TableTxResults+` WHERE tx_hash = $1;
 `, hashString).Scan(&resultData); err != nil {
 		return nil, fmt.Errorf("lookup transaction for hash %q failed: %v", hashString, err)
 	}
@@ -601,7 +603,7 @@ SELECT DISTINCT %[1]s.created_at
 func verifyBlock(t *testing.T, height int64) {
 	// Check that the blocks table contains an entry for this height.
 	if err := testDB().QueryRow(`
-SELECT height FROM `+psql.TableBlocks+` WHERE height = $1;
+SELECT height FROM `+indexerCfg.TableBlocks+` WHERE height = $1;
 `, height).Err(); err == sql.ErrNoRows {
 		t.Errorf("No block found for height=%d", height)
 	} else if err != nil {
@@ -612,8 +614,8 @@ SELECT height FROM `+psql.TableBlocks+` WHERE height = $1;
 	if err := testDB().QueryRow(`
 SELECT type, height, chain_id FROM `+viewBlockEvents+`
   WHERE height = $1 AND type = $2 AND chain_id = $3;
-`, height, psql.EventTypeFinalizeBlock, chainID).Err(); err == sql.ErrNoRows {
-		t.Errorf("No %q event found for height=%d", psql.EventTypeFinalizeBlock, height)
+`, height, indexerCfg.EventTypeFinalizeBlock, chainID).Err(); err == sql.ErrNoRows {
+		t.Errorf("No %q event found for height=%d", indexerCfg.EventTypeFinalizeBlock, height)
 	} else if err != nil {
 		t.Fatalf("Database query failed: %v", err)
 	}

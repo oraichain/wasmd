@@ -2,11 +2,11 @@ package wasm
 
 import (
 	"github.com/CosmWasm/wasmd/app/params"
+	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 	indexerType "github.com/CosmWasm/wasmd/indexer/indexer/types"
 	"github.com/CosmWasm/wasmd/streaming/redpanda"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/state/indexer/sink/psql"
 )
 
 // EventSink is an indexer backend providing the tx/block index services.  This

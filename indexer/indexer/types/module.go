@@ -3,7 +3,7 @@ package types
 import (
 	"github.com/CosmWasm/wasmd/app/params"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/state/indexer/sink/psql"
+	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
 )
 
 type ModuleEventSinkIndexer interface {

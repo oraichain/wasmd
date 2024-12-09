@@ -11,4 +11,7 @@ const (
 	TableAttributes = tableAttributes
 	driverName      = "postgres"
 	DrviverName     = driverName
+
+	eventTypeFinalizeBlock = "finalize_block"
+	EventTypeFinalizeBlock = eventTypeFinalizeBlock
 )
