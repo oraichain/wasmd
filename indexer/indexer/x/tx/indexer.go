@@ -32,7 +32,6 @@ type TxEventSink struct {
 	es             *psql.EventSink
 	encodingConfig params.EncodingConfig
 	ri             *redpanda.RedpandaInfo
-	is             *indexerType.IndexerService
 }
 
 const (
@@ -45,13 +44,44 @@ func NewTxEventSinkIndexer(
 	es *psql.EventSink,
 	encodingConfig params.EncodingConfig,
 	ri *redpanda.RedpandaInfo,
-	is *indexerType.IndexerService,
 ) *TxEventSink {
-	return &TxEventSink{es: es, encodingConfig: encodingConfig, ri: ri, is: is}
+	return &TxEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
 }
 
 func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
-	return cs.is.IndexBlockAndTxs(req, res)
+	height := req.GetHeight()
+	numTxs := int64(len(req.GetTxs()))
+
+	txResults := []*abci.TxResult{}
+	for i := int64(0); i < numTxs; i++ {
+		txResult := abci.TxResult{
+			Height: height,
+			Index:  uint32(i),
+			Tx:     req.GetTxs()[i],
+			Result: *res.GetTxResults()[i],
+			Time:   &req.Time,
+		}
+		txResults = append(txResults, &txResult)
+	}
+
+	// index block
+	eventNewBlockEvents := cmttypes.EventDataNewBlockEvents{
+		Height: height,
+		NumTxs: numTxs,
+		Events: res.GetEvents(),
+	}
+	err := cs.es.IndexBlockEvents(eventNewBlockEvents)
+	if err != nil {
+		return fmt.Errorf("failed to index block, height: %d, err: %v", height, err)
+	}
+
+	// index txs
+	err = cs.es.IndexTxEvents(txResults)
+	if err != nil {
+		return fmt.Errorf("failed to index block txs, height: %d, err: %v", height, err)
+	}
+
+	return nil
 }
 
 func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int, txHash string) (*ctypes.ResultTxSearch, error) {

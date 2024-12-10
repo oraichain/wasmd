@@ -16,7 +16,6 @@ type WasmEventSink struct {
 	es             *psql.EventSink
 	encodingConfig params.EncodingConfig
 	ri             *redpanda.RedpandaInfo
-	is             *indexerType.IndexerService
 }
 
 var _ indexerType.ModuleEventSinkIndexer = (*WasmEventSink)(nil)
@@ -25,9 +24,8 @@ func NewWasmEventSinkIndexer(
 	es *psql.EventSink,
 	encodingConfig params.EncodingConfig,
 	ri *redpanda.RedpandaInfo,
-	is *indexerType.IndexerService,
 ) *WasmEventSink {
-	return &WasmEventSink{es: es, encodingConfig: encodingConfig, ri: ri, is: is}
+	return &WasmEventSink{es: es, encodingConfig: encodingConfig, ri: ri}
 }
 
 func (cs *WasmEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *abci.ResponseFinalizeBlock) error {
