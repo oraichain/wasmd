@@ -53,12 +53,11 @@ func (p *ModsStreamingPlugin) initStreamIndexerConn() error {
 func (p *ModsStreamingPlugin) initIndexerManager() {
 	if p.indexerManager == nil {
 		ri := redpanda.NewRedPandaInfo([]string{}, []string{})
-		is := indexerType.NewIndexerService(p.es)
 
 		// orders matter! the tx indexer must always be at the top to insert tx requests & block events into postgres
 		p.indexerManager = indexerType.NewIndexerManager(
-			tx.NewTxEventSinkIndexer(p.es, encodingConfig, ri, is),
-			wasm.NewWasmEventSinkIndexer(p.es, encodingConfig, ri, is),
+			tx.NewTxEventSinkIndexer(p.es, encodingConfig, ri),
+			wasm.NewWasmEventSinkIndexer(p.es, encodingConfig, ri),
 		)
 	}
 }
