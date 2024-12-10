@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -27,6 +28,8 @@ import (
 	// "cosmossdk.io/x/nft"
 	// nftkeeper "cosmossdk.io/x/nft/keeper"
 	// nftmodule "cosmossdk.io/x/nft/module"
+	"io/fs"
+
 	"cosmossdk.io/x/tx/signing"
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
@@ -85,6 +88,7 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	"github.com/gorilla/mux"
 
 	"github.com/cosmos/cosmos-sdk/x/group"
 	groupkeeper "github.com/cosmos/cosmos-sdk/x/group/keeper"
@@ -131,6 +135,7 @@ import (
 	srvflags "github.com/evmos/ethermint/server/flags"
 	"github.com/spf13/cast"
 
+	"github.com/CosmWasm/wasmd/client/docs"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -1349,9 +1354,26 @@ func (app *WasmApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 	app.BasicModuleManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// register swagger API from root so that other applications can override easily
-	if err := server.RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
+	if err := RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
 		panic(err)
 	}
+}
+
+// RegisterSwaggerAPI provides a common function which registers swagger route with API Server
+func RegisterSwaggerAPI(_ client.Context, rtr *mux.Router, swaggerEnabled bool) error {
+	if !swaggerEnabled {
+		return nil
+	}
+
+	root, err := fs.Sub(docs.SwaggerUI, "swagger-ui")
+	if err != nil {
+		return err
+	}
+
+	staticServer := http.FileServer(http.FS(root))
+	rtr.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", staticServer))
+
+	return nil
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.

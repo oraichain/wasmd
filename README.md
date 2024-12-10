@@ -49,6 +49,36 @@ Normally, for Linux-based machines, you already have Make installed by default.
 
 `oraid version`
 
+## Swagger
+
+To generate new swaggers, run:
+
+```bash
+make proto-swagger-gen
+```
+
+If there's a new module within the wasmd repo, simply add something like this in the [swagger config json file](./client/docs/swagger-ui/config.json):
+
+```json
+{
+      "url": "./tmp-swagger-gen/cosmwasm/tokenfactory/v1beta1/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "TokenFactoryParams"
+        }
+      }
+    }
+```
+
+then re-run the command above.
+
+If there's a new module but from a different repo (like Ethermint, Juno), then you need to configure the path to their protos yourself in [Swagger gen shell script](./scripts/protoc-swagger-gen.sh). Like this:
+
+```bash
+COSMOS_SDK_DIR=${COSMOS_SDK_DIR:-$(go list -f "{{ .Dir }}" -m github.com/cosmos/cosmos-sdk)}
+proto_dirs=$(find ./cosmwasm $COSMOS_SDK_DIR/proto/cosmos -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
+```
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
@@ -71,26 +101,3 @@ This project is licensed under the Apache 2.0 license - see the [LICENSE](LICENS
 
 Please use `unclog` to write changelogs.
 
-<!-- ## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc -->
-
-<!-- ## Run test
-`make test-method PACKAGE=github.com/oraichain/orai/x/airequest/keeper METHOD=TestCalucateMol` -->
-
-<!-- ## Create swagger documentation
-
-```bash
-# go to proto
-docker-compose exec proto ash
-make proto-swagger
-# then create static file
-go install github.com/rakyll/statik
-statik -src doc/swagger-ui/ -dest doc -f
-```
-
-## Non-docker build
-
-make build LEDGER_ENABLED=false GOMOD_FLAGS= VERSION=0.41.0
