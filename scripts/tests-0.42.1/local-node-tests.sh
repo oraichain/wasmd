@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ux
+
 CHAIN_ID=${CHAIN_ID:-testing}
 USER=${USER:-tupt}
 MONIKER=${MONIKER:-node001}
@@ -32,6 +34,8 @@ oraid genesis add-genesis-account $USER "1000000000orai" $ARGS
 oraid genesis gentx $USER "2500000orai" --chain-id="$CHAIN_ID" -y $ARGS &>$HIDE_LOGS
 
 oraid genesis collect-gentxs --home $NODE_HOME &>$HIDE_LOGS
+
+jq '.initial_height="1"' $NODE_HOME/config/genesis.json >tmp.$$.json && mv tmp.$$.json $NODE_HOME/config/genesis.json
 
 screen -S test-gasless -d -m oraid start $START_ARGS
 

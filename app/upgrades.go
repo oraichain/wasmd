@@ -37,13 +37,14 @@ import (
 	"github.com/CosmWasm/wasmd/app/upgrades/noop"
 	v050 "github.com/CosmWasm/wasmd/app/upgrades/v050"
 	v0501 "github.com/CosmWasm/wasmd/app/upgrades/v0501"
+	v0502 "github.com/CosmWasm/wasmd/app/upgrades/v0502"
 	v2 "github.com/CosmWasm/wasmd/x/wasm/migrations/v2"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v050.Upgrade, v0501.Upgrade}
+var Upgrades = []upgrades.Upgrade{v050.Upgrade, v0501.Upgrade, v0502.Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *WasmApp) RegisterUpgradeHandlers() {
@@ -72,6 +73,8 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 		IBCKeeper:                 app.IBCKeeper,
 		MintKeeper:                &app.MintKeeper,
 		GovKeeper:                 &app.GovKeeper,
+		ICAControllerKeeper:       app.ICAControllerKeeper,
+		IBCFeeKeeper:              app.IBCFeeKeeper,
 		Codec:                     app.appCodec,
 		GetStoreKey:               app.GetKey,
 	}

@@ -1,0 +1,17 @@
+{
+  "title": "Denom creation amount param change",
+  "description": "Denom creation amount param change",
+  "changes": [
+    {
+      "subspace": "tokenfactory",
+      "key": "DenomCreationFee",
+      "value": [
+        {
+          "amount": "1000",
+          "denom": "orai"
+        }
+      ]
+    }
+  ],
+  "deposit": "1000000000orai"
+}

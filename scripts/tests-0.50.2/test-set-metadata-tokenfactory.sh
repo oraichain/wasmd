@@ -3,7 +3,7 @@
 set -ux
 
 CHAIN_ID=${CHAIN_ID:-testing}
-USER=${USER:-tupt}
+USER=${USER:-"validator1"}
 NODE_HOME=${NODE_HOME:-"$PWD/.oraid"}
 ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $NODE_HOME"
 HIDE_LOGS="/dev/null"
@@ -11,12 +11,12 @@ HIDE_LOGS="/dev/null"
 # prepare a new contract for gasless
 fee_params=$(oraid query tokenfactory params --output json | jq '.params.denom_creation_fee[0].denom')
 if ! [[ $fee_params =~ "orai" ]]; then
-   echo "Tokenfactory tests failed. The tokenfactory fee params is not orai"
+   echo "Tokenfactory set metadata tests failed. The tokenfactory fee params is not orai"
    exit 1
 fi
 
 # try creating a new denom
-denom_name="usdt"
+denom_name="usd"
 oraid tx tokenfactory create-denom $denom_name $ARGS >$HIDE_LOGS
 
 # try querying list denoms afterwards
@@ -27,7 +27,7 @@ first_denom=$(oraid query tokenfactory denoms-from-creator $user_address --outpu
 echo "first denom: $first_denom"
 
 if ! [[ $first_denom =~ "factory/$user_address/$denom_name" ]]; then
-   echo "Tokenfactory tests failed. The tokenfactory denom does not match the created denom"
+   echo "Tokenfactory set metadata tests failed. The tokenfactory denom does not match the created denom"
    exit 1
 fi
 
@@ -35,30 +35,22 @@ admin=$(oraid query tokenfactory denom-authority-metadata $first_denom --output 
 echo "admin: $admin"
 
 if ! [[ $admin =~ $user_address ]]; then
-   echo "Tokenfactory tests failed. The tokenfactory admin does not match the creator"
+   echo "Tokenfactory set metadata tests failed. The tokenfactory admin does not match the creator"
    exit 1
 fi
 
-# try mint
-oraid tx tokenfactory mint 10$first_denom $ARGS >$HIDE_LOGS
-
-# query balance after mint
-# need sleep 1s
 sleep 2
-tokenfactory_balance=$(oraid query bank balance $user_address $first_denom --output json | jq '.balance.amount | tonumber')
-if [[ $tokenfactory_balance -ne 10 ]]; then
-   echo "Tokenfactory tests failed. The tokenfactory balance does not increase after mint"
-   exit 1
-fi
+# try to set denom metadata
+ticker="TICKER"
+description="description"
+exponent=6
+oraid tx tokenfactory modify-metadata $first_denom $ticker $description $exponent $ARGS >$HIDE_LOGS
 
-# try burn
-oraid tx tokenfactory burn 10$first_denom $ARGS >$HIDE_LOGS
-# need sleep 1s
 sleep 2
-tokenfactory_balance=$(oraid query bank balance $user_address $first_denom --output json | jq '.balance.amount | tonumber')
-if [[ $tokenfactory_balance -ne 0 ]]; then
-   echo "Tokenfactory tests failed. The tokenfactory balance does not decrease after burn"
+symbol=$(oraid query bank denom-metadata $first_denom --output json | jq '.metadata.symbol' |  tr -d '"')
+if ! [[ $ticker =~ $symbol ]]; then
+   echo "Tokenfactory set metadata tests failed. The tokenfactory ticker does not match symbol after modify metadata"
    exit 1
 fi
 
-echo "Tokenfactory tests passed!"
+echo "Tokenfactory set metadata tests passed!"

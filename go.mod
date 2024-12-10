@@ -9,7 +9,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.50.9
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/gogoproto v1.7.0
-	github.com/cosmos/iavl v1.2.0
+	github.com/cosmos/iavl v1.2.2
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8 v8.0.2
 	github.com/cosmos/ics23/go v0.11.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
@@ -271,10 +271,10 @@ replace (
 	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20241016192914-5c0462aa0de4
 	// go list -m -json github.com/oraichain/cosmos-sdk@cae2f186c240bed6f0244eab0fae42b3cb6f504f | jq '.|"\(.Path) \(.Version)"' -r
 	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20241114003258-bef8b864b9a0
-	github.com/cosmos/ibc-go/modules/capability => github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241115043303-2a541bfe28fc
+	github.com/cosmos/ibc-go/modules/capability => github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705
 
 	// ibc-go
-	github.com/cosmos/ibc-go/v8 => github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241115043303-2a541bfe28fc
+	github.com/cosmos/ibc-go/v8 => github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/13134
