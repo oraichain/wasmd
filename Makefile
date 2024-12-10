@@ -89,6 +89,9 @@ endif
 build-windows-client: go.sum
 	GOOS=windows GOARCH=amd64 go build -mod=readonly $(BUILD_FLAGS) -o build/oraid.exe ./cmd/wasmd
 
+docker-build-debug:
+	@DOCKER_BUILDKIT=1 docker build -t orai:debug -f ict.Dockerfile --no-cache .
+
 install: go.sum
 	go install -mod=readonly $(BUILD_FLAGS) ./cmd/wasmd
 
@@ -146,6 +149,14 @@ test-sim-deterministic: runsim
 
 test-system: install
 	$(MAKE) -C tests/system/ test
+
+###############################################################################
+###                             Interchain test                             ###
+###############################################################################
+
+# Executes basic chain tests via interchaintest
+ictest-basic:
+	cd tests/interchaintest && go test -race -v -run TestStartOrai .
 
 ###############################################################################
 ###                                Linting                                  ###
