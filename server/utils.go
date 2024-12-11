@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/CosmWasm/wasmd/server/config"
 	cmtcfg "github.com/cometbft/cometbft/config"
+	clientCfg "github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/spf13/viper"
 )
 
@@ -25,6 +26,19 @@ func ReadCometBFTConfig(configPath string, configFileName string, v *viper.Viper
 	}
 
 	conf := cmtcfg.DefaultConfig()
+	if err := v.Unmarshal(conf); err != nil {
+		return nil, err
+	}
+
+	return conf, nil
+}
+
+func ReadClientConfig(configPath string, configFileName string, v *viper.Viper) (*clientCfg.ClientConfig, error) {
+	if err := readConfig(configPath, configFileName, v); err != nil {
+		return nil, err
+	}
+
+	conf := clientCfg.DefaultConfig()
 	if err := v.Unmarshal(conf); err != nil {
 		return nil, err
 	}

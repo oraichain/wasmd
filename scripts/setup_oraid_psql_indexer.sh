@@ -30,7 +30,7 @@ oraid genesis gentx $USER "250000000orai" --chain-id="$CHAINID" -y $ARGS >$HIDE_
 
 oraid genesis collect-gentxs --home $NODE_HOME >$HIDE_LOGS
 
-jq '.initial_height="1"' $NODE_HOME/config/genesis.json > tmp.$$.json && mv tmp.$$.json $NODE_HOME/config/genesis.json
+jq '.initial_height="1"' $NODE_HOME/config/genesis.json >tmp.$$.json && mv tmp.$$.json $NODE_HOME/config/genesis.json
 
 APP_TOML=$NODE_HOME/config/app.toml
 CONFIG_TOML=$NODE_HOME/config/config.toml
@@ -50,6 +50,7 @@ sed -i '' -E "s%^psql-conn *=.*%psql-conn = \"$PSQL_CONN\"%; " $CONFIG_TOML
 # export PSQL conn and chain id
 export PSQL_CONN="postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
 export CHAIN_ID=$CHAINID
+export HOME_PATH=$NODE_HOME
 
 # add indexer.toml file to enable indexer RPC
 cp $PWD/indexer.toml $NODE_HOME/config
