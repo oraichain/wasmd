@@ -8,10 +8,10 @@
 set -o errexit -o nounset -o pipefail -o xtrace
 shopt -s expand_aliases
 
-alias chainA="oraid --node http://localhost:26657 --chain-id localoraichain-a"
-alias chainB="oraid --node http://localhost:36657 --chain-id localoraichain-b"
-alias chainAWithoutChainId="oraid --node http://localhost:26657"
-alias chainBWithoutChainId="oraid --node http://localhost:36657"
+alias chainA="oraid --node http://localhost:36657 --chain-id localoraichain-a"
+alias chainB="oraid --node http://localhost:46657 --chain-id localoraichain-b"
+alias chainAWithoutChainId="oraid --node http://localhost:36657"
+alias chainBWithoutChainId="oraid --node http://localhost:46657"
 
 # setup the keys
 echo "bottom loan skill merry east cradle onion journey palm apology verb edit desert impose absurd oil bubble sweet glove shallow size build burst effort" | oraid keys add validator --keyring-backend test --recover || echo "key exists"
