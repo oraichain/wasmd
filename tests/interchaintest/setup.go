@@ -93,6 +93,9 @@ func modifyGenesisShortProposals(
 		if err := dyno.Set(g, votingPeriod, "app_state", "gov", "params", "voting_period"); err != nil {
 			return nil, fmt.Errorf("failed to set voting period in genesis json: %w", err)
 		}
+		if err := dyno.Set(g, "1", "initial_height"); err != nil {
+			return nil, fmt.Errorf("failed to set initial height in genesis json: %w", err)
+		}
 		if err := dyno.Set(g, maxDepositPeriod, "app_state", "gov", "params", "max_deposit_period"); err != nil {
 			return nil, fmt.Errorf("failed to set voting period in genesis json: %w", err)
 		}
