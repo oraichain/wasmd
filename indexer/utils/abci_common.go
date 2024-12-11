@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/CosmWasm/wasmd/app/params"
-	indexerType "github.com/CosmWasm/wasmd/indexer/indexer/types"
+	indexerType "github.com/CosmWasm/wasmd/indexer/types"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	cosmostx "github.com/cosmos/cosmos-sdk/types/tx"

@@ -3,7 +3,7 @@ package psql
 import (
 	"database/sql"
 
-	cfg "github.com/CosmWasm/wasmd/indexer/indexer/config"
+	cfg "github.com/CosmWasm/wasmd/indexer/config"
 )
 
 // EventSink is an indexer backend providing the tx/block index services.  This

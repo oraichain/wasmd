@@ -1,7 +1,7 @@
-package indexer
+package server
 
 import (
-	"github.com/CosmWasm/wasmd/indexer/server/config"
+	"github.com/CosmWasm/wasmd/server/config"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/spf13/viper"
 )

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	cfg "github.com/CosmWasm/wasmd/indexer/indexer/config"
+	cfg "github.com/CosmWasm/wasmd/indexer/config"
 	abci "github.com/cometbft/cometbft/abci/types"
 )
 

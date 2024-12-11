@@ -28,9 +28,9 @@ import (
 	// Register the Postgres database driver.
 	"github.com/CosmWasm/wasmd/app/params"
 	indexercodec "github.com/CosmWasm/wasmd/indexer/codec"
-	indexerCfg "github.com/CosmWasm/wasmd/indexer/indexer/config"
-	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
-	indexertx "github.com/CosmWasm/wasmd/indexer/indexer/x/tx"
+	indexerCfg "github.com/CosmWasm/wasmd/indexer/config"
+	"github.com/CosmWasm/wasmd/indexer/sink/psql"
+	indexertx "github.com/CosmWasm/wasmd/indexer/x/tx"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cmtPsql "github.com/cometbft/cometbft/state/indexer/sink/psql"
 	"github.com/cometbft/cometbft/state/txindex"
