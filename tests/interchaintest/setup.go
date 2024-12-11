@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	votingPeriod     = "10s"
-	maxDepositPeriod = "10s"
+	votingPeriod     = "15s"
+	maxDepositPeriod = "15s"
 
 	// Chain and relayer version inf
 	IBCRelayerImage     = "ghcr.io/cosmos/relayer"

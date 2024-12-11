@@ -3,6 +3,7 @@ package interchaintest
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	paramsutils "github.com/cosmos/cosmos-sdk/x/params/client/utils"
 )
 
@@ -76,10 +78,6 @@ func TestTokenfactoryParamChange(t *testing.T) {
 	// Get our Bech32 encoded user addresses
 	oraiUser := users[0]
 
-	oldFeeParam, err := orai.QueryParam(ctx, "tokenfactory", "DenomCreationFee")
-	require.NoError(t, err)
-	_ = oldFeeParam
-
 	paramChangeValue := sdk.NewCoins(sdk.NewInt64Coin("orai", 10_000_000))
 	rawValue, err := json.Marshal(paramChangeValue)
 	require.NoError(t, err)
@@ -99,5 +97,22 @@ func TestTokenfactoryParamChange(t *testing.T) {
 
 	paramTx, err := helpers.ParamChangeProposal(t, ctx, orai, oraiUser, &param_change)
 	require.NoError(t, err, "error submitting param change proposal tx")
-	_ = paramTx
+
+	err = testutil.WaitForBlocks(ctx, 2, orai)
+	require.NoError(t, err)
+
+	propId, err := strconv.ParseUint(paramTx.ProposalID, 10, 64)
+	require.NoError(t, err, "failed to convert proposal ID to uint64")
+
+	err = orai.VoteOnProposalAllValidators(ctx, propId, cosmos.ProposalVoteYes)
+	require.NoError(t, err, "failed to submit votes")
+
+	height, _ := orai.Height(ctx)
+
+	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, propId, govv1beta1.StatusPassed)
+	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
+
+	newParam, err := helpers.QueryTokenFactoryParam(t, ctx, orai)
+	require.NoError(t, err)
+	require.Equal(t, paramChangeValue, newParam.DenomCreationFee)
 }

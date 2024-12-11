@@ -21,19 +21,19 @@ func ParamChangeProposal(
 	chain *cosmos.CosmosChain,
 	admin ibc.Wallet,
 	prop *paramsutils.ParamChangeProposalJSON,
-) (string, error) {
+) (tx TxProposal, _ error) {
 	tn := chain.GetNode()
 
 	content, err := json.Marshal(prop)
 	if err != nil {
-		return "", err
+		return tx, err
 	}
 
 	hash := sha256.Sum256(content)
 	proposalFilename := fmt.Sprintf("%x.json", hash)
 	err = tn.WriteFile(ctx, content, proposalFilename)
 	if err != nil {
-		return "", fmt.Errorf("writing param change proposal: %w", err)
+		return tx, fmt.Errorf("writing param change proposal: %w", err)
 	}
 
 	proposalPath := filepath.Join(tn.HomeDir(), proposalFilename)
@@ -42,5 +42,28 @@ func ParamChangeProposal(
 		"tokenfactory", "param-change", proposalPath,
 	}
 
-	return tn.ExecTx(ctx, admin.KeyName(), command...)
+	txHash, err := tn.ExecTx(ctx, admin.KeyName(), command...)
+	if err != nil {
+		return tx, fmt.Errorf("failed to submit param change proposal: %w", err)
+	}
+
+	return txProposal(chain, txHash)
+}
+
+// QueryParam returns the state and details of a subspace param.
+func QueryTokenFactoryParam(t *testing.T,
+	ctx context.Context,
+	chain *cosmos.CosmosChain,
+) (TokenFactoryParams, error) {
+	tn := chain.GetNode()
+	stdout, _, err := tn.ExecQuery(ctx, "tokenfactory", "params")
+	if err != nil {
+		return TokenFactoryParams{}, err
+	}
+	var param QueryTokenFactoryParamsResponse
+	err = json.Unmarshal(stdout, &param)
+	if err != nil {
+		return TokenFactoryParams{}, err
+	}
+	return param.Params, nil
 }
