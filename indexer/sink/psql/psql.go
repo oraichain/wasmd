@@ -9,7 +9,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	cfg "github.com/CosmWasm/wasmd/indexer/indexer/config"
+	cfg "github.com/CosmWasm/wasmd/indexer/config"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/types"

@@ -16,7 +16,7 @@ import (
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 
 	"github.com/CosmWasm/wasmd/cmd"
-	indexerserver "github.com/CosmWasm/wasmd/indexer/server"
+	indexerserver "github.com/CosmWasm/wasmd/server"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/pruning"

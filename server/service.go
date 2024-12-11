@@ -9,11 +9,10 @@ import (
 	"time"
 
 	"github.com/CosmWasm/wasmd/app/params"
-	"github.com/CosmWasm/wasmd/indexer"
 	"github.com/CosmWasm/wasmd/indexer/codec"
-	"github.com/CosmWasm/wasmd/indexer/indexer/sink/psql"
-	"github.com/CosmWasm/wasmd/indexer/indexer/x/tx"
-	"github.com/CosmWasm/wasmd/indexer/server/config"
+	"github.com/CosmWasm/wasmd/indexer/sink/psql"
+	"github.com/CosmWasm/wasmd/indexer/x/tx"
+	"github.com/CosmWasm/wasmd/server/config"
 	"github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	"github.com/rs/cors"
 	"golang.org/x/sync/errgroup"
@@ -42,7 +41,7 @@ func StartIndexerService(
 ) (func(), error) {
 
 	configPath := filepath.Join(clientCtx.HomeDir, "config")
-	indexerConfig, err := indexer.ReadServiceConfig(configPath, config.IndexerFileName, clientCtx.Viper)
+	indexerConfig, err := ReadServiceConfig(configPath, config.IndexerFileName, clientCtx.Viper)
 	if err != nil {
 		svrCtx.Logger.Warn(fmt.Sprintf("Couldn't find the %s.toml file with err: %v. The Indexer RPC won't run", err, config.IndexerFileName))
 		return func() {}, nil
