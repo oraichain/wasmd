@@ -85,9 +85,9 @@ func TestIbcHooks(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// t.Cleanup(func() {
-	// 	_ = ic.Close()
-	// })
+	t.Cleanup(func() {
+		_ = ic.Close()
+	})
 
 	// Start the relayer
 	require.NoError(t, r.StartRelayer(ctx, eRep, pathOraiGaia))
@@ -161,6 +161,5 @@ func TestIbcHooks(t *testing.T) {
 	var res GetCountResponse
 	err = orai.QueryContract(ctx, contractAddress, QueryMsg{GetCount: &GetCountQuery{}}, &res)
 	require.NoError(t, err)
-	fmt.Println(res)
-	require.Equal(t, 1, res.Data.Count)
+	require.Equal(t, uint64(1), res.Data.Count)
 }
