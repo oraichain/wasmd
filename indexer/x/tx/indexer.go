@@ -84,6 +84,19 @@ func (cs *TxEventSink) InsertModuleEvents(req *abci.RequestFinalizeBlock, res *a
 	return nil
 }
 
+func (cs *TxEventSink) Tx(_ *rpctypes.Context, txHash string) (*ctypes.ResultTx, error) {
+	if txHash == "" {
+		return nil, fmt.Errorf("tx hash must not be empty")
+	}
+
+	txResponses, err := cs.GetTxByHash(txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return txResponses[0], nil
+}
+
 func (cs *TxEventSink) TxSearch(_ *rpctypes.Context, query string, _limit *int, txHash string) (*ctypes.ResultTxSearch, error) {
 
 	// if tx hash is not empty -> we query via tx hash directly and ignore tx search txs

@@ -53,7 +53,7 @@ export CHAIN_ID=$CHAINID
 export HOME_PATH=$NODE_HOME
 
 # add indexer.toml file to enable indexer RPC
-cp $PWD/indexer.toml $NODE_HOME/config
+cp $PWD/scripts/indexer.toml $NODE_HOME/config
 
 # clean old db
 docker-compose -f $PWD/indexer/docker-compose.yml down -v

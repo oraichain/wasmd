@@ -27,7 +27,7 @@ func GetRoutes(cs *tx.TxEventSink, env *rpccore.Environment) RoutesMap {
 		"header":               rpc.NewRPCFunc(env.Header, "height", rpc.Cacheable("height")),
 		"header_by_hash":       rpc.NewRPCFunc(env.HeaderByHash, "hash", rpc.Cacheable()),
 		"check_tx":             rpc.NewRPCFunc(env.CheckTx, "tx"),
-		"tx":                   rpc.NewRPCFunc(env.Tx, "hash,prove", rpc.Cacheable()),
+		"tx":                   rpc.NewRPCFunc(cs.Tx, "hash", rpc.Cacheable()),
 		"block_search":         rpc.NewRPCFunc(env.BlockSearch, "query,page,per_page,order_by"),
 		"validators":           rpc.NewRPCFunc(env.Validators, "height,page,per_page", rpc.Cacheable("height")),
 		"dump_consensus_state": rpc.NewRPCFunc(env.DumpConsensusState, ""),
