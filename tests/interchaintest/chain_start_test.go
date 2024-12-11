@@ -49,6 +49,7 @@ func TestStartOrai(t *testing.T) {
 	})
 
 	a, err := orai.AuthQueryModuleAccounts(ctx)
+
 	require.NoError(t, err)
 	t.Log("module accounts", a)
 }
