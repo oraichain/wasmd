@@ -274,8 +274,7 @@ replace (
 	github.com/cosmos/ibc-go/modules/capability => github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705
 
 	// ibc-go
-	// github.com/cosmos/ibc-go/v8 => github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705
-	github.com/cosmos/ibc-go/v8 => github.com/GNaD13/ibc-go/v8 v8.0.0-20241212044132-09c86cbd9c6d
+	github.com/cosmos/ibc-go/v8 => github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/13134

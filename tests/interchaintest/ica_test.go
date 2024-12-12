@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
@@ -114,7 +115,7 @@ func TestInterchainAccount(t *testing.T) {
 	ibcConnection, err := r.GetConnections(ctx, eRep, orai.Config().ChainID)
 	require.NoError(t, err)
 
-	res, err := orai.RegisterICA(ctx, user.KeyName(), ibcConnection[0].ID)
+	res, err := helpers.RegisterICA(t, ctx, orai, user.KeyName(), ibcConnection[0].ID)
 	require.NoError(t, err)
 
 	fmt.Println(res)
