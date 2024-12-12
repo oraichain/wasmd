@@ -12,6 +12,13 @@ rm -rf data/
 pkill oraid
 pkill rly
 
+# clone or pull latest repo
+if ! [ -d "$PWD/../orai-0424" ]; then
+  git clone --branch v0.42.4 --single-branch https://github.com/oraichain/orai.git $PWD/../orai-0424
+fi
+
+CUR_DIR=$PWD && cd $PWD/../orai-0424 && go mod tidy && GOTOOLCHAIN=go1.21.4 make install && cp $GOPATH/bin/oraid $GOPATH/bin/$OLD_BINARY && cd $CUR_DIR
+
 echo "Initializing both blockchains..."
 bash $CONFIG_DIR/init.sh
 bash $CONFIG_DIR/start.sh
