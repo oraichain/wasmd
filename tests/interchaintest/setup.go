@@ -20,7 +20,7 @@ const (
 	// Chain and relayer version inf
 	IBCRelayerImage     = "ghcr.io/cosmos/relayer"
 	IBCRelayerVersion   = "latest"
-	GaiaImageVersion    = "v14.1.0"
+	GaiaImageVersion    = "v16.0.0"
 	OsmosisImageVersion = "v22.0.1"
 )
 
@@ -52,6 +52,7 @@ var (
 	}
 	genesisWalletAmount = math.NewInt(100_000_000_000)
 	amountToSend        = math.NewInt(1_000_000_000)
+	pathOraiGaia        = "IbcPath"
 )
 
 // oraiEncoding registers the Orai specific module codecs so that the associated types and msgs
@@ -90,6 +91,9 @@ func modifyGenesisShortProposals(
 		}
 		if err := dyno.Set(g, votingPeriod, "app_state", "gov", "params", "voting_period"); err != nil {
 			return nil, fmt.Errorf("failed to set voting period in genesis json: %w", err)
+		}
+		if err := dyno.Set(g, "1", "initial_height"); err != nil {
+			return nil, fmt.Errorf("failed to set initial height in genesis json: %w", err)
 		}
 		if err := dyno.Set(g, maxDepositPeriod, "app_state", "gov", "params", "max_deposit_period"); err != nil {
 			return nil, fmt.Errorf("failed to set voting period in genesis json: %w", err)

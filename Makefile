@@ -158,6 +158,10 @@ test-system: install
 ictest-basic:
 	cd tests/interchaintest && go test -race -v -run TestStartOrai .
 
+# Executes basic chain tests via interchaintest
+ictest-interchain-account:
+	cd tests/interchaintest && go test -race -v -run TestInterchainAccount .
+
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
