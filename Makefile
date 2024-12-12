@@ -162,6 +162,10 @@ ictest-basic:
 ictest-tf-param-change:
 	cd tests/interchaintest && go test -race -v -run TestTokenfactoryParamChange .
 
+# Executes basic chain tests via interchaintest
+ictest-ibchooks:
+	cd tests/interchaintest && go test -race -v -run TestIbcHooks .
+
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################

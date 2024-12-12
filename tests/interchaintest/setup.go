@@ -52,6 +52,8 @@ var (
 	}
 	genesisWalletAmount = math.NewInt(100_000_000_000)
 	amountToSend        = math.NewInt(1_000_000_000)
+
+	pathOraiGaia = "orai-gaia"
 )
 
 // oraiEncoding registers the Orai specific module codecs so that the associated types and msgs
