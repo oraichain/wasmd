@@ -84,6 +84,11 @@ export COSMOS_SDK_ABCI="{path to}/streaming/streaming"
 # export your redpanda brokers
 export REDPANDA_BROKERS=<your_redpanda_brokers>
 # example: export REDPANDA_BROKERS="localhost:19092"
+
+# export your home node directory
+# if not this code will use default home node directory ($HOME/.oraid)
+export HOME_PATH=<path_home_node>
+# example: export HOME_PATH="$PWD/.oraid"
 ```
 
 ## Oraichain Indexer

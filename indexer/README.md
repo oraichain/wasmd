@@ -50,7 +50,7 @@ You need to configure the `config.toml` file as follows to enable the indexer vi
 # 		- When "kv" is chosen "tx.height" and "tx.hash" will always be indexed.
 #   3) "psql" - the indexer services backed by PostgreSQL.
 # When "kv" or "psql" is chosen "tx.height" and "tx.hash" will always be indexed.
-indexer = "psql"
+indexer = "null"
 
 # The PostgreSQL connection configuration, the connection format:
 #   postgresql://<user>:<password>@<host>:<port>/<db>?<opts>
@@ -58,8 +58,9 @@ indexer = "psql"
 # sslmode=disable for local
 psql-conn = "postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
 ```
+We use custom psql indexer so we set `indexer=null` and still keep `psql-conn` in `app.toml` file.
 
-we also need to create a new file called `indexer.toml` like follows in .oraid/config dir: 
+We also need to create a new file called `indexer.toml` like follows in .oraid/config dir: 
 
 ```toml
 ###############################################################################
@@ -89,11 +90,11 @@ http-idle-timeout = "2m0s"
 metrics-address = "127.0.0.1:5051"
 ```
 
-Lastly, we need to export the Postgres connection as well as our chain id so that the streaming can initialize the postgres connection:
+Lastly, we need to export home node directory (if not we will use default home node directory `$HOME/.oraid`) so that the streaming can initialize the postgres connection:
 
 ```bash
-export PSQL_CONN="postgresql://admin:root@localhost:5432/node_indexer?sslmode=disable"
-export CHAIN_ID="Oraichain"
+export HOME_PATH=<path_to_home_node>
+# example: export HOME_PATH="$PWD/.oraid"
 ```
 
 
