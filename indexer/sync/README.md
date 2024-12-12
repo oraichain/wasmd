@@ -19,6 +19,11 @@ To sync data from specific blocks, please following these steps below:
 ```sh
 cd <path_to_WASMD_folder>/indexer/sync
 ```
+- Export your home node directory (if not we will use default home node directory $HOME/.oraid)
+```sh
+export HOME_PATH=<path_to_home_node>
+# example: export HOME_PATH=$PWD/.oraid
+```
 - Run follwing cmd:
 ```sh
 go run main.go --archive-node <archive_node_rpc> --start-block <start_sync_block> --end-block <end_sync_block>
