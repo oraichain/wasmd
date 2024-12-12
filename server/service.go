@@ -46,6 +46,10 @@ func StartIndexerService(
 		svrCtx.Logger.Warn(fmt.Sprintf("Couldn't find the %s.toml file with err: %v. The Indexer RPC won't run", err, config.IndexerFileName))
 		return func() {}, nil
 	}
+	if !indexerConfig.IService.Enable {
+		svrCtx.Logger.Info("Indexer RPC service is not enabled")
+		return func() {}, nil
+	}
 
 	r := http.NewServeMux()
 	eventSink, err := psql.NewEventSink(svrCtx.Config.TxIndex.PsqlConn, clientCtx.ChainID)

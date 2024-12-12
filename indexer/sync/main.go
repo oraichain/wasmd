@@ -20,7 +20,7 @@ func main() {
 	}()
 
 	// get archive node, start block, end block from cmd
-	archiveNode := flag.String("archive-node", "", "")
+	archiveNode := flag.String("archive-node", "https://rpc.orai.io", "")
 	startBlock := flag.Int64("start-block", 0, "")
 	endBlock := flag.Int64("end-block", 0, "")
 	flag.Parse()
@@ -44,8 +44,7 @@ func main() {
 		panic(err)
 	}
 
-	for i := *startBlock; i <= *endBlock; i++ {
-		curHeight := i
+	for curHeight := *startBlock; curHeight <= *endBlock; curHeight++ {
 		blockResult, err := rpcClient.BlockResults(context.Background(), &curHeight)
 		if err != nil {
 			fmt.Println(err)
