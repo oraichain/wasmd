@@ -115,9 +115,7 @@ func TestInterchainAccount(t *testing.T) {
 	err = testutil.WaitForBlocks(ctx, 50, orai, gaia)
 
 	require.NoError(t, err)
-	icaAdddress, err := helpers.QueryInterchainAccount(t, ctx, orai, user.FormattedAddress(), ibcConnection[0].ID)
+	icaAddress, err := helpers.QueryInterchainAccount(t, ctx, orai, user.FormattedAddress(), ibcConnection[0].ID)
 	require.NoError(t, err)
-	// Query interchain account address
-
-	fmt.Println(icaAdddress)
+	require.NotEmpty(t, icaAddress)
 }
