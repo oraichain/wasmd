@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	tmlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/types"
 
@@ -32,8 +31,6 @@ import (
 	"github.com/CosmWasm/wasmd/indexer/sink/psql"
 	indexertx "github.com/CosmWasm/wasmd/indexer/x/tx"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	cmtPsql "github.com/cometbft/cometbft/state/indexer/sink/psql"
-	"github.com/cometbft/cometbft/state/txindex"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	_ "github.com/lib/pq"
@@ -399,56 +396,6 @@ func TestIndexing(t *testing.T) {
 		require.Equal(t, len(txs.Txs), 4)
 		require.Equal(t, txs.TotalCount, 4)
 		require.Equal(t, txs.Txs[0].Hash.Bytes(), txHashBz)
-	})
-
-	t.Run("IndexerService", func(t *testing.T) {
-		indexer := cmtPsql.NewEventSinkFromDB(testDB(), chainID)
-
-		// event bus
-		eventBus := types.NewEventBus()
-		err := eventBus.Start()
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			if err := eventBus.Stop(); err != nil {
-				t.Error(err)
-			}
-		})
-
-		service := txindex.NewIndexerService(indexer.TxIndexer(), indexer.BlockIndexer(), eventBus, true)
-		service.SetLogger(tmlog.TestingLogger())
-		err = service.Start()
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			if err := service.Stop(); err != nil {
-				t.Error(err)
-			}
-		})
-
-		// publish block with txs
-		err = eventBus.PublishEventNewBlockEvents(types.EventDataNewBlockEvents{
-			Height: 1,
-			NumTxs: 2,
-		})
-		require.NoError(t, err)
-		txResult1 := &abci.TxResult{
-			Height: 1,
-			Index:  uint32(0),
-			Tx:     types.Tx("foo"),
-			Result: abci.ExecTxResult{Code: 0},
-		}
-		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult1})
-		require.NoError(t, err)
-		txResult2 := &abci.TxResult{
-			Height: 1,
-			Index:  uint32(1),
-			Tx:     types.Tx("bar"),
-			Result: abci.ExecTxResult{Code: 1},
-		}
-		err = eventBus.PublishEventTx(types.EventDataTx{TxResult: *txResult2})
-		require.NoError(t, err)
-
-		time.Sleep(100 * time.Millisecond)
-		require.True(t, service.IsRunning())
 	})
 }
 

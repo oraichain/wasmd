@@ -13,7 +13,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	cometbftindexer "github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	cosmostx "github.com/cosmos/cosmos-sdk/types/tx"
@@ -45,12 +44,11 @@ func TestUnMarshalEventsString(t *testing.T) {
 }
 
 func TestCreateHeightRangeWhereConditions(t *testing.T) {
-	heightInfo := kv.HeightInfo{}
-	heightInfo.SetHeight(2)
+	heightInfo := tx.HeightInfo{Height: 2}
 	testCases := []struct {
 		name         string
 		queryRanges  cometbftindexer.QueryRanges
-		heightInfo   kv.HeightInfo
+		heightInfo   tx.HeightInfo
 		expectedVals []interface{}
 		expectedSQL  string
 	}{
@@ -124,7 +122,7 @@ func TestCreateHeightRangeWhereConditions(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			heightRange := tc.queryRanges[types.TxHeightKey]
-			tc.heightInfo.SetheightRange(heightRange)
+			tc.heightInfo.HeightRange = heightRange
 			query, vals, _ := tx.CreateHeightRangeWhereConditions(tc.heightInfo)
 			require.Equal(t, tc.expectedVals, vals)
 
