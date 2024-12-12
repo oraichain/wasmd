@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	votingPeriod     = "10s"
-	maxDepositPeriod = "10s"
+	votingPeriod     = "15s"
+	maxDepositPeriod = "15s"
 
 	// Chain and relayer version inf
 	IBCRelayerImage     = "ghcr.io/cosmos/relayer"
@@ -42,8 +42,8 @@ var (
 		Bech32Prefix:        "orai",
 		Denom:               "orai",
 		CoinType:            "118",
-		GasPrices:           "0.005orai",
-		GasAdjustment:       1.5,
+		GasPrices:           "0.5orai",
+		GasAdjustment:       5,
 		TrustingPeriod:      "112h",
 		NoHostMount:         false,
 		ModifyGenesis:       modifyGenesisShortProposals(votingPeriod, maxDepositPeriod),
