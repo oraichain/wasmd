@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
@@ -22,4 +23,27 @@ func RegisterICA(t *testing.T,
 		"--version", "",
 		"--gas", "auto",
 	)
+}
+
+// QueryParam returns the state and details of a subspace param.
+func QueryInterchainAccount(t *testing.T,
+	ctx context.Context,
+	chain *cosmos.CosmosChain,
+	owner string,
+	connectionID string,
+) (string, error) {
+	tn := chain.GetNode()
+	stdout, _, err := tn.ExecQuery(
+		ctx,
+		"interchain-accounts",
+		"controller",
+		"interchain-account",
+		owner,
+		connectionID,
+	)
+	fmt.Printf("================== %s\n", stdout)
+	if err != nil {
+		return "", err
+	}
+	return string(stdout), nil
 }

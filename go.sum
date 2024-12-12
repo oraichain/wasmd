@@ -232,8 +232,6 @@ github.com/DataDog/datadog-go v4.8.3+incompatible h1:fNGaYSuObuQb5nzeTQqowRAd9bp
 github.com/DataDog/datadog-go v4.8.3+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
 github.com/DataDog/zstd v1.5.5/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
-github.com/GNaD13/ibc-go/v8 v8.0.0-20241212044132-09c86cbd9c6d h1:WLEfqxPNSoj3xQFx3WL9/f4NIPnuSiB/e5SdXr6qJkA=
-github.com/GNaD13/ibc-go/v8 v8.0.0-20241212044132-09c86cbd9c6d/go.mod h1:zh6x1osR0hNvEcFrC/lhGD08sMfQmr9wHVvZ/mRWMCs=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
@@ -946,6 +944,8 @@ github.com/oraichain/go-ethereum v0.0.0-20240919025041-184f816b9d65 h1:oumbt8qiU
 github.com/oraichain/go-ethereum v0.0.0-20240919025041-184f816b9d65/go.mod h1:/6CsT5Ceen2WPLI/oCA3xMcZ5sWMF/D46SjM/ayY0Oo=
 github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705 h1:K/PQ2Ca4UrrT3+zzwa9Ifjf+Q6Hkteh34pfqF1sTLJM=
 github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705/go.mod h1:NzIQLyMWg07HJkjnVLsvOJIJYmafN/KDpr3J8O2ABAk=
+github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705 h1:++dP96551V3FxJGaCCHFrHESz8WH6MnJlhDNKUNVwv4=
+github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705/go.mod h1:zh6x1osR0hNvEcFrC/lhGD08sMfQmr9wHVvZ/mRWMCs=
 github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597 h1:vFCKH25Q+BVNWRImFym0rYzno6BW8+l9GplszOdZ9no=
 github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597/go.mod h1:JAaOF+0j23OoyEgd6uhE3cgNDpZcfVZx4/DBbnMjUsc=
 github.com/oraichain/juno/x/globalfee v0.0.0-20240925043856-fe3d1d8b9ad3 h1:/Um//l2b6eGaAcVRwkzv2U7xTAqlYfiyaqG71bUyyac=

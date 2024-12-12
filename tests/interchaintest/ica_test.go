@@ -79,7 +79,7 @@ func TestInterchainAccount(t *testing.T) {
 		TestName:         t.Name(),
 		Client:           client,
 		NetworkID:        network,
-		SkipPathCreation: true,
+		SkipPathCreation: false,
 
 		// This can be used to write to the block database which will index all block data e.g. txs, msgs, events, etc.
 		// BlockDatabaseFile: interchaintest.DefaultBlockDatabaseFilepath(),
@@ -90,22 +90,16 @@ func TestInterchainAccount(t *testing.T) {
 		_ = ic.Close()
 	})
 
-	// Generate new path
-	err = r.GeneratePath(ctx, eRep, orai.Config().ChainID, gaia.Config().ChainID, pathOraiGaia)
-	require.NoError(t, err)
-	// Create client
-	err = r.CreateClients(ctx, eRep, pathOraiGaia, ibc.DefaultClientOpts())
-	require.NoError(t, err)
-
-	err = testutil.WaitForBlocks(ctx, 5, orai, gaia)
-	require.NoError(t, err)
-
-	// Create connection
-	err = r.CreateConnections(ctx, eRep, pathOraiGaia)
-	require.NoError(t, err)
-
-	err = testutil.WaitForBlocks(ctx, 5, orai, gaia)
-	require.NoError(t, err)
+	// Start the relayer
+	require.NoError(t, r.StartRelayer(ctx, eRep, pathOraiGaia))
+	t.Cleanup(
+		func() {
+			err := r.StopRelayer(ctx, eRep)
+			if err != nil {
+				panic(fmt.Errorf("an error occurred while stopping the relayer: %s", err))
+			}
+		},
+	)
 
 	// Fund testing user
 	users := interchaintest.GetAndFundTestUsers(t, ctx, t.Name(), genesisWalletAmount, orai)
@@ -115,8 +109,15 @@ func TestInterchainAccount(t *testing.T) {
 	ibcConnection, err := r.GetConnections(ctx, eRep, orai.Config().ChainID)
 	require.NoError(t, err)
 
-	res, err := helpers.RegisterICA(t, ctx, orai, user.KeyName(), ibcConnection[0].ID)
+	// register ICA
+	_, err = helpers.RegisterICA(t, ctx, orai, user.KeyName(), ibcConnection[0].ID)
 	require.NoError(t, err)
+	err = testutil.WaitForBlocks(ctx, 50, orai, gaia)
 
-	fmt.Println(res)
+	require.NoError(t, err)
+	icaAdddress, err := helpers.QueryInterchainAccount(t, ctx, orai, user.FormattedAddress(), ibcConnection[0].ID)
+	require.NoError(t, err)
+	// Query interchain account address
+
+	fmt.Println(icaAdddress)
 }
