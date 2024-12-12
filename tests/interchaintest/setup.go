@@ -20,7 +20,7 @@ const (
 	// Chain and relayer version inf
 	IBCRelayerImage     = "ghcr.io/cosmos/relayer"
 	IBCRelayerVersion   = "latest"
-	GaiaImageVersion    = "v16.0.0"
+	GaiaImageVersion    = "v21.0.0"
 	OsmosisImageVersion = "v22.0.1"
 )
 

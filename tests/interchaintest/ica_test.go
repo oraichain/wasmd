@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
@@ -40,7 +41,7 @@ func TestInterchainAccount(t *testing.T) {
 			Name:    "gaia",
 			Version: GaiaImageVersion,
 			ChainConfig: ibc.ChainConfig{
-				GasPrices: "0.0uatom",
+				GasPrices: "1uatom",
 			},
 			NumValidators: &numVals,
 			NumFullNodes:  &numFullNodes,
@@ -102,20 +103,41 @@ func TestInterchainAccount(t *testing.T) {
 	)
 
 	// Fund testing user
-	users := interchaintest.GetAndFundTestUsers(t, ctx, t.Name(), genesisWalletAmount, orai)
-	user := users[0]
+	users := interchaintest.GetAndFundTestUsers(t, ctx, t.Name(), genesisWalletAmount, orai, gaia)
+	// Get our Bech32 encoded user addresses
+	oraiUser, gaiaUser := users[0], users[1]
+
+	relayerWalletOrai, found := r.GetWallet(orai.Config().ChainID)
+	require.True(t, found)
+
+	err = orai.SendFunds(ctx, oraiUser.KeyName(), ibc.WalletAmount{
+		Address: relayerWalletOrai.FormattedAddress(),
+		Amount:  math.NewInt(100_000_000),
+		Denom:   orai.Config().Denom,
+	})
+	require.NoError(t, err)
+
+	relayerWalletGaia, found := r.GetWallet(gaia.Config().ChainID)
+	require.True(t, found)
+
+	err = gaia.SendFunds(ctx, gaiaUser.KeyName(), ibc.WalletAmount{
+		Address: relayerWalletGaia.FormattedAddress(),
+		Amount:  math.NewInt(100_000_000),
+		Denom:   gaia.Config().Denom,
+	})
+	require.NoError(t, err)
 
 	// Get ibc connection
 	ibcConnection, err := r.GetConnections(ctx, eRep, orai.Config().ChainID)
 	require.NoError(t, err)
 
 	// register ICA
-	_, err = helpers.RegisterICA(t, ctx, orai, user.KeyName(), ibcConnection[0].ID)
+	_, err = helpers.RegisterICA(t, ctx, orai, oraiUser.KeyName(), ibcConnection[0].ID)
 	require.NoError(t, err)
-	err = testutil.WaitForBlocks(ctx, 50, orai, gaia)
+	err = testutil.WaitForBlocks(ctx, 10, orai, gaia)
 
 	require.NoError(t, err)
-	icaAddress, err := helpers.QueryInterchainAccount(t, ctx, orai, user.FormattedAddress(), ibcConnection[0].ID)
+	icaAddress, err := helpers.QueryInterchainAccount(t, ctx, orai, oraiUser.FormattedAddress(), ibcConnection[0].ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, icaAddress)
 }

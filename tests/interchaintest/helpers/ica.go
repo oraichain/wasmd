@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
@@ -41,7 +40,6 @@ func QueryInterchainAccount(t *testing.T,
 		owner,
 		connectionID,
 	)
-	fmt.Printf("================== %s\n", stdout)
 	if err != nil {
 		return "", err
 	}
