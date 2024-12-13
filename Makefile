@@ -158,6 +158,11 @@ test-system: install
 ictest-basic:
 	cd tests/interchaintest && go test -race -v -run TestStartOrai .
 
+
+ictest-interchain-account:
+	cd tests/interchaintest && go test -race -v -run TestInterchainAccount .
+
+
 # Executes token factory param change tests via interchaintest
 ictest-tf-param-change:
 	cd tests/interchaintest && go test -race -v -run TestTokenfactoryParamChange .
@@ -166,10 +171,9 @@ ictest-tf-param-change:
 ictest-tf-set-metadata:
 	cd tests/interchaintest && go test -race -v -run TestTokenfactorySetMetadata .
 
-# Executes basic chain tests via interchaintest
+# Executes ibc hooks tests via interchaintest
 ictest-ibchooks:
 	cd tests/interchaintest && go test -race -v -run TestIbcHooks .
-
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
