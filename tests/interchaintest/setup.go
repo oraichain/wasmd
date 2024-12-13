@@ -20,7 +20,7 @@ const (
 	// Chain and relayer version inf
 	IBCRelayerImage     = "ghcr.io/cosmos/relayer"
 	IBCRelayerVersion   = "latest"
-	GaiaImageVersion    = "v14.1.0"
+	GaiaImageVersion    = "v21.0.0"
 	OsmosisImageVersion = "v22.0.1"
 )
 
@@ -42,8 +42,8 @@ var (
 		Bech32Prefix:        "orai",
 		Denom:               "orai",
 		CoinType:            "118",
-		GasPrices:           "0.5orai",
-		GasAdjustment:       5,
+		GasPrices:           "0.005orai",
+		GasAdjustment:       10,
 		TrustingPeriod:      "112h",
 		NoHostMount:         false,
 		ModifyGenesis:       modifyGenesisShortProposals(votingPeriod, maxDepositPeriod),
@@ -53,7 +53,7 @@ var (
 	genesisWalletAmount = math.NewInt(100_000_000_000)
 	amountToSend        = math.NewInt(1_000_000_000)
 
-	pathOraiGaia = "orai-gaia"
+	pathOraiGaia = "IbcPath"
 )
 
 // oraiEncoding registers the Orai specific module codecs so that the associated types and msgs
