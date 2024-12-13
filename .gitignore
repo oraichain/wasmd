@@ -6,8 +6,10 @@
 *.swm
 *.swn
 *.txt
+*.csv
 .vscode
 .idea
+*.venv
 
 # Build
 vendor
@@ -52,3 +54,4 @@ dependency-graph.png
 # debug
 debug/
 data/
+streaming/streaming

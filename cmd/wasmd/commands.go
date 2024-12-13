@@ -16,6 +16,7 @@ import (
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 
 	"github.com/CosmWasm/wasmd/cmd"
+	indexerserver "github.com/CosmWasm/wasmd/server"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/pruning"
@@ -120,7 +121,7 @@ func initRootCmd(
 	wasmcli.ExtendUnsafeResetAllCmd(rootCmd)
 
 	// ethermintserver adds additional flags to start the JSON-RPC server for evm support
-	ethermintserver.AddCommands(rootCmd, app.DefaultNodeHome, newApp, appExport, addModuleInitFlags)
+	ethermintserver.AddCommands(rootCmd, app.DefaultNodeHome, newApp, appExport, addModuleInitFlags, ethermintserver.StartCmdOptions{PostSetup: indexerserver.StartIndexerService})
 
 	// add keybase, auxiliary RPC, query, genesis, and tx child commands
 	rootCmd.AddCommand(

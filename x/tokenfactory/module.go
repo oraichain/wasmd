@@ -173,13 +173,13 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the tokenfactory module.
-func (am AppModule) BeginBlock(_ sdk.Context) error {
+func (am AppModule) BeginBlock(_ context.Context) error {
 	return nil
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the tokenfactory module. It
 // returns no validator updates.
-func (am AppModule) EndBlock(_ sdk.Context) ([]abci.ValidatorUpdate, error) {
+func (am AppModule) EndBlock(_ context.Context) ([]abci.ValidatorUpdate, error) {
 	return nil, nil
 }
 

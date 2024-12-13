@@ -357,7 +357,7 @@ func NewWasmApp(
 	encodingConfig := simappparams.EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
 		Codec:             appCodec,
-		TxConfig:          authtx.NewTxConfig(appCodec, authtx.DefaultSignModes),
+		TxConfig:          txConfig,
 		Amino:             legacyAmino,
 	}
 
@@ -398,7 +398,7 @@ func NewWasmApp(
 
 	// init optimistic execution
 	// uncomment the below line to enable optimistic execution
-	// baseAppOptions = append(baseAppOptions, baseapp.SetOptimisticExecution())
+	baseAppOptions = append(baseAppOptions, baseapp.SetOptimisticExecution())
 	bApp := baseapp.NewBaseApp(appName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
