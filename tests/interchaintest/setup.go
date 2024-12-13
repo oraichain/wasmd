@@ -1,16 +1,24 @@
 package interchaintest
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+	"testing"
 
 	"cosmossdk.io/math"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	"github.com/docker/docker/client"
 	"github.com/icza/dyno"
+	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos/wasm"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
+	"github.com/strangelove-ventures/interchaintest/v8/relayer"
+	"github.com/strangelove-ventures/interchaintest/v8/testreporter"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 )
 
 const (
@@ -108,4 +116,69 @@ func modifyGenesisShortProposals(
 		}
 		return out, nil
 	}
+}
+
+// CreateChains create testing chain. Currently we instantiate 2 chain, first is Orai, seconds is gaia
+func CreateChains(t *testing.T, numVals, numFullNodes int) []ibc.Chain {
+	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
+		{
+			Name:          "orai",
+			ChainConfig:   oraiConfig,
+			NumValidators: &numVals,
+			NumFullNodes:  &numFullNodes,
+		},
+		{
+			Name:          "gaia",
+			Version:       GaiaImageVersion,
+			NumValidators: &numVals,
+			NumFullNodes:  &numFullNodes,
+		},
+	})
+
+	// Get chains from the chain factory
+	chains, err := cf.Chains(t.Name())
+	require.NoError(t, err)
+	return chains
+}
+
+func BuildInitialChain(t *testing.T, chains []ibc.Chain) (*interchaintest.Interchain, ibc.Relayer, context.Context, *client.Client, string) {
+	// Create a new Interchain object which describes the chains, relayers, and IBC connections we want to use
+	require.Equal(t, len(chains), 2) // we only initial 2 chain for now
+	ic := interchaintest.NewInterchain()
+
+	for _, chain := range chains {
+		ic = ic.AddChain(chain)
+	}
+
+	rep := testreporter.NewNopReporter()
+	eRep := rep.RelayerExecReporter(t)
+
+	// setupp relayer
+	ctx := context.Background()
+	client, network := interchaintest.DockerSetup(t)
+	r := interchaintest.NewBuiltinRelayerFactory(
+		ibc.CosmosRly,
+		zaptest.NewLogger(t),
+		relayer.CustomDockerImage(IBCRelayerImage, IBCRelayerVersion, "100:1000"),
+	).Build(t, client, network)
+
+	ic.AddRelayer(r, "rly").
+		AddLink(interchaintest.InterchainLink{
+			Chain1:  chains[0],
+			Chain2:  chains[1],
+			Relayer: r,
+			Path:    pathOraiGaia,
+		})
+
+	err := ic.Build(ctx, eRep, interchaintest.InterchainBuildOptions{
+		TestName:         t.Name(),
+		Client:           client,
+		NetworkID:        network,
+		SkipPathCreation: false,
+		// This can be used to write to the block database which will index all block data e.g. txs, msgs, events, etc.
+		// BlockDatabaseFile: interchaintest.DefaultBlockDatabaseFilepath(),
+	})
+	require.NoError(t, err)
+
+	return ic, r, ctx, client, network
 }
