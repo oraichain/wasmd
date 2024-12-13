@@ -99,14 +99,14 @@ func ProposalMsgs(bk BankKeeper, wasmKeeper WasmKeeper) []simtypes.WeightedPropo
 				DefaultSimulationExecuteContractSelector,
 			),
 		),
-		simulation.NewWeightedProposalMsg(
-			WeightUnsetGaslessContractsProposal,
-			params.DefaultWeightUnsetGaslessContractsProposal,
-			SimulateUnsetGaslessContractProposal(
-				wasmKeeper,
-				DefaultSimulationExecuteContractSelector,
-			),
-		),
+		// simulation.NewWeightedProposalMsg(
+		// 	WeightUnsetGaslessContractsProposal,
+		// 	params.DefaultWeightUnsetGaslessContractsProposal,
+		// 	SimulateUnsetGaslessContractProposal(
+		// 		wasmKeeper,
+		// 		DefaultSimulationExecuteContractSelector,
+		// 	),
+		// ),
 		simulation.NewWeightedProposalMsg(
 			WeightUpdateInstantiateConfigProposal,
 			params.DefaultWeightUpdateInstantiateConfigProposal,
@@ -344,16 +344,17 @@ func SimulateUnpinContractProposal(wasmKeeper WasmKeeper, codeSelector CodeIDSel
 // Simulate set gasless contract proposal
 func SimulateSetGaslessContractProposal(wasmKeeper WasmKeeper, contractSelector MsgExecuteContractSelector) simtypes.MsgSimulatorFn {
 	return func(r *rand.Rand, ctx sdk.Context, accs []simtypes.Account) sdk.Msg {
+		authority := wasmKeeper.GetAuthority()
+
 		contractAddr := contractSelector(ctx, wasmKeeper)
 		if contractAddr.Empty() {
 			return nil
 		}
 
-		return types.NewSetGaslessContractsProposal(
-			simtypes.RandStringOfLength(r, 10),
-			simtypes.RandStringOfLength(r, 10),
-			[]string{contractAddr.String()},
-		)
+		return &types.MsgSetGaslessContracts{
+			Authority: authority,
+			Contracts: []string{contractAddr.String()},
+		}
 	}
 }
 
