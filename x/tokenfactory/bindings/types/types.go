@@ -17,6 +17,11 @@ type Metadata struct {
 	// Symbol is the token symbol usually shown on exchanges (eg: ATOM).
 	// This can be the same as the display.
 	Symbol string `json:"symbol"`
+	// URI to a document (on or off-chain) that contains additional information. Optional.
+	URI string `protobuf:"bytes,7,opt,name=uri,proto3" json:"uri,omitempty"`
+	// URIHash is a sha256 hash of a document pointed by URI. It's used to verify that
+	// the document didn't change. Optional.
+	URIHash string `protobuf:"bytes,8,opt,name=uri_hash,json=uriHash,proto3" json:"uri_hash,omitempty"`
 }
 
 type DenomUnit struct {
