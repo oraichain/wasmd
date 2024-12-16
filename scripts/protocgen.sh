@@ -20,8 +20,8 @@ done
 
 protoc_install_proto_gen_doc
 
-echo "Generating proto docs"
-buf generate --template buf.gen.doc.yml
+#echo "Generating proto docs"
+#buf generate --template buf.gen.doc.yml
 
 cd ..
 

@@ -508,3 +508,28 @@ func (m msgServer) SetGaslessContracts(ctx context.Context, msg *types.MsgSetGas
 
 	return &types.MsgSetGaslessContractsResponse{}, nil
 }
+
+func (m msgServer) UnsetGaslessContracts(goCtx context.Context, req *types.MsgUnsetGaslessContracts) (*types.MsgUnsetGaslessContractsResponse, error) {
+	if err := req.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	authority := m.keeper.GetAuthority()
+	if authority != req.Authority {
+		return nil, errorsmod.Wrapf(types.ErrInvalid, "invalid authority; expected %s, got %s", authority, req.Authority)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	for _, v := range req.Contracts {
+		contractAddr, err := sdk.AccAddressFromBech32(v)
+		if err != nil {
+			return nil, errorsmod.Wrap(err, "contract")
+		}
+		if err := m.keeper.unsetGasless(ctx, contractAddr); err != nil {
+			return nil, errorsmod.Wrapf(err, "contract address: %s", v)
+		}
+	}
+
+	return &types.MsgUnsetGaslessContractsResponse{}, nil
+}
