@@ -33,7 +33,7 @@ oraid tx bank send $user_address $contract_address 100000000orai $ARGS > $HIDE_L
 # create denom
 # sleep 1s to not miss match account sequence
 sleep 2
-oraid tx wasm execute $contract_address $CREATE_DENOM_MSG $ARGS > $HIDE_LOGS
+oraid tx wasm execute $contract_address $CREATE_DENOM_MSG --amount 100000000orai $ARGS > $HIDE_LOGS
 
 # query created denom
 # sleep 1s for create denom tx already in block
