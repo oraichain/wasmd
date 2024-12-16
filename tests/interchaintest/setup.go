@@ -141,6 +141,44 @@ func CreateChains(t *testing.T, numVals, numFullNodes int) []ibc.Chain {
 	return chains
 }
 
+// CreateChain create only one testing chain, suitable for non-ibc testing logic -> faster
+func CreateChain(t *testing.T, numVals, numFullNodes int) []ibc.Chain {
+	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
+		{
+			Name:          "orai",
+			ChainConfig:   oraiConfig,
+			NumValidators: &numVals,
+			NumFullNodes:  &numFullNodes,
+		},
+	})
+
+	// Get chains from the chain factory
+	chains, err := cf.Chains(t.Name())
+	require.NoError(t, err)
+	return chains
+}
+
+func BuildInitialChainNoIbc(t *testing.T, chain ibc.Chain) (*interchaintest.Interchain, context.Context) {
+	// Create a new Interchain object which describes the chains, relayers, and IBC connections we want to use
+	ic := interchaintest.NewInterchain()
+	ic = ic.AddChain(chain)
+	rep := testreporter.NewNopReporter()
+	eRep := rep.RelayerExecReporter(t)
+	ctx := context.Background()
+	client, network := interchaintest.DockerSetup(t)
+	err := ic.Build(ctx, eRep, interchaintest.InterchainBuildOptions{
+		TestName:         t.Name(),
+		Client:           client,
+		NetworkID:        network,
+		SkipPathCreation: false,
+		// This can be used to write to the block database which will index all block data e.g. txs, msgs, events, etc.
+		// BlockDatabaseFile: interchaintest.DefaultBlockDatabaseFilepath(),
+	})
+	require.NoError(t, err)
+
+	return ic, ctx
+}
+
 func BuildInitialChain(t *testing.T, chains []ibc.Chain) (*interchaintest.Interchain, ibc.Relayer, context.Context, *client.Client, string) {
 	// Create a new Interchain object which describes the chains, relayers, and IBC connections we want to use
 	require.Equal(t, len(chains), 2) // we only initial 2 chain for now

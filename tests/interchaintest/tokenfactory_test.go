@@ -61,15 +61,14 @@ func TestTokenfactorySetMetadata(t *testing.T) {
 	}
 
 	t.Parallel()
-	chains := CreateChains(t, 1, 1)
+	chains := CreateChain(t, 1, 1)
 	orai := chains[0].(*cosmos.CosmosChain)
-	ic, _, ctx, _, _ := BuildInitialChain(t, chains)
+	ic, ctx := BuildInitialChainNoIbc(t, orai)
 	t.Cleanup(func() {
 		_ = ic.Close()
 	})
 	users := CreateTestingUser(t, ctx, t.Name(), genesisWalletAmount, chains...)
 	oraiUser := users[0]
-	_ = oraiUser
 
 	// create new token
 	expectedDenom, _ := helpers.TxTokenFactoryCreateDenom(t, ctx, orai, oraiUser, "usd", 100_000_000)
@@ -106,6 +105,15 @@ func TestTokenfactorySetMetadata(t *testing.T) {
 		Base: expectedDenom,
 	}
 
+	// case 1: unauthorized
+	// fixture
+	unauthorizedWallet := CreateTestingUser(t, ctx, "unauthorized", genesisWalletAmount, chains...)
+	unauthorizedUser := unauthorizedWallet[0]
+	// test
+	_, err = helpers.TxTokenFactoryModifyMetadata(t, ctx, orai, unauthorizedUser, expectedDenom, ticker, desc, uint64(exponent), 1000000)
+	require.Error(t, err)
+
+	// case 2: happy case
 	_, err = helpers.TxTokenFactoryModifyMetadata(t, ctx, orai, oraiUser, expectedDenom, ticker, desc, uint64(exponent), 1000000)
 	require.NoError(t, err)
 
