@@ -21,28 +21,36 @@ contract_address=$(oraid query wasm list-contract-by-code $code_id --output json
 echo $contract_address
 
 subdenom="usdo"
-metadata='{"description":"foobar","name":"'"$subdenom"'","symbol":"'"$subdenom"'","base":"0","denom_units":{}}'
-CREATE_DENOM_MSG='{"create_denom":{"subdenom":"'"$subdenom"'"}}'
+metadata='{"description":"foobar","name":"'"$subdenom"'","symbol":"'"$subdenom"'","base":"'"factory/$contract_address/$subdenom"'","display":"'"$subdenom"'","denom_units":[{"denom":"'"factory/$contract_address/$subdenom"'","exponent":0,"aliases":["'"$subdenom"'"]},{"denom":"'"$subdenom"'","exponent":6,"aliases":["'"$subdenom"'"]}],"uri":"foobar","uri_hash":"foobar"}'
+CREATE_DENOM_MSG='{"create_denom":{"subdenom":"'"$subdenom"'","metadata":'$metadata'}}'
 QUERY_DENOM_MSG='{"get_denom":{"creator_address":"'"$user_address"'","subdenom":"'"$subdenom"'"}}'
 
 echo "create denom msg: $CREATE_DENOM_MSG"
 echo "query denom msg: $QUERY_DENOM_MSG"
 
 # send to the contract some funds to create denom
-oraid tx bank send $user_address $contract_address 100000000orai $ARGS > $HIDE_LOGS
+oraid tx bank send $user_address $contract_address 100000000orai $ARGS >$HIDE_LOGS
 
 # create denom
 # sleep 1s to not miss match account sequence
 sleep 2
-oraid tx wasm execute $contract_address $CREATE_DENOM_MSG $ARGS > $HIDE_LOGS
+oraid tx wasm execute $contract_address $CREATE_DENOM_MSG --amount 100000000orai $ARGS >$HIDE_LOGS
 
-# query created denom
-# sleep 1s for create denom tx already in block
+# query created denom uri and uri_hash
+# sleep 2s for create denom tx already in block
+created_denom="factory/$contract_address/$subdenom"
 sleep 2
-created_denom=$(oraid query wasm contract-state smart $contract_address $QUERY_DENOM_MSG --output json | jq '.data.denom' | tr -d '"')
-
-if ! [[ $created_denom =~ "factory/$user_address/$subdenom" ]] ; then
-   echo "The created denom does not match with our expected denom"; exit 1
+uri=$(oraid query bank denom-metadata $created_denom --output json | jq '.metadata.uri' | tr -d '"')
+if ! [[ $uri =~ "foobar" ]]; then
+    echo "Tokenfactory set metadata binding tests failed! The created uri does not match with our expected uri"
+    exit 1
 fi
 
-echo "Tokenfactory cw binding tests passed!"
+sleep 2
+uri_hash=$(oraid query bank denom-metadata $created_denom --output json | jq '.metadata.uri_hash' | tr -d '"')
+if ! [[ $uri_hash =~ "foobar" ]]; then
+    echo "Tokenfactory set metadata binding tests failed! The created uri hash does not match with our expected uri hash"
+    exit 1
+fi
+
+echo "Tokenfactory set metadata binding tests passed!"
