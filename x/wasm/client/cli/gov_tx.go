@@ -53,6 +53,8 @@ func SubmitProposalCmd() *cobra.Command {
 		ProposalAddCodeUploadParamsAddresses(),
 		ProposalRemoveCodeUploadParamsAddresses(),
 		ProposalStoreAndMigrateContractCmd(),
+		ProposalSetGaslessContractsCmd(),
+		ProposalUnsetGaslessContractsCmd(),
 	)
 	return cmd
 }
@@ -719,10 +721,17 @@ func ProposalSetGaslessContractsCmd() *cobra.Command {
 				return err
 			}
 
-			msg := types.SetGasLessContractsProposal{
-				Title:             proposalTitle,
-				Description:       summary,
-				ContractAddresses: args,
+			authority, err := cmd.Flags().GetString(flagAuthority)
+			if err != nil {
+				return fmt.Errorf("authority: %s", err)
+			}
+
+			if len(authority) == 0 {
+				return errors.New("authority address is required")
+			}
+
+			msg := types.MsgSetGaslessContracts{
+				Contracts: args,
 			}
 			if err = msg.ValidateBasic(); err != nil {
 				return err
@@ -753,10 +762,17 @@ func ProposalUnsetGaslessContractsCmd() *cobra.Command {
 				return err
 			}
 
-			msg := types.UnsetGasLessContractsProposal{
-				Title:             proposalTitle,
-				Description:       summary,
-				ContractAddresses: args,
+			authority, err := cmd.Flags().GetString(flagAuthority)
+			if err != nil {
+				return fmt.Errorf("authority: %s", err)
+			}
+
+			if len(authority) == 0 {
+				return errors.New("authority address is required")
+			}
+
+			msg := types.MsgUnsetGaslessContracts{
+				Contracts: args,
 			}
 			if err = msg.ValidateBasic(); err != nil {
 				return err
