@@ -168,6 +168,10 @@ ictest-interchain-account:
 ictest-tf-param-change:
 	cd tests/interchaintest && go test -race -v -run TestTokenfactoryParamChange .
 
+# Executes token factory set metadata tests via interchaintest
+ictest-tf-set-metadata:
+	cd tests/interchaintest && go test -race -v -run TestTokenfactorySetMetadata .
+
 # Executes ibc hooks tests via interchaintest
 ictest-ibchooks:
 	cd tests/interchaintest && go test -race -v -run TestIbcHooks .
