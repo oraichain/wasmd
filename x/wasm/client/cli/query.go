@@ -703,7 +703,7 @@ func GetCmdQueryGasLessContracts() *cobra.Command {
 		SilenceUsage: true,
 	}
 	flags.AddQueryFlagsToCmd(cmd)
-	flags.AddPaginationFlagsToCmd(cmd, "all balances")
+	flags.AddPaginationFlagsToCmd(cmd, "gas less contracts")
 	return cmd
 }
 
