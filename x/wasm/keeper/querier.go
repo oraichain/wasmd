@@ -359,7 +359,7 @@ func (q GrpcQuerier) GaslessContracts(c context.Context, req *types.QueryGasless
 	prefixStore := prefix.NewStore(runtime.KVStoreAdapter(q.storeService.OpenKVStore(ctx)), types.GaslessContractIndexPrefix)
 	pageRes, err := query.FilteredPaginate(prefixStore, req.Pagination, func(key []byte, _ []byte, accumulate bool) (bool, error) {
 		if accumulate {
-			r = append(r, string(key))
+			r = append(r, sdk.AccAddress(key).String())
 		}
 		return true, nil
 	})

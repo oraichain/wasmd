@@ -25,6 +25,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
@@ -1144,6 +1146,92 @@ func TestQueryBuildAddress(t *testing.T) {
 			require.NoError(t, gotErr)
 			require.NotNil(t, got)
 			assert.Equal(t, spec.exp.Address, got.Address)
+		})
+	}
+}
+
+func TestQueryGasLessContract(t *testing.T) {
+	ctx, keepers := CreateTestInput(t, false, AvailableCapabilities)
+	wasmKeeper := keepers.WasmKeeper
+	govKeeper := keepers.GovKeeper
+
+	myAddress := DeterministicAccountAddress(t, 1)
+
+	wasmKeeper.SetParams(ctx, types.Params{
+		CodeUploadAccess:             types.AllowEverybody,
+		InstantiateDefaultPermission: types.AccessTypeEverybody,
+	})
+
+	wasmCode, err := os.ReadFile("./testdata/hackatom.wasm")
+	require.NoError(t, err)
+
+	codeInfo := types.CodeInfoFixture(types.WithSHA256CodeHash(wasmCode), func(codeInfo *types.CodeInfo) {
+		codeInfo.Creator = sdk.AccAddress(myAddress).String()
+	})
+	err = wasmKeeper.importCode(ctx, 1, codeInfo, wasmCode)
+	require.NoError(t, err)
+
+	// instantiate contract
+	_, bob := keyPubAddr()
+	initMsg := HackatomExampleInitMsg{
+		Verifier:    myAddress,
+		Beneficiary: bob,
+	}
+	initMsgBz, err := json.Marshal(initMsg)
+	require.NoError(t, err)
+	contractAddress, _, err := wasmKeeper.instantiate(ctx, 1, myAddress, myAddress, initMsgBz, "labels", nil, wasmKeeper.ClassicAddressGenerator(), DefaultAuthorizationPolicy{})
+	require.NoError(t, err)
+
+	// Test SetGasLess
+	// store proposal
+	em := sdk.NewEventManager()
+	msgSetGasLessProposal := &types.MsgSetGaslessContracts{
+		Authority: wasmKeeper.GetAuthority(),
+		Contracts: []string{contractAddress.String()},
+	}
+	storedProposal, err := govKeeper.SubmitProposal(ctx, []sdk.Msg{msgSetGasLessProposal}, "metadata", "title", "sumary", myAddress, true)
+	require.NoError(t, err)
+
+	// execute proposal
+	msgs, err := sdktx.GetMsgs(storedProposal.Messages, "sdk.MsgProposal")
+	require.NoError(t, err)
+
+	handler := govKeeper.Router().Handler(msgs[0])
+	result, err := handler(ctx.WithEventManager(em), msgs[0])
+	require.NoError(t, err)
+	require.NotEmpty(t, result)
+
+	// check store
+	isGasLess := wasmKeeper.IsGasless(ctx, contractAddress)
+	require.True(t, isGasLess)
+
+	specs := map[string]struct {
+		req    *types.QueryGaslessContractsRequest
+		res    []string
+		expErr error
+	}{
+		"valid": {
+			req: &types.QueryGaslessContractsRequest{
+				Pagination: &query.PageRequest{},
+			},
+			res:    []string{contractAddress.String()},
+			expErr: nil,
+		},
+	}
+
+	// query gas less contract
+	querier := Querier(wasmKeeper)
+	for msg, spec := range specs {
+		t.Run(msg, func(t *testing.T) {
+			got, gotErr := querier.GaslessContracts(ctx, spec.req)
+			if spec.expErr != nil {
+				require.Error(t, gotErr)
+				assert.ErrorContains(t, gotErr, spec.expErr.Error())
+				return
+			}
+			require.NoError(t, gotErr)
+			require.NotNil(t, got)
+			assert.Equal(t, spec.res, got.ContractAddresses)
 		})
 	}
 }
