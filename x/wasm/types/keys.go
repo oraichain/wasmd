@@ -148,7 +148,7 @@ func GetPinnedCodeIndexPrefix(codeID uint64) []byte {
 
 // GetGaslessContractIndexPrefix returns the key prefix for a gasless contract into the wasmvm cache
 func GetGaslessContractIndexPrefix(contractAddr sdk.AccAddress) []byte {
-	prefixLen := len(PinnedCodeIndexPrefix)
+	prefixLen := len(GaslessContractIndexPrefix)
 	contractAddrLen := len(contractAddr)
 	r := make([]byte, prefixLen+contractAddrLen)
 	copy(r[0:], GaslessContractIndexPrefix)
