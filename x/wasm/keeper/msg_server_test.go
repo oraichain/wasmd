@@ -94,6 +94,14 @@ func TestSetGaslessAndUnsetGasLessProposal(t *testing.T) {
 	contractAddress, _, err := wasmKeeper.instantiate(ctx, 1, myAddress, myAddress, initMsgBz, "labels", nil, wasmKeeper.ClassicAddressGenerator(), DefaultAuthorizationPolicy{})
 	require.NoError(t, err)
 
+	// Test unauthorized case
+	unauthorizedMsgSetGasLessProposal := &types.MsgSetGaslessContracts{
+		Authority: myAddress.String(),
+		Contracts: []string{contractAddress.String()},
+	}
+	_, err = govKeeper.SubmitProposal(ctx, []sdk.Msg{unauthorizedMsgSetGasLessProposal}, "metadata", "title", "sumary", myAddress, true)
+	require.Error(t, err)
+
 	// Test SetGasLess
 	// store proposal
 	em := sdk.NewEventManager()
