@@ -1,14 +1,16 @@
-package app
+package v050_test
 
 import (
 	"testing"
 
+	wasmApp "github.com/CosmWasm/wasmd/app"
+	v050 "github.com/CosmWasm/wasmd/app/upgrades/v050"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUpgradeMintParams(t *testing.T) {
-	app := Setup(t)
+	app := wasmApp.Setup(t)
 	ctx := app.GetBaseApp().NewContext(false)
 	mintSpace, _ := app.ParamsKeeper.GetSubspace(minttypes.ModuleName)
 
@@ -43,7 +45,7 @@ func TestUpgradeMintParams(t *testing.T) {
 		t.Run(tc.name, func(st *testing.T) {
 			tc.melleate()
 
-			err := app.upgradeMintParams(ctx)
+			err := v050.UpgradeMintParams(ctx, &app.ParamsKeeper)
 
 			if tc.expPass {
 				require.NoError(t, err)
