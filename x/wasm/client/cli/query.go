@@ -43,6 +43,7 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryParams(),
 		GetCmdBuildAddress(),
 		GetCmdListContractsByCreator(),
+		GetCmdQueryGasLessContracts(),
 	)
 	return queryCmd
 }
@@ -669,6 +670,40 @@ func GetCmdQueryParams() *cobra.Command {
 
 	flags.AddQueryFlagsToCmd(cmd)
 
+	return cmd
+}
+
+func GetCmdQueryGasLessContracts() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "gas-less-contracts",
+		Short: "Query the gas less contracts",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.GaslessContracts(
+				context.Background(),
+				&types.QueryGaslessContractsRequest{
+					Pagination: pageReq,
+				},
+			)
+			if err != nil {
+				return err
+			}
+			return clientCtx.PrintProto(res)
+		},
+		SilenceUsage: true,
+	}
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "gas less contracts")
 	return cmd
 }
 
