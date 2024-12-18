@@ -394,6 +394,7 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	// infinite gas meter
 	if isGasLess {
 		sdkCtx = sdkCtx.WithGasMeter(storetypes.NewInfiniteGasMeter())
+		k.Logger(sdkCtx).Info("execute gas less wasm contract")
 	}
 	contractInfo, codeInfo, prefixStore, err := k.contractInstance(ctx, contractAddress)
 	if err != nil {
@@ -417,7 +418,12 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	querier := k.newQueryHandler(sdkCtx, contractAddress)
 	gasLeft := k.runtimeGasForContract(sdkCtx)
 	res, gasUsed, execErr := k.wasmVM.Execute(codeInfo.CodeHash, env, info, msg, prefixStore, cosmwasmAPI, querier, k.gasMeter(sdkCtx), gasLeft, costJSONDeserialization)
-	k.consumeRuntimeGas(sdkCtx, gasUsed)
+	// consume gas wasmvm if it isn't gas less contract
+	if !isGasLess {
+		k.Logger(sdkCtx).Info(fmt.Sprintf("execute wasm contract with %d gas used", gasUsed))
+		k.consumeRuntimeGas(sdkCtx, gasUsed)
+	}
+
 	if execErr != nil {
 		return nil, errorsmod.Wrap(types.ErrVMError, execErr.Error())
 	}
