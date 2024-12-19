@@ -1,7 +1,6 @@
 package interchaintest
 
 import (
-	"encoding/json"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -9,6 +8,8 @@ import (
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
+	"github.com/strangelove-ventures/interchaintest/v8/ibc"
+	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +20,19 @@ func TestWasmGasLessContract(t *testing.T) {
 	}
 
 	t.Parallel()
-	chains := CreateChain(t, 1, 1)
+
+	configFileOverrides := make(map[string]any)
+	configTomlOverrides := make(testutil.Toml)
+
+	rpcOverrides := make(testutil.Toml)
+	rpcOverrides["timeout_broadcast_tx_commit"] = "60s"
+	configTomlOverrides["rpc"] = rpcOverrides
+
+	configFileOverrides["config/config.toml"] = configTomlOverrides
+
+	chains := CreateChain(t, 1, 1, func(config *ibc.ChainConfig) {
+		config.ConfigFileOverrides = configFileOverrides
+	})
 	orai := chains[0].(*cosmos.CosmosChain)
 	ic, ctx := BuildInitialChainNoIbc(t, orai)
 	t.Cleanup(func() {
@@ -29,20 +42,15 @@ func TestWasmGasLessContract(t *testing.T) {
 	oraiUser := users[0]
 
 	// Store and instantiate contract on Orai chain
-	counterContractID, err := orai.StoreContract(ctx, oraiUser.KeyName(), "./bytecode/hackatom.wasm")
+	counterContractID, err := orai.StoreContract(ctx, oraiUser.KeyName(), "./bytecode/counter_high_gas_cost.wasm")
 	require.NoError(t, err)
 
-	initMsg := helpers.HackatomExampleInitMsg{
-		Verifier:    oraiUser.FormattedAddress(),
-		Beneficiary: oraiUser.FormattedAddress(),
-	}
-	initMsgBz, err := json.Marshal(initMsg)
-	require.NoError(t, err)
-	contractAddress, err := orai.InstantiateContract(ctx, oraiUser.KeyName(), counterContractID, string(initMsgBz), true)
+	initMsg := "{}"
+	contractAddress, err := orai.InstantiateContract(ctx, oraiUser.KeyName(), counterContractID, initMsg, true)
 	require.NoError(t, err)
 
 	// Execute contract
-	executeMsg := `{"release":{}}`
+	executeMsg := `{"ping":{}}`
 	resBefore, err := orai.ExecuteContract(ctx, oraiUser.KeyName(), contractAddress, executeMsg, "--gas", "auto")
 	require.NoError(t, err)
 

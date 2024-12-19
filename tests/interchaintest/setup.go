@@ -119,7 +119,11 @@ func modifyGenesisShortProposals(
 }
 
 // CreateChains create testing chain. Currently we instantiate 2 chain, first is Orai, seconds is gaia
-func CreateChains(t *testing.T, numVals, numFullNodes int) []ibc.Chain {
+func CreateChains(t *testing.T, numVals, numFullNodes int, opts ...func(*ibc.ChainConfig)) []ibc.Chain {
+	// this allow we add some custom config if we want
+	for _, opt := range opts {
+		opt(&oraiConfig)
+	}
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
 		{
 			Name:          "orai",
@@ -142,7 +146,11 @@ func CreateChains(t *testing.T, numVals, numFullNodes int) []ibc.Chain {
 }
 
 // CreateChain create only one testing chain, suitable for non-ibc testing logic -> faster
-func CreateChain(t *testing.T, numVals, numFullNodes int) []ibc.Chain {
+func CreateChain(t *testing.T, numVals, numFullNodes int, opts ...func(*ibc.ChainConfig)) []ibc.Chain {
+	// this allow we add some custom config if we want
+	for _, opt := range opts {
+		opt(&oraiConfig)
+	}
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
 		{
 			Name:          "orai",
