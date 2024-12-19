@@ -121,5 +121,5 @@ func QueryGasLessContracts(
 	if err != nil {
 		return []string{}, err
 	}
-	return res.ContractAddresses, nil // we
+	return res.ContractAddresses, nil
 }
