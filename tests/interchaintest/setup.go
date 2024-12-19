@@ -27,6 +27,7 @@ const (
 
 	// Chain and relayer version inf
 	IBCRelayerImage     = "ghcr.io/cosmos/relayer"
+	OraidICTestRepo     = "ghcr.io/wasmd/oraid-ictest"
 	IBCRelayerVersion   = "latest"
 	GaiaImageVersion    = "v21.0.0"
 	OsmosisImageVersion = "v22.0.1"
@@ -79,7 +80,6 @@ func GetDockerImageInfo() (repo, version string) {
 	branchVersion, found := os.LookupEnv("BRANCH_CI")
 	if !found {
 		// make local-image
-		fmt.Println("Testing local image")
 		repo = "orai"
 		branchVersion = "debug"
 	}
