@@ -35,7 +35,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/wasmd/oraid-ictest:latest
+            ghcr.io/oraichain/oraid-ictest:latest
   test-basic:
     runs-on: ubuntu-latest
     steps:
