@@ -16,6 +16,11 @@ type RedpandaInfo struct {
 }
 
 func NewRedPandaInfo(brokers []string, topics []string) *RedpandaInfo {
+	// if brokers not set then return nil
+	if len(brokers) == 0 && strings.TrimSpace(os.Getenv("REDPANDA_BROKERS")) == "" {
+		return nil
+	}
+
 	info := &RedpandaInfo{}
 	info.SetBrokers(brokers)
 	info.SetTopics(topics...)
@@ -39,7 +44,10 @@ func (ri *RedpandaInfo) SetBrokers(initialBrokers []string) {
 	brokersEnv := os.Getenv("REDPANDA_BROKERS")
 
 	for _, broker := range strings.Split(brokersEnv, ",") {
-		brokers = append(brokers, strings.TrimSpace(broker))
+		brokerTrim := strings.TrimSpace(broker)
+		if brokerTrim != "" {
+			brokers = append(brokers, brokerTrim)
+		}
 	}
 	if len(brokers) == 0 {
 		panic("Length of brokers must greater than 0")
