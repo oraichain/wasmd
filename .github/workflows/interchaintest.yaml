@@ -30,7 +30,7 @@ jobs:
         id: build_push_image
         uses: docker/build-push-action@v6
         with:
-          file: Dockerfile
+          file: ict.Dockerfile
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
