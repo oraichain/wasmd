@@ -9,6 +9,7 @@ WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/tokenfactory.wasm"}
 ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $NODE_HOME"
 user_address=$(oraid keys show $USER --keyring-backend test --home $NODE_HOME -a)
 HIDE_LOGS="/dev/null"
+FUND=${FUND:-"100000000orai"}
 
 # deploy cw-bindings contract
 store_txhash=$(oraid tx wasm store $WASM_PATH $ARGS --output json | jq -r '.txhash')
@@ -34,7 +35,7 @@ oraid tx bank send $user_address $contract_address 100000000orai $ARGS >$HIDE_LO
 # create denom
 # sleep 1s to not miss match account sequence
 sleep 2
-oraid tx wasm execute $contract_address $CREATE_DENOM_MSG --amount 100000000orai $ARGS >$HIDE_LOGS
+oraid tx wasm execute $contract_address $CREATE_DENOM_MSG --amount $FUND $ARGS >$HIDE_LOGS
 
 # query created denom uri and uri_hash
 # sleep 2s for create denom tx already in block
