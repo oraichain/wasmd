@@ -27,6 +27,7 @@ const (
 
 	// Chain and relayer version inf
 	IBCRelayerImage     = "ghcr.io/cosmos/relayer"
+	OraidICTestRepo     = "ghcr.io/oraichain/oraid-ictest"
 	IBCRelayerVersion   = "latest"
 	GaiaImageVersion    = "v21.0.0"
 	OsmosisImageVersion = "v22.0.1"
@@ -77,9 +78,9 @@ func oraiEncoding() *moduletestutil.TestEncodingConfig {
 // If testing locally, user should run `make docker-build-debug` and interchaintest will use the local image.
 func GetDockerImageInfo() (repo, version string) {
 	branchVersion, found := os.LookupEnv("BRANCH_CI")
+	repo = OraidICTestRepo
 	if !found {
 		// make local-image
-		fmt.Println("Testing local image")
 		repo = "orai"
 		branchVersion = "debug"
 	}
