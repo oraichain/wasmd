@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ux
+set -eu
 
 CHAIN_ID=${CHAIN_ID:-testing}
 USER=${USER:-tupt}
