@@ -20,17 +20,15 @@ func TestWasmGasLessContract(t *testing.T) {
 	}
 
 	t.Parallel()
-
-	configFileOverrides := make(map[string]any)
-	configTomlOverrides := make(testutil.Toml)
-
-	rpcOverrides := make(testutil.Toml)
-	rpcOverrides["timeout_broadcast_tx_commit"] = "60s"
-	configTomlOverrides["rpc"] = rpcOverrides
-
-	configFileOverrides["config/config.toml"] = configTomlOverrides
-
 	chains := CreateChain(t, 1, 1, func(config *ibc.ChainConfig) {
+		configFileOverrides := make(map[string]any)
+		configTomlOverrides := make(testutil.Toml)
+
+		rpcOverrides := make(testutil.Toml)
+		rpcOverrides["timeout_broadcast_tx_commit"] = "60s"
+		configTomlOverrides["rpc"] = rpcOverrides
+
+		configFileOverrides["config/config.toml"] = configTomlOverrides
 		config.ConfigFileOverrides = configFileOverrides
 	})
 	orai := chains[0].(*cosmos.CosmosChain)

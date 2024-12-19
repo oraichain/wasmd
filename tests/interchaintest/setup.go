@@ -120,7 +120,6 @@ func modifyGenesisShortProposals(
 
 // CreateChains create testing chain. Currently we instantiate 2 chain, first is Orai, seconds is gaia
 func CreateChains(t *testing.T, numVals, numFullNodes int, opts ...func(*ibc.ChainConfig)) []ibc.Chain {
-	// this allow we add some custom config if we want
 	for _, opt := range opts {
 		opt(&oraiConfig)
 	}
@@ -147,7 +146,6 @@ func CreateChains(t *testing.T, numVals, numFullNodes int, opts ...func(*ibc.Cha
 
 // CreateChain create only one testing chain, suitable for non-ibc testing logic -> faster
 func CreateChain(t *testing.T, numVals, numFullNodes int, opts ...func(*ibc.ChainConfig)) []ibc.Chain {
-	// this allow we add some custom config if we want
 	for _, opt := range opts {
 		opt(&oraiConfig)
 	}
