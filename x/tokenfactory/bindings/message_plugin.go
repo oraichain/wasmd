@@ -349,6 +349,8 @@ func WasmMetadataToSdk(metadata bindingstypes.Metadata) banktypes.Metadata {
 		Name:        metadata.Name,
 		Symbol:      metadata.Symbol,
 		DenomUnits:  denoms,
+		URI:         metadata.URI,
+		URIHash:     metadata.URIHash,
 	}
 }
 
@@ -368,5 +370,7 @@ func SdkMetadataToWasm(metadata banktypes.Metadata) *bindingstypes.Metadata {
 		Name:        metadata.Name,
 		Symbol:      metadata.Symbol,
 		DenomUnits:  denoms,
+		URI:         metadata.URI,
+		URIHash:     metadata.URIHash,
 	}
 }

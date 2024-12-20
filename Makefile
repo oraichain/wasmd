@@ -159,10 +159,9 @@ docker-build-debug:
 ictest-basic:
 	cd tests/interchaintest && go test -race -v -run TestStartOrai .
 
-
+# Executes interchain account tests via interchaintest
 ictest-interchain-account:
 	cd tests/interchaintest && go test -race -v -run TestInterchainAccount .
-
 
 # Executes token factory param change tests via interchaintest
 ictest-tf-param-change:
@@ -175,6 +174,10 @@ ictest-tf-set-metadata:
 # Executes ibc hooks tests via interchaintest
 ictest-ibchooks:
 	cd tests/interchaintest && go test -race -v -run TestIbcHooks .
+
+# Executes wasm gas less tests via interchaintest
+ictest-wasm-gasless:
+	cd tests/interchaintest && go test -race -v -run TestWasmGasLessContract .
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################

@@ -4,10 +4,10 @@ set -eu
 
 # setup the network using the old binary
 
-OLD_VERSION=${OLD_VERSION:-"v0.50.1"}
+OLD_VERSION=${OLD_VERSION:-"v0.50.2"}
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/oraiswap-token.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
-NEW_VERSION=${NEW_VERSION:-"v0.50.2"}
+NEW_VERSION=${NEW_VERSION:-"v0.50.3"}
 VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
 MIGRATE_MSG=${MIGRATE_MSG:-'{}'}
 EXECUTE_MSG=${EXECUTE_MSG:-'{"ping":{}}'}
@@ -22,7 +22,7 @@ current_dir=$PWD
 
 # clone or pull latest repo
 if ! [ -d "../orai-old" ]; then
-  git clone https://github.com/oraichain/wasmd.git ../orai-old
+   git clone https://github.com/oraichain/wasmd.git ../orai-old
 fi
 
 # build old binary
@@ -46,10 +46,9 @@ echo "Sleep til the proposal passes..."
 
 # Check if latest height is less than the upgrade height
 latest_height=$(curl --no-progress-meter http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest | jq '.block.header.height | tonumber')
-while [ $latest_height -lt $UPGRADE_HEIGHT ];
-do
+while [ $latest_height -lt $UPGRADE_HEIGHT ]; do
    sleep 5
-   ((latest_height=$(curl --no-progress-meter http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest | jq '.block.header.height | tonumber')))
+   ((latest_height = $(curl --no-progress-meter http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest | jq '.block.header.height | tonumber')))
    echo $latest_height
 done
 
@@ -78,47 +77,51 @@ echo "Waiting for the REST & JSONRPC servers to be up ..."
 sleep 5
 
 oraid_version=$(oraid version)
-if [[ $oraid_version =~ $OLD_VERSION ]] ; then
-   echo "The chain has not upgraded yet. There's something wrong!"; exit 1
+if [[ $oraid_version =~ $OLD_VERSION ]]; then
+   echo "The chain has not upgraded yet. There's something wrong!"
+   exit 1
 fi
 
 height_before=$(curl --no-progress-meter http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest | jq '.block.header.height | tonumber')
 
 re='^[0-9]+([.][0-9]+)?$'
-if ! [[ $height_before =~ $re ]] ; then
-   echo "error: Not a number" >&2; exit 1
+if ! [[ $height_before =~ $re ]]; then
+   echo "error: Not a number" >&2
+   exit 1
 fi
 
 sleep 5
 
 height_after=$(curl --no-progress-meter http://localhost:1317/cosmos/base/tendermint/v1beta1/blocks/latest | jq '.block.header.height | tonumber')
 
-if ! [[ $height_after =~ $re ]] ; then
-   echo "error: Not a number" >&2; exit 1
+if ! [[ $height_after =~ $re ]]; then
+   echo "error: Not a number" >&2
+   exit 1
 fi
 
-if [ $height_after -gt $height_before ]
-then
-echo "Chain Upgrade Passed"
+if [ $height_after -gt $height_before ]; then
+   echo "Chain Upgrade Passed"
 else
-echo "Chain Upgrade Failed"
+   echo "Chain Upgrade Failed"
 fi
 
 inflation=$(curl --no-progress-meter http://localhost:1317/cosmos/mint/v1beta1/inflation | jq '.inflation | tonumber')
-if ! [[ $inflation =~ $re ]] ; then
-   echo "Error: Cannot query inflation => Potentially missing Go GRPC backport" >&2;
-   echo "Tests Failed"; exit 1
+if ! [[ $inflation =~ $re ]]; then
+   echo "Error: Cannot query inflation => Potentially missing Go GRPC backport" >&2
+   echo "Tests Failed"
+   exit 1
 fi
 
 evm_denom=$(curl --no-progress-meter http://localhost:1317/ethermint/evm/v1/params | jq '.params.evm_denom')
-if ! [[ $evm_denom =~ "aorai" ]] ; then
-   echo "Error: EVM denom is not correct. The upgraded version is not the latest!" >&2;
-   echo "Tests Failed"; exit 1
+if ! [[ $evm_denom =~ "aorai" ]]; then
+   echo "Error: EVM denom is not correct. The upgraded version is not the latest!" >&2
+   echo "Tests Failed"
+   exit 1
 fi
 
 sh $PWD/scripts/test_clock_counter_contract.sh
 # v0.42.1 tests
-USER=validator1 USER2=validator2 WASM_PATH="$PWD/scripts/wasm_file/counter_high_gas_cost.wasm" sh $PWD/scripts/tests-0.42.1/test-gasless.sh
+# USER=validator1 USER2=validator2 WASM_PATH="$PWD/scripts/wasm_file/counter_high_gas_cost.wasm" sh $PWD/scripts/tests-0.42.1/test-gasless.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory-bindings.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-evm-cosmos-mapping.sh
@@ -142,6 +145,10 @@ bash $PWD/scripts/tests-0.50.1/test-gov-params.sh
 # v0.50.2 tests
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-set-metadata-tokenfactory.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-param-change-proposal-tokenfactory.sh
+
+# v0.50.3 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.3/test-tokenfactory-metadata-binding.sh
+USER=validator1 USER2=validator2 sh $PWD/scripts/tests-0.50.3/test-gasless.sh
 
 echo "Tests Passed!!"
 bash scripts/clean-multinode-local-testnet.sh

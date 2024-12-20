@@ -31,3 +31,18 @@ type QueryDenomAuthorityMetadataResponse struct {
 type DenomAuthorityMetadata struct {
 	Admin string `json:"admin"`
 }
+
+type QueryWasmGasLessContracts struct {
+	ContractAddresses []string     `json:"contract_addresses"`
+	Pagination        PageResponse `json:"pagination"`
+}
+
+type PageResponse struct {
+	NextKey []byte `json:"next_key"`
+	Total   string `json:"total"`
+}
+
+type HackatomExampleInitMsg struct {
+	Verifier    string `json:"verifier"`
+	Beneficiary string `json:"beneficiary"`
+}

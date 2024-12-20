@@ -1,5 +1,41 @@
 # CHANGELOG
 
+## v0.50.3
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+
+Upgrade Oraichain mainnet to v0.50.3 to fix cometbft vulnarabilty, gasless contract and set metadata tokenfactory bindings bug. 
+Otherwise, v0.50.3 also supports interchain tests.
+
+### BUG FIXES
+
+- Can not set uri + uri_hash metatdata for token factory bindings
+  ([\#60](https://github.com/oraichain/wasmd/issues/60))
+- Unconsume wasm gas if execute gas less contract
+  ([\#56](https://github.com/oraichain/wasmd/pull/56))
+- Update to cometbft to v0.38.15
+  ([\#49](https://github.com/oraichain/wasmd/pull/49))
+
+### IMPROVEMENTS
+
+- Add LCD swagger gen with modules from wasmd, cosmos-sdk, ibc, and ethermint
+  ([\#40](https://github.com/oraichain/wasmd/pull/40))
+- Add interchain test for ibc hooks
+  ([\#44](https://github.com/oraichain/wasmd/pull/44))
+- Add test create interchain account
+  ([\#48](https://github.com/oraichain/wasmd/pull/48))
+- Add test param change token factory
+  ([\#45](https://github.com/oraichain/wasmd/pull/45))
+- Add test set meta data token factory
+  ([\#52](https://github.com/oraichain/wasmd/pull/52))
+- Fix issue can't query gas less contract
+  ([\#55](https://github.com/oraichain/wasmd/pull/55))
+- Set up interchain tests ([\#42](https://github.com/oraichain/wasmd/pull/42))
+
 ## v0.50.2
 
 <!--
