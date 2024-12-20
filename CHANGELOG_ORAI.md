@@ -8,7 +8,7 @@
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
 
-Upgrade Oraichain mainnet to v0.50.3 to fix cometbft vulnarabilty, gasless contract and set metadata tokenfactory bindings bug. 
+Upgrade Oraichain mainnet to v0.50.3 to fix gasless contract and set metadata tokenfactory bindings bug. 
 Otherwise, v0.50.3 also supports interchain tests.
 
 ### BUG FIXES
@@ -17,8 +17,6 @@ Otherwise, v0.50.3 also supports interchain tests.
   ([\#60](https://github.com/oraichain/wasmd/issues/60))
 - Unconsume wasm gas if execute gas less contract
   ([\#56](https://github.com/oraichain/wasmd/pull/56))
-- Update to cometbft to v0.38.15
-  ([\#49](https://github.com/oraichain/wasmd/pull/49))
 
 ### IMPROVEMENTS
 
