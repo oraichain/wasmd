@@ -132,8 +132,11 @@ func CreateChains(t *testing.T, numVals, numFullNodes int, opts ...func(*ibc.Cha
 			NumFullNodes:  &numFullNodes,
 		},
 		{
-			Name:          "gaia",
-			Version:       GaiaImageVersion,
+			Name:    "gaia",
+			Version: GaiaImageVersion,
+			ChainConfig: ibc.ChainConfig{
+				GasPrices: "1uatom",
+			},
 			NumValidators: &numVals,
 			NumFullNodes:  &numFullNodes,
 		},
