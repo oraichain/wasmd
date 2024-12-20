@@ -189,7 +189,7 @@ func BuildInitialChainNoIbc(t *testing.T, chain ibc.Chain) (*interchaintest.Inte
 	return ic, ctx
 }
 
-func BuildInitialChain(t *testing.T, chains []ibc.Chain) (*interchaintest.Interchain, ibc.Relayer, context.Context, *client.Client, string) {
+func BuildInitialChain(t *testing.T, chains []ibc.Chain) (*interchaintest.Interchain, ibc.Relayer, context.Context, *client.Client, *testreporter.RelayerExecReporter, string) {
 	// Create a new Interchain object which describes the chains, relayers, and IBC connections we want to use
 	require.Equal(t, len(chains), 2) // we only initial 2 chain for now
 	ic := interchaintest.NewInterchain()
@@ -228,5 +228,5 @@ func BuildInitialChain(t *testing.T, chains []ibc.Chain) (*interchaintest.Interc
 	})
 	require.NoError(t, err)
 
-	return ic, r, ctx, client, network
+	return ic, r, ctx, client, eRep, network
 }
