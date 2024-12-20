@@ -36,7 +36,7 @@ jobs:
           file: ict.Dockerfile
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: |
             ghcr.io/oraichain/oraid-ictest:latest
   test-basic:
