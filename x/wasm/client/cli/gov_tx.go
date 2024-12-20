@@ -731,6 +731,7 @@ func ProposalSetGaslessContractsCmd() *cobra.Command {
 			}
 
 			msg := types.MsgSetGaslessContracts{
+				Authority: authority,
 				Contracts: args,
 			}
 			if err = msg.ValidateBasic(); err != nil {
@@ -772,6 +773,7 @@ func ProposalUnsetGaslessContractsCmd() *cobra.Command {
 			}
 
 			msg := types.MsgUnsetGaslessContracts{
+				Authority: authority,
 				Contracts: args,
 			}
 			if err = msg.ValidateBasic(); err != nil {
