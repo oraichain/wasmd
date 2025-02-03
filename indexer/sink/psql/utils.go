@@ -2,9 +2,11 @@ package psql
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	cfg "github.com/CosmWasm/wasmd/indexer/config"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -100,7 +102,14 @@ func insertEvents(dbtx *sql.DB, blockID, txID uint32, evts []abci.Event) error {
 			if len(attr.Value) > 8191 {
 				continue
 			}
-			attrValue := attr.Value
+			isUtf8 := isUTF8Valid(attr.Value)
+			var attrValue string
+
+			if isUtf8 {
+				attrValue = attr.Value
+			} else {
+				attrValue = base64.StdEncoding.EncodeToString([]byte(attr.Value))
+			}
 			if hasNonPrintableChars(attr.Value) {
 				// convert to hex to safely store the value
 				attrValue = fmt.Sprintf("%x\n", []byte(attr.Value))
@@ -140,4 +149,8 @@ func hasNonPrintableChars(s string) bool {
 		}
 	}
 	return false // All characters are printable
+}
+
+func isUTF8Valid(s string) bool {
+	return utf8.ValidString(s)
 }
