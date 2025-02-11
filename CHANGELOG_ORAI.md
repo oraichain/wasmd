@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.50.5
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+Upgrade Oraichain mainnet to v0.50.5 to upgrade cometbft dependency. 
+
+### IMPROVEMENTS
+
+- Upgrade cometbft dependency
+  ([\#68](https://github.com/oraichain/wasmd/pull/68))
+
 ## v0.50.4
 
 <!--
