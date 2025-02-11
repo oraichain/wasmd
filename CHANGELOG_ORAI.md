@@ -7,7 +7,12 @@
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
-Upgrade Oraichain mainnet to v0.50.5 to upgrade cometbft dependency. 
+Upgrade Oraichain mainnet to v0.50.5 to upgrade cometbft dependency and fix store non-utf8 value to database.
+
+### BUG FIXES
+
+- Fix store non utf8 data to sql db
+  ([\#69](https://github.com/oraichain/wasmd/pull/69))
 
 ### IMPROVEMENTS
 
