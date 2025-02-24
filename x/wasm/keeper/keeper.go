@@ -396,6 +396,12 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 		sdkCtx = sdkCtx.WithGasMeter(storetypes.NewInfiniteGasMeter())
 		k.Logger(sdkCtx).Info("execute gas less wasm contract")
 	}
+	// Logger for tracking gasless
+	contractBench32Address := contractAddress.String()
+	if contractBench32Address == "orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm" {
+		k.Logger(sdkCtx).Debug(fmt.Sprintf("TonBridge: begin execute %d", sdkCtx.GasMeter().GasConsumed()))
+	}
+
 	contractInfo, codeInfo, prefixStore, err := k.contractInstance(ctx, contractAddress)
 	if err != nil {
 		return nil, err
@@ -403,6 +409,9 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 
 	setupCost := k.gasRegister.SetupContractCost(k.IsPinnedCode(ctx, contractInfo.CodeID), len(msg))
 	sdkCtx.GasMeter().ConsumeGas(setupCost, "Loading CosmWasm module: execute")
+	if contractBench32Address == "orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm" {
+		k.Logger(sdkCtx).Debug(fmt.Sprintf("TonBridge: setup contract %d", sdkCtx.GasMeter().GasConsumed()))
+	}
 
 	// add more funds
 	if !coins.IsZero() {
@@ -420,8 +429,12 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	res, gasUsed, execErr := k.wasmVM.Execute(codeInfo.CodeHash, env, info, msg, prefixStore, cosmwasmAPI, querier, k.gasMeter(sdkCtx), gasLeft, costJSONDeserialization)
 	// consume gas wasmvm if it isn't gas less contract
 	if !isGasLess {
-		k.Logger(sdkCtx).Info(fmt.Sprintf("execute wasm contract with %d gas used", gasUsed))
+		k.Logger(sdkCtx).Debug(fmt.Sprintf("execute wasm contract %s with %d gas used", contractAddress.String(), gasUsed))
 		k.consumeRuntimeGas(sdkCtx, gasUsed)
+	}
+
+	if contractBench32Address == "orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm" {
+		k.Logger(sdkCtx).Debug(fmt.Sprintf("TonBridge: after execute %d", sdkCtx.GasMeter().GasConsumed()))
 	}
 
 	if execErr != nil {
@@ -443,6 +456,10 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	data, err := k.handleContractResponse(sdkCtx, contractAddress, contractInfo.IBCPortID, res.Ok.Messages, res.Ok.Attributes, res.Ok.Data, res.Ok.Events)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "dispatch")
+	}
+
+	if contractBench32Address == "orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm" {
+		k.Logger(sdkCtx).Debug(fmt.Sprintf("TonBridge: finish %d", sdkCtx.GasMeter().GasConsumed()))
 	}
 
 	return data, nil
