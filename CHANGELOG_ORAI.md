@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v0.50.6
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+Upgrade Oraichain mainnet to v0.50.6 to fix apphash and aorai token issue
+
+
 ## v0.50.5
 
 <!--
