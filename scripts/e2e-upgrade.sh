@@ -121,39 +121,39 @@ if ! [[ $evm_denom =~ "aorai" ]]; then
    exit 1
 fi
 
-# sh $PWD/scripts/test_clock_counter_contract.sh
-# # v0.42.1 tests
-# USER=validator1 USER2=validator2 WASM_PATH="$PWD/scripts/wasm_file/counter_high_gas_cost.wasm" sh $PWD/scripts/tests-0.42.1/test-gasless.sh
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory.sh
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory-bindings.sh
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-evm-cosmos-mapping.sh
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-evm-cosmos-mapping-complex.sh
+sh $PWD/scripts/test_clock_counter_contract.sh
+# v0.42.1 tests
+USER=validator1 USER2=validator2 WASM_PATH="$PWD/scripts/wasm_file/counter_high_gas_cost.wasm" sh $PWD/scripts/tests-0.42.1/test-gasless.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-tokenfactory-bindings.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-evm-cosmos-mapping.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.1/test-evm-cosmos-mapping-complex.sh
 
-# # v0.42.2 tests
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.2/test-multi-sig.sh
+# v0.42.2 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.2/test-multi-sig.sh
 
-# # v0.42.3 tests
-# NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.3/test-commit-timeout.sh
+# v0.42.3 tests
+NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.3/test-commit-timeout.sh
 
-# # v0.42.4 tests
-# NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.4/test-cw-stargate-staking-query.sh
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-cw20-erc20.sh
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-globalfee.sh
+# v0.42.4 tests
+NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.4/test-cw-stargate-staking-query.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-cw20-erc20.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-globalfee.sh
 
-# # v0.50.1 tests
-# bash $PWD/scripts/tests-0.50.1/test-mint-params.sh
-# bash $PWD/scripts/tests-0.50.1/test-gov-params.sh
+# v0.50.1 tests
+bash $PWD/scripts/tests-0.50.1/test-mint-params.sh
+bash $PWD/scripts/tests-0.50.1/test-gov-params.sh
 
-# # v0.50.2 tests
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-set-metadata-tokenfactory.sh
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-param-change-proposal-tokenfactory.sh
+# v0.50.2 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-set-metadata-tokenfactory.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-param-change-proposal-tokenfactory.sh
 
-# # v0.50.3 tests
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.3/test-tokenfactory-metadata-binding.sh
-# USER=validator1 USER2=validator2 sh $PWD/scripts/tests-0.50.3/test-gasless.sh
+# v0.50.3 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.3/test-tokenfactory-metadata-binding.sh
+USER=validator1 USER2=validator2 sh $PWD/scripts/tests-0.50.3/test-gasless.sh
 
-# # v0.50.4 tests
-# NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.4/test-tokenfactory-force-transfer.sh
+# v0.50.4 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.4/test-tokenfactory-force-transfer.sh
 
-# echo "Tests Passed!!"
-# bash scripts/clean-multinode-local-testnet.sh
+echo "Tests Passed!!"
+bash scripts/clean-multinode-local-testnet.sh

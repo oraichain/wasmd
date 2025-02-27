@@ -205,7 +205,6 @@ oraid tx staking create-validator $PWD/scripts/json/validator.json --from valida
 pkill oraid
 
 # disable max-txs evm mempool
-sed -i -e "s%^max-txs *=.*%max-txs = 0%; " $VALIDATOR1_APP_TOML
 sed -i -e "s%^max-txs *=.*%max-txs = 0%; " $VALIDATOR2_APP_TOML
 sed -i -e "s%^max-txs *=.*%max-txs = 0%; " $VALIDATOR3_APP_TOML
 
