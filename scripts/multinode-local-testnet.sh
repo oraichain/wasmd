@@ -31,8 +31,8 @@ oraid keys add validator1 $ARGS --home $VALIDATOR1_HOME >$HIDE_LOGS
 oraid keys add validator2 $ARGS --home $VALIDATOR2_HOME >$HIDE_LOGS
 oraid keys add validator3 $ARGS --home $VALIDATOR3_HOME >$HIDE_LOGS
 
-update_genesis () {
-    cat $VALIDATOR1_HOME/config/genesis.json | jq "$1" > $VALIDATOR1_HOME/config/tmp_genesis.json && mv $VALIDATOR1_HOME/config/tmp_genesis.json $VALIDATOR1_HOME/config/genesis.json
+update_genesis() {
+    cat $VALIDATOR1_HOME/config/genesis.json | jq "$1" >$VALIDATOR1_HOME/config/tmp_genesis.json && mv $VALIDATOR1_HOME/config/tmp_genesis.json $VALIDATOR1_HOME/config/genesis.json
 }
 
 # change staking denom to orai
@@ -173,7 +173,7 @@ sleep 1
 oraid tx bank send $VALIDATOR1_ADDRESS $VALIDATOR3_ADDRESS 5000000000orai --home $VALIDATOR1_HOME $TX_SEND_ARGS >$HIDE_LOGS
 # send test orai to a test account
 sleep 1
-oraid tx bank send $VALIDATOR1_ADDRESS orai1kzkf6gttxqar9yrkxfe34ye4vg5v4m588ew7c9 5000000000orai --home $VALIDATOR1_HOME $TX_SEND_ARGS > $HIDE_LOGS
+oraid tx bank send $VALIDATOR1_ADDRESS orai1kzkf6gttxqar9yrkxfe34ye4vg5v4m588ew7c9 5000000000orai --home $VALIDATOR1_HOME $TX_SEND_ARGS >$HIDE_LOGS
 
 echo "Waiting 1 second to create two new validators..."
 sleep 1
@@ -181,10 +181,10 @@ sleep 1
 validator='{"pubkey":{"@type":"/cosmos.crypto.ed25519.PubKey","key":"xj740yWkYQbJCNkof2m7hQWpyaO6eFQ8qvGmYrtsqjQ="},"amount":"500000000orai","moniker":"validator3","identity":"","website":"","security":"","details":"","commission-rate":"0.1","commission-max-rate":"0.2","commission-max-change-rate":"0.05","min-self-delegation":"500000000"}'
 validator_info_temp_path=$PWD/scripts/json/validator.json
 
-echo $validator > $validator_info_temp_path
+echo $validator >$validator_info_temp_path
 
-update_validator () {
-    cat $validator_info_temp_path | jq "$1" > $PWD/scripts/json/temp_validator.json && mv $PWD/scripts/json/temp_validator.json $validator_info_temp_path
+update_validator() {
+    cat $validator_info_temp_path | jq "$1" >$PWD/scripts/json/temp_validator.json && mv $PWD/scripts/json/temp_validator.json $validator_info_temp_path
 }
 
 VALIDATOR2_PUBKEY=$(oraid tendermint show-validator --home $VALIDATOR2_HOME | jq -r '.key')
@@ -200,7 +200,18 @@ oraid tx staking create-validator $PWD/scripts/json/validator.json --from valida
 update_validator ".pubkey[\"key\"]=\"$VALIDATOR3_PUBKEY\""
 update_validator '.moniker="validator3"'
 update_validator '.amount="500000000orai"'
-oraid tx staking create-validator $PWD/scripts/json/validator.json  --from validator3 --home $VALIDATOR3_HOME $TX_SEND_ARGS  > $HIDE_LOGS
+oraid tx staking create-validator $PWD/scripts/json/validator.json --from validator3 --home $VALIDATOR3_HOME $TX_SEND_ARGS >$HIDE_LOGS
+
+pkill oraid
+
+# disable max-txs evm mempool
+sed -i -e "s%^max-txs *=.*%max-txs = 0%; " $VALIDATOR2_APP_TOML
+sed -i -e "s%^max-txs *=.*%max-txs = 0%; " $VALIDATOR3_APP_TOML
+
+# start all three validators
+screen -S validator1 -d -m oraid start --home $VALIDATOR1_HOME
+screen -S validator2 -d -m oraid start --home $VALIDATOR2_HOME
+screen -S validator3 -d -m oraid start --home $VALIDATOR3_HOME
 
 echo "All 3 Validators are up and running!"
 # cleanup validator.json

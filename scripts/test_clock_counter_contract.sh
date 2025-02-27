@@ -3,7 +3,7 @@
 # sh $PWD/scripts/multinode-local-testnet.sh
 # cw-clock-example.wasm source code: https://github.com/oraichain/cw-plus.git
 
-set -eu
+set -ux
 
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/cw-clock-example.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync"
@@ -21,7 +21,7 @@ CLOCK_PROPOSAL_FILE=${CLOCK_PROPOSAL_FILE:-"$PWD/scripts/json/clock-proposal.jso
 store_ret=$(oraid tx wasm store $WASM_PATH $VALIDATOR1_ARGS $ARGS --output json)
 store_txhash=$(echo $store_ret | jq -r '.txhash')
 # need to sleep 1s for tx already in block
-sleep 2
+sleep 5
 # need to use temp.json since there's a weird error: jq: parse error: Invalid string: control characters from U+0000 through U+001F must be escaped at line 1, column 72291
 # probably because of weird characters from the raw code bytes
 oraid query tx $store_txhash --output json > temp.json
@@ -29,7 +29,7 @@ code_id=$(cat temp.json | jq -r '.events[4].attributes[] | select(.key | contain
 rm temp.json
 oraid tx wasm instantiate $code_id '{}' --label 'cw clock contract' $VALIDATOR1_ARGS --admin $(oraid keys show validator1 --keyring-backend test --home $HOME/.oraid/validator1 -a) $ARGS > $HIDE_LOGS
 # need to sleep 1s for tx already in block
-sleep 2
+sleep 5
 contract_address=$(oraid query wasm list-contract-by-code $code_id --output json | jq -r '.contracts | last')
 echo "cw-clock contract address: $contract_address, $CONTRACT_GAS_LIMIT, $TITLE, $INITIAL_DEPOSIT, $DESCRIPTION"
 
