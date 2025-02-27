@@ -1,0 +1,1 @@
+- Fix mempool evm app hash ([\#71](https://github.com/oraichain/wasmd/pull/71))

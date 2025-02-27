@@ -7,8 +7,16 @@
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
-Upgrade Oraichain mainnet to v0.50.6 to fix apphash and aorai token issue
+Upgrade Oraichain mainnet to v0.50.6 to upgrade ethermint dependency and fix mempool evm app hash.
 
+### BUG FIXES
+
+- Fix mempool evm app hash ([\#71](https://github.com/oraichain/wasmd/pull/71))
+
+### IMPROVEMENTS
+
+- Update dependency for ethermint module
+  ([\#72](https://github.com/oraichain/wasmd/pull/72))
 
 ## v0.50.5
 
