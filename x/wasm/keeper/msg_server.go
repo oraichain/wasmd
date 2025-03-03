@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -122,10 +123,16 @@ func (m msgServer) ExecuteContract(ctx context.Context, msg *types.MsgExecuteCon
 		return nil, errorsmod.Wrap(err, "contract")
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.Logger().Error(fmt.Sprintf("before enter execute: %d", sdkCtx.GasMeter().GasConsumed()))
+
 	data, err := m.keeper.execute(ctx, contractAddr, senderAddr, msg.Msg, msg.Funds)
 	if err != nil {
 		return nil, err
 	}
+
+	sdkCtx = sdk.UnwrapSDKContext(ctx)
+	sdkCtx.Logger().Error(fmt.Sprintf("after enter execute: %d", sdkCtx.GasMeter().GasConsumed()))
 
 	return &types.MsgExecuteContractResponse{
 		Data: data,
