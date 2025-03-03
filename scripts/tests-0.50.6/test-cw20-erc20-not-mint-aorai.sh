@@ -81,14 +81,14 @@ orai_balance_after_transfer=$(oraid query bank balance orai1kzkf6gttxqar9yrkxfe3
 output=$(ERC20_ADDRESS=$contract_addr yarn hardhat run scripts/cw20erc20-query-balance-of.ts --network testing)
 balance_of=$(echo "$output" | awk '/^[0-9]+$/ { print $1 }')
 if [ $balance_of == "1000000000" ]; then
-    echo "Could not transfer CW20 token from ERC20 contract. CW20-ERC20 Test Failed"
+    echo "Could not transfer CW20 token from ERC20 contract. CW20-ERC20 Not Mint Aorai Test Failed"
     exit 1
 fi
 
 if [ $orai_balance_before_transfer == $orai_balance_after_transfer ]; then
-    echo "Could not transfer native ORAI token from ERC20 contract. CW20-ERC20 Test Failed"
+    echo "Could not transfer native ORAI token from ERC20 contract. CW20-ERC20 Not Mint Aorai Test Failed"
     exit 1
 fi
 
-echo "CW20-ERC20 Test Passed"
+echo "CW20-ERC20 Not Mint Aorai Test Passed"
 cd $current_dir
