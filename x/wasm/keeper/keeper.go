@@ -394,12 +394,12 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	// infinite gas meter
 	if isGasLess {
 		sdkCtx = sdkCtx.WithGasMeter(storetypes.NewInfiniteGasMeter())
-		k.Logger(sdkCtx).Info(fmt.Sprintf("execute gas less wasm contract %s", contractAddress.String()))
+		k.Logger(sdkCtx).Error(fmt.Sprintf("execute gas less wasm contract %s", contractAddress.String()))
 	}
 	// Logger for tracking gasless
-	contractBench32Address := contractAddress.String()
-	if contractBench32Address == "orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm" {
-		k.Logger(sdkCtx).Info(fmt.Sprintf("orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm: begin execute %d", sdkCtx.GasMeter().GasConsumed()))
+	// contractBench32Address := contractAddress.String()
+	if isGasLess {
+		k.Logger(sdkCtx).Error(fmt.Sprintf("TON BRIDGE: begin execute %d", sdkCtx.GasMeter().GasConsumed()))
 	}
 
 	contractInfo, codeInfo, prefixStore, err := k.contractInstance(ctx, contractAddress)
@@ -409,8 +409,8 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 
 	setupCost := k.gasRegister.SetupContractCost(k.IsPinnedCode(ctx, contractInfo.CodeID), len(msg))
 	sdkCtx.GasMeter().ConsumeGas(setupCost, "Loading CosmWasm module: execute")
-	if contractBench32Address == "orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm" {
-		k.Logger(sdkCtx).Info(fmt.Sprintf("orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm: setup contract %d", sdkCtx.GasMeter().GasConsumed()))
+	if isGasLess {
+		k.Logger(sdkCtx).Error(fmt.Sprintf("TON BRIDGE: setup contract %d", sdkCtx.GasMeter().GasConsumed()))
 	}
 
 	// add more funds
@@ -427,14 +427,17 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	querier := k.newQueryHandler(sdkCtx, contractAddress)
 	gasLeft := k.runtimeGasForContract(sdkCtx)
 	res, gasUsed, execErr := k.wasmVM.Execute(codeInfo.CodeHash, env, info, msg, prefixStore, cosmwasmAPI, querier, k.gasMeter(sdkCtx), gasLeft, costJSONDeserialization)
+
+	k.Logger(sdkCtx).Error(fmt.Sprintf("GAS USED WASMVM %d", gasUsed))
+
 	// consume gas wasmvm if it isn't gas less contract
 	if !isGasLess {
 		k.Logger(sdkCtx).Info(fmt.Sprintf("execute wasm contract %s with %d gas used", contractAddress.String(), gasUsed))
 		k.consumeRuntimeGas(sdkCtx, gasUsed)
 	}
 
-	if contractBench32Address == "orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm" {
-		k.Logger(sdkCtx).Info(fmt.Sprintf("orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm: after execute %d", sdkCtx.GasMeter().GasConsumed()))
+	if isGasLess {
+		k.Logger(sdkCtx).Error(fmt.Sprintf("TON BRIDGE: after execute %d", sdkCtx.GasMeter().GasConsumed()))
 	}
 
 	if execErr != nil {
@@ -458,8 +461,8 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 		return nil, errorsmod.Wrap(err, "dispatch")
 	}
 
-	if contractBench32Address == "orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm" {
-		k.Logger(sdkCtx).Info(fmt.Sprintf("orai16crw7g2rcvuga7vlnyxgwtdxtan46k8qqjjwhjqdjvjgk96n95es35q8vm: finish %d", sdkCtx.GasMeter().GasConsumed()))
+	if isGasLess {
+		k.Logger(sdkCtx).Error(fmt.Sprintf("TON BRIDGE: finish %d", sdkCtx.GasMeter().GasConsumed()))
 	}
 
 	return data, nil

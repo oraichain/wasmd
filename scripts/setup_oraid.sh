@@ -29,6 +29,9 @@ oraid genesis gentx $USER "250000000orai" --chain-id="$CHAIN_ID" -y $ARGS >$HIDE
 
 oraid genesis collect-gentxs --home $NODE_HOME >$HIDE_LOGS
 
-jq '.initial_height="1"' $NODE_HOME/config/genesis.json > tmp.$$.json && mv tmp.$$.json $NODE_HOME/config/genesis.json
+jq '.initial_height="1"' $NODE_HOME/config/genesis.json >tmp.$$.json && mv tmp.$$.json $NODE_HOME/config/genesis.json
+jq '.app_state["gov"]["params"]["voting_period"]="6s"' $NODE_HOME/config/genesis.json >tmp.$$.json && mv tmp.$$.json $NODE_HOME/config/genesis.json
+
+sed -i -e "s%^timeout_broadcast_tx_commit *=.*%timeout_broadcast_tx_commit = \"60s\"%; " $NODE_HOME/config/config.toml
 
 oraid start $START_ARGS
