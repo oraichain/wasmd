@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v0.50.7
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+Upgrade Oraichain mainnet to v0.50.7 to upgrade cosmos-sdk dependency and fix gasless contract bug.
+
+### BUG FIXES
+
+- Fix gasless contract ([\#73](https://github.com/oraichain/wasmd/pull/73))
+
+### IMPROVEMENTS
+
+- Update cosmos-sdk dependency
+  ([\#74](https://github.com/oraichain/wasmd/pull/74))
+
 ## v0.50.6
 
 <!--

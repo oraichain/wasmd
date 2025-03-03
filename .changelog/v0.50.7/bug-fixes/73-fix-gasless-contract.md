@@ -1,0 +1,1 @@
+- Fix gasless contract ([\#73](https://github.com/oraichain/wasmd/pull/73))
