@@ -393,7 +393,7 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	isGasLess := k.IsGasless(sdkCtx, contractAddress)
 	// infinite gas meter
 	if isGasLess {
-		sdkCtx = sdkCtx.WithGasMeter(storetypes.NewInfiniteGasMeter())
+		sdkCtx.GasMeter().RefundGas(sdkCtx.GasMeter().GasConsumed(), "refund gasless contract")
 		k.Logger(sdkCtx).Info("execute gas less wasm contract")
 	}
 	contractInfo, codeInfo, prefixStore, err := k.contractInstance(ctx, contractAddress)
