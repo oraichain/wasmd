@@ -391,7 +391,7 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	defer telemetry.MeasureSince(time.Now(), "wasm", "contract", "execute")
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	isGasLess := k.IsGasless(sdkCtx, contractAddress)
-	// infinite gas meter
+	// refund gas if we execute gasless contract
 	if isGasLess {
 		sdkCtx.GasMeter().RefundGas(sdkCtx.GasMeter().GasConsumed(), "refund gasless contract")
 		k.Logger(sdkCtx).Info("execute gas less wasm contract")
