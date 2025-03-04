@@ -178,6 +178,7 @@ func CreateChain(t *testing.T, numVals, numFullNodes int, opts ...func(*ibc.Chai
 
 	chainSpecs["orai"].NumFullNodes = &numFullNodes
 	chainSpecs["orai"].NumValidators = &numVals
+	chainSpecs["orai"].ChainConfig = oraiConfig
 
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
 		chainSpecs["orai"],
