@@ -51,7 +51,7 @@
         "type": "string"
       }
     ],
-    "name": "grants",
+    "name": "grant",
     "outputs": [
       {
         "internalType": "uint256",

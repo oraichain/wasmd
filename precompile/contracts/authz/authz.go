@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
+	wasmappparams "github.com/CosmWasm/wasmd/app/params"
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -25,7 +26,12 @@ var (
 )
 
 const (
+	BankMsgSend = "/cosmos.bank.v1beta1.MsgSend"
+)
+
+const (
 	SetGrantMethod = "setGrant"
+	GrantMethod    = "grant"
 )
 
 type PrecompileExecutor struct {
@@ -48,7 +54,11 @@ func NewContract(evmKeeper pcommon.EVMKeeper, authzKeeper pcommon.AuthzKeeper) c
 	functions := []*contract.StatefulPrecompileFunction{
 		contract.NewStatefulPrecompileFunction(
 			ABI.Methods[SetGrantMethod].ID,
-			executor.approve,
+			executor.setGrant,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[GrantMethod].ID,
+			executor.grant,
 		),
 	}
 
@@ -61,7 +71,7 @@ func NewContract(evmKeeper pcommon.EVMKeeper, authzKeeper pcommon.AuthzKeeper) c
 	return precompile
 }
 
-func (p PrecompileExecutor) approve(
+func (p PrecompileExecutor) setGrant(
 	accessibleState contract.AccessibleState,
 	caller common.Address,
 	callingContract common.Address,
@@ -128,13 +138,13 @@ func (p PrecompileExecutor) approve(
 	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
 
 	// We consider expire time = nil
-	grantMsg, err := authz.NewMsgGrant(granterCosmosAddr, granteeCosmosAddr, authorization, nil)
+	setGrantMsg, err := authz.NewMsgGrant(granterCosmosAddr, granteeCosmosAddr, authorization, nil)
 	if err != nil {
 		rerr = err
 		return
 	}
 
-	_, err = p.authzKeeper.Grant(ctx, grantMsg)
+	_, err = p.authzKeeper.Grant(ctx, setGrantMsg)
 	if err != nil {
 		rerr = err
 		return
@@ -142,5 +152,102 @@ func (p PrecompileExecutor) approve(
 
 	ret, rerr = method.Outputs.Pack(true)
 	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	return
+}
+
+func (p PrecompileExecutor) grant(
+	accessibleState contract.AccessibleState,
+	caller common.Address,
+	callingContract common.Address,
+	packedInput []byte,
+	suppliedGas uint64,
+	readOnly bool,
+	value *big.Int,
+) (ret []byte, remainingGas uint64, rerr error) {
+	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	if rerr != nil {
+		return
+	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			ret = nil
+			remainingGas = 0
+			rerr = fmt.Errorf("%s", err)
+			ctx.Logger().Error("Error querying grant using authz precompile: ", rerr.Error())
+			return
+		}
+	}()
+
+	method := ABI.Methods[GrantMethod]
+
+	args, err := method.Inputs.Unpack(packedInput)
+	if err != nil {
+		rerr = err
+		return
+	}
+
+	if err := pcommon.ValidateNonPayable(value); err != nil {
+		rerr = err
+		return
+	}
+
+	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
+		rerr = err
+		return
+	}
+
+	granterAddress := args[0].(common.Address)
+	granteeAddress := args[1].(common.Address)
+
+	denom := args[2].(string)
+	if denom == "" {
+		rerr = errors.New("invalid denom")
+		return
+	}
+
+	granterCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, granterAddress)
+	granteeCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, granteeAddress)
+
+	// We consider pagination = nil
+	grantMsg := &authz.QueryGrantsRequest{
+		Granter:    granterCosmosAddr.String(),
+		Grantee:    granteeCosmosAddr.String(),
+		MsgTypeUrl: BankMsgSend,
+		Pagination: nil,
+	}
+
+	res, err := p.authzKeeper.Grants(ctx, grantMsg)
+	if err != nil {
+		rerr = err
+		return
+	}
+
+	encodingConfig := wasmappparams.MakeEncodingConfig()
+	var sendAuthorization banktypes.SendAuthorization
+	var grantCoin sdk.Coin
+
+	for _, grant := range res.Grants {
+		err := encodingConfig.Codec.UnpackAny(grant.Authorization, &sendAuthorization)
+		if err != nil {
+			rerr = err
+			return
+		}
+
+		for _, coin := range sendAuthorization.SpendLimit {
+			if coin.Denom == denom {
+				grantCoin = coin
+			}
+		}
+	}
+
+	if grantCoin.Denom == "" {
+		rerr = errors.New("invalid grant denom")
+		return
+	}
+
+	ret, rerr = method.Outputs.Pack(grantCoin.Amount.BigInt())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+
 	return
 }
