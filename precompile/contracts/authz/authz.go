@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/contract"
@@ -21,7 +24,7 @@ var (
 )
 
 const (
-	ApproveMethod = "aprrove"
+	SaveGrantMethod = "saveGrant"
 )
 
 type PrecompileExecutor struct {
@@ -43,7 +46,7 @@ func NewContract(evmKeeper pcommon.EVMKeeper, authzKeeper pcommon.AuthzKeeper) c
 
 	functions := []*contract.StatefulPrecompileFunction{
 		contract.NewStatefulPrecompileFunction(
-			ABI.Methods[ApproveMethod].ID,
+			ABI.Methods[SaveGrantMethod].ID,
 			executor.approve,
 		),
 	}
@@ -66,7 +69,7 @@ func (p PrecompileExecutor) approve(
 	readOnly bool,
 	value *big.Int,
 ) (ret []byte, remainingGas uint64, rerr error) {
-	_, rerr = pcommon.GetPrecompileCtx(accessibleState)
+	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -81,7 +84,7 @@ func (p PrecompileExecutor) approve(
 		}
 	}()
 
-	method := ABI.Methods[ApproveMethod]
+	method := ABI.Methods[SaveGrantMethod]
 	args, err := method.Inputs.Unpack(packedInput)
 	if err != nil {
 		rerr = err
@@ -89,7 +92,7 @@ func (p PrecompileExecutor) approve(
 	}
 
 	if readOnly {
-		rerr = errors.New("cannot call approve from staticcall")
+		rerr = errors.New("cannot call save grant from staticcall")
 		return
 	}
 
@@ -98,12 +101,38 @@ func (p PrecompileExecutor) approve(
 		return
 	}
 
-	// TODO: need to check args length again
 	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
 		rerr = err
 		return
 	}
 
-	// TODO: need to implement authz logic here
+	granteeAddress := args[0].(common.Address)
+
+	denom := args[1].(string)
+	if denom == "" {
+		rerr = errors.New("invalid denom")
+		return
+	}
+
+	amount := args[2].(*big.Int)
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		// short circuit
+		ret, rerr = method.Outputs.Pack(true)
+		return
+	}
+
+	granterCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
+	granteeCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, granteeAddress)
+	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount)))
+	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
+
+	// We consider expire time = nil
+	if err := p.authzKeeper.SaveGrant(ctx, granteeCosmosAddr, granterCosmosAddr, authorization, nil); err != nil {
+		rerr = err
+		return
+	}
+
+	ret, rerr = method.Outputs.Pack(true)
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
 	return
 }
