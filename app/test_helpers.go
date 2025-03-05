@@ -150,7 +150,7 @@ func Setup(t *testing.T, opts ...wasmkeeper.Option) *WasmApp {
 
 	app := SetupWithGenesisValSet(t, valSet, []authtypes.GenesisAccount{acc}, SimAppChainID, opts, balance)
 	// register precompile contracts
-	registry.InitializePrecompiles(app.ContractKeeper, app.WasmKeeper, app.EvmKeeper, app.BankKeeper, app.AccountKeeper)
+	registry.InitializePrecompiles(app.ContractKeeper, app.WasmKeeper, app.EvmKeeper, app.BankKeeper, app.AccountKeeper, app.AuthzKeeper)
 
 	return app
 }

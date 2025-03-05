@@ -42,3 +42,6 @@ type AccountKeeper interface {
 	RemoveAccount(ctx context.Context, acc sdk.AccountI)
 	NewAccountWithAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
 }
+
+type AuthzKeeper interface {
+}

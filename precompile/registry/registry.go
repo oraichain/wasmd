@@ -3,6 +3,7 @@ package registry
 import (
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	"github.com/CosmWasm/wasmd/precompile/contracts/addr"
+	"github.com/CosmWasm/wasmd/precompile/contracts/authz"
 	"github.com/CosmWasm/wasmd/precompile/contracts/bank"
 	"github.com/CosmWasm/wasmd/precompile/contracts/json"
 	"github.com/CosmWasm/wasmd/precompile/contracts/wasmd"
@@ -17,16 +18,25 @@ var (
 	JsonContractAddress  = common.HexToAddress("0x9000000000000000000000000000000000000002")
 	AddrContractAddress  = common.HexToAddress("0x9000000000000000000000000000000000000003")
 	BankContractAddress  = common.HexToAddress("0x9000000000000000000000000000000000000004")
+	// TODO: need to declare authz precompile contract address here
+	AuthzContractAddress = common.HexToAddress("0x9000000000000000000000000000000000000005")
 )
 
 // init registers stateful precompile contracts with the global precompile registry
 // defined in kava-labs/go-ethereum/precompile/modules
-func InitializePrecompiles(wasmdKeeper pcommon.WasmdKeeper, wasmdViewKeeper pcommon.WasmdViewKeeper, evmKeeper pcommon.EVMKeeper, bankKeeper pcommon.BankKeeper, accountKeeper pcommon.AccountKeeper) {
+func InitializePrecompiles(
+	wasmdKeeper pcommon.WasmdKeeper,
+	wasmdViewKeeper pcommon.WasmdViewKeeper,
+	evmKeeper pcommon.EVMKeeper,
+	bankKeeper pcommon.BankKeeper,
+	accountKeeper pcommon.AccountKeeper,
+	authzKeeper pcommon.AuthzKeeper,
+) {
 	register(WasmdContractAddress, wasmd.NewContract(wasmdKeeper, wasmdViewKeeper, evmKeeper))
 	register(JsonContractAddress, json.NewContract())
 	register(AddrContractAddress, addr.NewContract(evmKeeper))
 	register(BankContractAddress, bank.NewContract(evmKeeper, bankKeeper, accountKeeper))
-
+	register(AuthzContractAddress, authz.NewContract(evmKeeper, authzKeeper))
 }
 
 // register accepts a 0x address string and a stateful precompile contract constructor, instantiates the
