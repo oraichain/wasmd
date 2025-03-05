@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/contract"
 )
@@ -24,7 +25,7 @@ var (
 )
 
 const (
-	SaveGrantMethod = "saveGrant"
+	SetGrantMethod = "setGrant"
 )
 
 type PrecompileExecutor struct {
@@ -46,7 +47,7 @@ func NewContract(evmKeeper pcommon.EVMKeeper, authzKeeper pcommon.AuthzKeeper) c
 
 	functions := []*contract.StatefulPrecompileFunction{
 		contract.NewStatefulPrecompileFunction(
-			ABI.Methods[SaveGrantMethod].ID,
+			ABI.Methods[SetGrantMethod].ID,
 			executor.approve,
 		),
 	}
@@ -84,7 +85,7 @@ func (p PrecompileExecutor) approve(
 		}
 	}()
 
-	method := ABI.Methods[SaveGrantMethod]
+	method := ABI.Methods[SetGrantMethod]
 	args, err := method.Inputs.Unpack(packedInput)
 	if err != nil {
 		rerr = err
@@ -127,7 +128,14 @@ func (p PrecompileExecutor) approve(
 	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
 
 	// We consider expire time = nil
-	if err := p.authzKeeper.SaveGrant(ctx, granteeCosmosAddr, granterCosmosAddr, authorization, nil); err != nil {
+	grantMsg, err := authz.NewMsgGrant(granterCosmosAddr, granteeCosmosAddr, authorization, nil)
+	if err != nil {
+		rerr = err
+		return
+	}
+
+	_, err = p.authzKeeper.Grant(ctx, grantMsg)
+	if err != nil {
 		rerr = err
 		return
 	}

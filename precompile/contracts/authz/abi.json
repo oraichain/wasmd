@@ -3,6 +3,11 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "granter",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "grantee",
         "type": "address"
       },
@@ -17,7 +22,65 @@
         "type": "uint256"
       }
     ],
-    "name": "saveGrant",
+    "name": "execGrant",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "granter",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "grantee",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "denom",
+        "type": "string"
+      }
+    ],
+    "name": "grants",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "grantee",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "denom",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "setGrant",
     "outputs": [
       {
         "internalType": "bool",
