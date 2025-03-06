@@ -1,6 +1,7 @@
 package authz
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"math/big"
@@ -19,7 +20,7 @@ import (
 // Singleton StatefulPrecompiledContract.
 var (
 	// RawABI contains the raw ABI of wasmd contract.
-	// go:embed abi.json
+	//go:embed abi.json
 	RawABI string
 
 	ABI = contract.MustParseABI(RawABI)
