@@ -7,7 +7,6 @@ import (
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
-	wasmappparams "github.com/CosmWasm/wasmd/app/params"
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -311,16 +310,11 @@ func (p PrecompileExecutor) grant(
 		return
 	}
 
-	encodingConfig := wasmappparams.MakeEncodingConfig()
 	var sendAuthorization banktypes.SendAuthorization
 	var grantCoin sdk.Coin
 
 	for _, grant := range res.Grants {
-		err := encodingConfig.Codec.UnpackAny(grant.Authorization, &sendAuthorization)
-		if err != nil {
-			rerr = err
-			return
-		}
+		sendAuthorization.Unmarshal(grant.Authorization.Value)
 
 		for _, coin := range sendAuthorization.SpendLimit {
 			if coin.Denom == denom {

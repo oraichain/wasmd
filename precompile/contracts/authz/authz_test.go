@@ -2,6 +2,7 @@ package authz_test
 
 import (
 	"encoding/hex"
+	"math/big"
 	"testing"
 
 	"github.com/CosmWasm/wasmd/app"
@@ -120,4 +121,56 @@ func TestSetGrant(t *testing.T) {
 
 	require.Equal(t, grantCoin.Denom, denom)
 	require.Equal(t, grantCoin.Amount, grantCoins[0].Amount)
+}
+
+func TestQueryGrant(t *testing.T) {
+	denom := "ukava"
+	tApp := app.Setup(t)
+	ctx := tApp.NewContext(true)
+	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
+
+	granterAddr, granterEvmAddr := MockAddressPair()
+	granteeAddr, granteeEvmAddr := MockAddressPair()
+	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
+
+	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
+	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
+	bankKeeper := tApp.GetBankKeeper()
+	authzKeeper := tApp.GetAuthzKeeper()
+	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
+	require.NoError(t, err)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
+	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
+
+	// grant
+	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
+	setGrantMsg, err := authztypes.NewMsgGrant(granterAddr, granteeAddr, authorization, nil)
+	require.NoError(t, err)
+
+	_, err = authzKeeper.Grant(ctx, setGrantMsg)
+	require.NoError(t, err)
+
+	// query
+	evm := vm.EVM{
+		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
+	}
+	p := authz.NewContract(tApp.EvmKeeper, authzKeeper)
+	method := authz.ABI.Methods[authz.GrantMethod]
+	suppliedGas := uint64(10_000_000)
+
+	args, err := method.Inputs.Pack(granterEvmAddr, granteeEvmAddr, denom)
+	require.Nil(t, err)
+	res, _, err := p.Run(&evm, granteeEvmAddr, registry.AddrContractAddress,
+		append(method.ID, args...),
+		suppliedGas,
+		false,
+		nil,
+	)
+	require.Nil(t, err)
+	output, err := method.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(*big.Int), big.NewInt(grantCoins[0].Amount.Int64()))
 }
