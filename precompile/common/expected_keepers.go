@@ -47,4 +47,5 @@ type AccountKeeper interface {
 type AuthzKeeper interface {
 	Grant(ctx context.Context, msg *authz.MsgGrant) (*authz.MsgGrantResponse, error)
 	Grants(ctx context.Context, req *authz.QueryGrantsRequest) (*authz.QueryGrantsResponse, error)
+	Exec(ctx context.Context, msg *authz.MsgExec) (*authz.MsgExecResponse, error)
 }

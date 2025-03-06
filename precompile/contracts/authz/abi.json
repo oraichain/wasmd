@@ -8,7 +8,7 @@
       },
       {
         "internalType": "address",
-        "name": "grantee",
+        "name": "recipient",
         "type": "address"
       },
       {

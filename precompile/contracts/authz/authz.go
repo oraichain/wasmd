@@ -26,12 +26,9 @@ var (
 )
 
 const (
-	BankMsgSend = "/cosmos.bank.v1beta1.MsgSend"
-)
-
-const (
-	SetGrantMethod = "setGrant"
-	GrantMethod    = "grant"
+	SetGrantMethod  = "setGrant"
+	ExecGrantMethod = "execGrant"
+	GrantMethod     = "grant"
 )
 
 type PrecompileExecutor struct {
@@ -57,6 +54,10 @@ func NewContract(evmKeeper pcommon.EVMKeeper, authzKeeper pcommon.AuthzKeeper) c
 			executor.setGrant,
 		),
 		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[ExecGrantMethod].ID,
+			executor.execGrant,
+		),
+		contract.NewStatefulPrecompileFunction(
 			ABI.Methods[GrantMethod].ID,
 			executor.grant,
 		),
@@ -71,6 +72,7 @@ func NewContract(evmKeeper pcommon.EVMKeeper, authzKeeper pcommon.AuthzKeeper) c
 	return precompile
 }
 
+// Transaction function
 func (p PrecompileExecutor) setGrant(
 	accessibleState contract.AccessibleState,
 	caller common.Address,
@@ -155,6 +157,91 @@ func (p PrecompileExecutor) setGrant(
 	return
 }
 
+func (p PrecompileExecutor) execGrant(
+	accessibleState contract.AccessibleState,
+	caller common.Address,
+	callingContract common.Address,
+	packedInput []byte,
+	suppliedGas uint64,
+	readOnly bool,
+	value *big.Int,
+) (ret []byte, remainingGas uint64, rerr error) {
+	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	if rerr != nil {
+		return
+	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			ret = nil
+			remainingGas = 0
+			rerr = fmt.Errorf("%s", err)
+			return
+
+		}
+	}()
+
+	method := ABI.Methods[SetGrantMethod]
+	args, err := method.Inputs.Unpack(packedInput)
+	if err != nil {
+		rerr = err
+		return
+	}
+
+	if readOnly {
+		rerr = errors.New("cannot call exec grant from staticcall")
+		return
+	}
+
+	if err := pcommon.ValidateNonPayable(value); err != nil {
+		rerr = err
+		return
+	}
+
+	if err := pcommon.ValidateArgsLength(args, 4); err != nil {
+		rerr = err
+		return
+	}
+
+	granterAddress := args[0].(common.Address)
+	recipientAddress := args[1].(common.Address)
+
+	denom := args[2].(string)
+	if denom == "" {
+		rerr = errors.New("invalid denom")
+		return
+	}
+
+	amount := args[3].(*big.Int)
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		// short circuit
+		ret, rerr = method.Outputs.Pack(true)
+		return
+	}
+
+	granterCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, granterAddress)
+	granteeCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
+	recipientCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, recipientAddress)
+
+	bankSendMsg := banktypes.NewMsgSend(
+		granterCosmosAddr,
+		recipientCosmosAddr,
+		sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount))),
+	)
+	execGrantMsg := authz.NewMsgExec(granteeCosmosAddr, []sdk.Msg{bankSendMsg})
+
+	_, err = p.authzKeeper.Exec(ctx, &execGrantMsg)
+	if err != nil {
+		rerr = err
+		return
+	}
+
+	ret, rerr = method.Outputs.Pack(true)
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	return
+}
+
+// Query function
 func (p PrecompileExecutor) grant(
 	accessibleState contract.AccessibleState,
 	caller common.Address,
@@ -213,7 +300,7 @@ func (p PrecompileExecutor) grant(
 	grantMsg := &authz.QueryGrantsRequest{
 		Granter:    granterCosmosAddr.String(),
 		Grantee:    granteeCosmosAddr.String(),
-		MsgTypeUrl: BankMsgSend,
+		MsgTypeUrl: banktypes.SendAuthorization{}.MsgTypeURL(),
 		Pagination: nil,
 	}
 
