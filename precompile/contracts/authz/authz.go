@@ -181,7 +181,7 @@ func (p PrecompileExecutor) execGrant(
 		}
 	}()
 
-	method := ABI.Methods[SetGrantMethod]
+	method := ABI.Methods[ExecGrantMethod]
 	args, err := method.Inputs.Unpack(packedInput)
 	if err != nil {
 		rerr = err
