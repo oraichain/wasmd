@@ -13,3 +13,25 @@ const (
 	// QuerierRoute defines the module's query routing key
 	QuerierRoute = ModuleName
 )
+
+type (
+	ByPassMsgKey struct{}
+)
+
+var (
+	AllowedTokenKeyPrefix       = []byte{0x00} // Key for the fee allowed token lists
+	TokenConfigurationKeyPrefix = []byte{0x01} // Key for the token info
+	TokenPoolRoutePrefix        = []byte{0x02} // Key for the token pool route on OraiDex
+)
+
+func GetAllowedTokenKey(denom string) []byte {
+	return append(AllowedTokenKeyPrefix, []byte(denom)...)
+}
+
+func GetTokenConfigurationKey(denom string) []byte {
+	return append(TokenConfigurationKeyPrefix, []byte(denom)...)
+}
+
+func GetTokenPoolRouteKey(denom string) []byte {
+	return append(TokenPoolRoutePrefix, []byte(denom)...)
+}

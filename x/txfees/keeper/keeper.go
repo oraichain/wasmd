@@ -1,8 +1,17 @@
 package keeper
 
+import (
+	storetypes "cosmossdk.io/store/types"
+)
+
 type Keeper struct {
+	storeKey storetypes.StoreKey
 }
 
-func NewKeeper() Keeper {
-	return Keeper{}
+func NewKeeper(
+	storeKey storetypes.StoreKey,
+) Keeper {
+	return Keeper{
+		storeKey: storeKey,
+	}
 }
