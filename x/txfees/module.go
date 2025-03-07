@@ -7,6 +7,7 @@ import (
 
 	"cosmossdk.io/api/tendermint/abci"
 	"cosmossdk.io/core/appmodule"
+	"github.com/CosmWasm/wasmd/x/txfees/keeper"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -24,9 +25,7 @@ var (
 	_ appmodule.AppModule   = AppModule{}
 )
 
-type AppModule struct {
-	AppModuleBasic
-}
+type AppModuleBasic struct{}
 
 func NewAppModuleBasic() AppModuleBasic {
 	return AppModuleBasic{}
@@ -67,6 +66,7 @@ func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)) //nolint:errcheck
 }
 
 // GetTxCmd returns the x/txfees module's root tx command.
@@ -79,11 +79,17 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return nil
 }
 
-type AppModuleBasic struct{}
+type AppModule struct {
+	AppModuleBasic
+	keeper keeper.Keeper
+}
 
-func NewAppModule() AppModule {
+func NewAppModule(
+	keeper keeper.Keeper,
+) AppModule {
 	return AppModule{
 		AppModuleBasic: NewAppModuleBasic(),
+		keeper:         keeper,
 	}
 }
 
@@ -106,32 +112,39 @@ func (AppModule) QuerierRoute() string { return types.QuerierRoute }
 // RegisterServices registers a GRPC query service to respond to the
 // module-specific GRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
-// RegisterInvariants registers the x/tokenfactory module's invariants.
+// RegisterInvariants registers the x/txfees module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
-// InitGenesis performs the x/tokenfactory module's genesis initialization. It
+// InitGenesis performs the x/txfees module's genesis initialization. It
 // returns no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.RawMessage) []abci.ValidatorUpdate {
+	var genState types.GenesisState
+	cdc.MustUnmarshalJSON(gs, &genState)
+	am.keeper.InitGenesis(ctx, genState)
+
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the x/tokenfactory module's exported genesis state as raw
+// ExportGenesis returns the x/txfees module's exported genesis state as raw
 // JSON bytes.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	return nil
+	genState := am.keeper.ExportGenesis(ctx)
+	return cdc.MustMarshalJSON(genState)
 }
 
 // ConsensusVersion implements ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
-// BeginBlock executes all ABCI BeginBlock logic respective to the tokenfactory module.
+// BeginBlock executes all ABCI BeginBlock logic respective to the txfees module.
 func (am AppModule) BeginBlock(_ context.Context) error {
 	return nil
 }
 
-// EndBlock executes all ABCI EndBlock logic respective to the tokenfactory module. It
+// EndBlock executes all ABCI EndBlock logic respective to the txfees module. It
 // returns no validator updates.
 func (am AppModule) EndBlock(_ context.Context) ([]abci.ValidatorUpdate, error) {
 	return nil, nil
