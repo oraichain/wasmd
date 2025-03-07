@@ -16,10 +16,5 @@ enum FeeTokenStatus {
 message FeeTokenConfiguration {
     string denom = 1;
     string pool_id = 2;
-    string exchange_rate = 3 [
-        (cosmos_proto.scalar)  = "cosmos.Dec",
-        (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
-        (gogoproto.nullable)   = false
-    ];
-    FeeTokenStatus status = 4;
+    FeeTokenStatus status = 3;
 }
