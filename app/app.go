@@ -175,6 +175,10 @@ import (
 	"github.com/CosmosContracts/juno/v18/x/globalfee"
 	globalfeekeeper "github.com/CosmosContracts/juno/v18/x/globalfee/keeper"
 	globalfeetypes "github.com/CosmosContracts/juno/v18/x/globalfee/types"
+
+	"github.com/CosmWasm/wasmd/x/precisebank"
+	precisebankkeeper "github.com/CosmWasm/wasmd/x/precisebank/keeper"
+	precisebanktypes "github.com/CosmWasm/wasmd/x/precisebank/types"
 )
 
 const appName = "WasmApp"
@@ -231,6 +235,8 @@ var maccPerms = map[string][]string{
 	tokenfactorytypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 	evmtypes.ModuleName:          {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 	erc20types.ModuleName:        {authtypes.Minter, authtypes.Burner},
+	precisebanktypes.ModuleName:  {authtypes.Minter, authtypes.Burner}, // used for reserve account to back fractional amounts
+
 }
 
 var (
@@ -294,6 +300,8 @@ type WasmApp struct {
 	Erc20Keeper     erc20keeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
 	GlobalFeeKeeper globalfeekeeper.Keeper
+
+	PrecisebankKeeper precisebankkeeper.Keeper
 
 	// Middleware wrapper
 	Ics20WasmHooks   *ibchooks.WasmHooks
@@ -406,7 +414,7 @@ func NewWasmApp(
 		capabilitytypes.StoreKey, ibcexported.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		wasmtypes.StoreKey, icahosttypes.StoreKey,
 		icacontrollertypes.StoreKey, clocktypes.StoreKey, globalfeetypes.StoreKey, ibchookstypes.StoreKey, packetforwardtypes.StoreKey, tokenfactorytypes.StoreKey,
-		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey,
+		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, precisebanktypes.StoreKey,
 	)
 
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
@@ -616,7 +624,7 @@ func NewWasmApp(
 	evmBankKeeper := evmkeeper.NewEvmBankKeeperWithDenoms(app.BankKeeper, app.AccountKeeper, appconfig.EvmDenom, appconfig.CosmosDenom)
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec, runtime.NewKVStoreService(keys[evmtypes.StoreKey]), tkeys[evmtypes.TransientKey], Authority,
-		app.AccountKeeper, evmBankKeeper, app.BankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
+		app.AccountKeeper, evmBankKeeper, app.PrecisebankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
 		nil, geth.NewEVM, tracer, evmSs,
 	)
 
@@ -666,6 +674,13 @@ func NewWasmApp(
 	// 	app.AccountKeeper,
 	// 	app.BankKeeper,
 	// )
+
+	app.PrecisebankKeeper = precisebankkeeper.NewKeeper(
+		app.appCodec,
+		keys[precisebanktypes.StoreKey],
+		app.BankKeeper,
+		app.AccountKeeper,
+	)
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -904,6 +919,7 @@ func NewWasmApp(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, evmSs),
 		feemarket.NewAppModule(app.FeeMarketKeeper, feeMarketSs),
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
+		precisebank.NewAppModule(app.PrecisebankKeeper, app.BankKeeper, app.AccountKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -967,6 +983,7 @@ func NewWasmApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
+		precisebanktypes.ModuleName,
 	)
 
 	app.ModuleManager.SetOrderEndBlockers(
@@ -991,6 +1008,7 @@ func NewWasmApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
+		precisebanktypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -1027,6 +1045,7 @@ func NewWasmApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
+		precisebanktypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
