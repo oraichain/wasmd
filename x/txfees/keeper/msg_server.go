@@ -20,6 +20,8 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 }
 
 func (k msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
 	if k.authority != msg.Authority {
 		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
 	}
@@ -28,9 +30,59 @@ func (k msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdateParam
 		return nil, err
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
 	if err := k.SetParams(ctx, msg.Params); err != nil {
 		return nil, err
 	}
 	return &types.MsgUpdateParamsResponse{}, nil
+}
+
+func (k msgServer) AddFeeToken(goCtx context.Context, msg *types.MsgAddFeeToken) (*types.MsgAddFeeTokenResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if k.authority != msg.Authority {
+		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
+	}
+
+	isAllowed, _ := k.IsTokenAllowed(ctx, msg.Config.Denom)
+	if isAllowed {
+		return nil, errors.Wrapf(types.ErrTokenAllowed, "fee token allowed %s", msg.Config.Denom)
+	}
+
+	k.AddAllowedToken(ctx, msg.Config.Denom)
+
+	// we need to force this to Frozen because there is no exchange price
+	msg.Config.Status = types.FeeTokenStatus_FROZEN
+	err := k.SetTokenConfiguration(ctx, msg.Config.Denom, msg.Config)
+	if err != nil {
+		return nil, errors.Wrapf(types.ErrTokenAllowed, err.Error())
+	}
+
+	return &types.MsgAddFeeTokenResponse{}, nil
+}
+
+func (k msgServer) RemoveFeeToken(goCtx context.Context, msg *types.MsgRemoveFeeToken) (*types.MsgRemoveFeeTokenResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if k.authority != msg.Authority {
+		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
+	}
+
+	isAllowed, _ := k.IsTokenAllowed(ctx, msg.Denom)
+	if !isAllowed {
+		return nil, errors.Wrapf(types.ErrTokenAllowed, "fee token not allowed %s", msg.Denom)
+	}
+
+	k.RemoveAllowedToken(ctx, msg.Denom)
+
+	err := k.RemoveTokenConfiguration(ctx, msg.Denom)
+	if err != nil {
+		return nil, errors.Wrapf(types.ErrTokenAllowed, err.Error())
+	}
+
+	err = k.RemoveTokenExchangeRate(ctx, msg.Denom)
+	if err != nil {
+		return nil, errors.Wrapf(types.ErrTokenAllowed, err.Error())
+	}
+
+	return &types.MsgRemoveFeeTokenResponse{}, nil
 }

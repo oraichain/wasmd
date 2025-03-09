@@ -8,13 +8,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 )
 
-func RegisterCodec(cdc *codec.LegacyAmino) {
-
+func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	cdc.RegisterConcrete(&MsgUpdateParams{}, "txfees/UpdateParams", nil)
+	cdc.RegisterConcrete(&MsgAddFeeToken{}, "txfees/AddFeeToken", nil)
+	cdc.RegisterConcrete(&MsgRemoveFeeToken{}, "txfees/RemoveFeeToken", nil)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
-	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgUpdateParams{},
+		&MsgAddFeeToken{},
+		&MsgRemoveFeeToken{},
 	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
@@ -25,13 +29,7 @@ var (
 )
 
 func init() {
-	RegisterCodec(amino)
-	// Register all Amino interfaces and concrete types on the authz Amino codec so that this can later be
-	// used to properly serialize MsgGrant and MsgExec instances
-	// Note: these 3 are inlines from authz/codec in 0.46 so we can be compatible with 0.45
+	RegisterLegacyAminoCodec(amino)
 	sdk.RegisterLegacyAminoCodec(amino)
 	cryptocodec.RegisterCrypto(amino)
-	codec.RegisterEvidences(amino)
-
-	amino.Seal()
 }

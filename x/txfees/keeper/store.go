@@ -74,6 +74,13 @@ func (k Keeper) GetTokenConfiguration(ctx sdk.Context, denom string) (types.FeeT
 	return config, true
 }
 
+func (k Keeper) RemoveTokenConfiguration(ctx sdk.Context, denom string) error {
+	store := k.storeService.OpenKVStore(ctx)
+	key := types.GetTokenConfigurationKey(denom)
+
+	return store.Delete(key)
+}
+
 // Token exchange rate store
 func (k Keeper) SetTokenExchangeRate(ctx sdk.Context, denom string, price math.LegacyDec) error {
 	store := k.storeService.OpenKVStore(ctx)
@@ -104,8 +111,8 @@ func (k Keeper) GetTokenExchangeRate(ctx sdk.Context, denom string) (math.Legacy
 	return rate, true
 }
 
-func (k Keeper) RemoveTokenExchangeRate(ctx sdk.Context, denom string) {
+func (k Keeper) RemoveTokenExchangeRate(ctx sdk.Context, denom string) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetTokenExchangeRateKey(denom)
-	store.Delete(key)
+	return store.Delete(key)
 }
