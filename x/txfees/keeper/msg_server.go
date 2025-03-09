@@ -57,6 +57,8 @@ func (k msgServer) AddFeeToken(goCtx context.Context, msg *types.MsgAddFeeToken)
 		return nil, errors.Wrapf(types.ErrTokenAllowed, err.Error())
 	}
 
+	// TODO: Get exchange rate here
+
 	return &types.MsgAddFeeTokenResponse{}, nil
 }
 
