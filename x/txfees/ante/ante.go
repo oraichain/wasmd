@@ -45,37 +45,53 @@ func (tdfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 		return next(ctx, tx, simulate)
 	}
 
-	feeCoins := feeTx.GetFee()
-
-	if len(feeCoins) > 1 {
-		return ctx, txfeestypes.ErrTooManyFeeCoins
-	}
-
 	if addr := tdfd.ak.GetModuleAddress(authtypes.FeeCollectorName); addr == nil {
 		return ctx, fmt.Errorf("fee collector module account (%s) has not been set", authtypes.FeeCollectorName)
 	}
 
-	fee := feeTx.GetFee()
-	if len(fee) == 0 {
-		return tdfd.normalDeductFeeAnteHandle(ctx, tx, simulate, next, feeTx)
+	feeCoins := feeTx.GetFee()
+	if len(feeCoins) > 1 {
+		return ctx, txfeestypes.ErrTooManyFeeCoins
+	}
+
+	// incase this is bypass msg. We will validate msg in mempool ante
+	if len(feeCoins) == 0 {
+		return tdfd.DeductFeeAnteHandle(ctx, tx, simulate, next, feeTx)
 	}
 
 	feeDenom := feeCoins.GetDenomByIndex(0)
-	isAllowed, err := tdfd.tfk.IsTokenAllowed(ctx, feeDenom)
+	baseDenom, err := tdfd.tfk.GetBaseTokenDenom(ctx)
 	if err != nil {
 		return ctx, err
 	}
 
-	if !isAllowed {
-		return tdfd.normalDeductFeeAnteHandle(ctx, tx, simulate, next, feeTx)
+	// if pay with different token
+	if feeDenom != baseDenom {
+		isAllowed, err := tdfd.tfk.IsTokenAllowed(ctx, feeDenom)
+		if err != nil {
+			return ctx, err
+		}
+
+		if !isAllowed {
+			return ctx, errors.Wrapf(txfeestypes.ErrTokenAllowed, "token not allowed %s", feeDenom)
+		}
+
+		config, found := tdfd.tfk.GetTokenConfiguration(ctx, feeDenom)
+		if !found {
+			return ctx, errors.Wrapf(txfeestypes.ErrTokenConfigurationNotFound, "token configuration not found %s", feeDenom)
+		}
+
+		if config.Status != txfeestypes.FeeTokenStatus_UPDATED {
+			return ctx, errors.Wrapf(txfeestypes.ErrFeeTokenUnAvailable, "token status not ready %s", feeDenom)
+		}
 	}
 
-	return tdfd.dynamicDeductFeeAnteHandle(ctx, tx, simulate, next, feeTx, feeDenom)
+	return tdfd.DeductFeeAnteHandle(ctx, tx, simulate, next, feeTx)
 }
 
-// normalDeductFeeAnteHandle deducts the fee from fee payer or fee granter (if set) and ensure
+// DeductFeeAnteHandle deducts the fee from fee payer or fee granter (if set) and ensure
 // the fee collector module account is set
-func (tdfd DeductFeeDecorator) normalDeductFeeAnteHandle(
+func (tdfd DeductFeeDecorator) DeductFeeAnteHandle(
 	ctx sdk.Context,
 	tx sdk.Tx,
 	simulate bool,
@@ -121,18 +137,6 @@ func (tdfd DeductFeeDecorator) normalDeductFeeAnteHandle(
 	)}
 	ctx.EventManager().EmitEvents(events)
 
-	return next(ctx, tx, simulate)
-}
-
-func (tdfd DeductFeeDecorator) dynamicDeductFeeAnteHandle(
-	ctx sdk.Context,
-	tx sdk.Tx,
-	simulate bool,
-	next sdk.AnteHandler,
-	feeTx sdk.FeeTx,
-	denom string,
-) (newCtx sdk.Context, err error) {
-	config, found := tdfd.tfk.GetTokenConfiguration(ctx, denom)
 	return next(ctx, tx, simulate)
 }
 

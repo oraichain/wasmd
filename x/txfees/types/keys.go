@@ -24,6 +24,7 @@ var (
 	TokenConfigurationKeyPrefix = []byte{0x02} // Key for the token info
 	TokenExchangeRateKeyPrefix  = []byte{0x03} // Key for token exchange rate
 	EpochKeyPrefix              = []byte{0x04} // KeyPrefixEpoch defines prefix key for storing epochs.
+	BaseDenomKey                = []byte{0x05} // BaseDenomKey
 )
 
 func GetAllowedTokenKey(denom string) []byte {

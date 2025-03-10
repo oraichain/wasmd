@@ -34,6 +34,6 @@ func NewKeeper(
 	}
 }
 
-func (Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
