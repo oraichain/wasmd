@@ -23,6 +23,7 @@ var (
 	AllowedTokenKeyPrefix       = []byte{0x01} // Key for the fee allowed token lists
 	TokenConfigurationKeyPrefix = []byte{0x02} // Key for the token info
 	TokenExchangeRateKeyPrefix  = []byte{0x03} // Key for token exchange rate
+	EpochKeyPrefix              = []byte{0x04} // KeyPrefixEpoch defines prefix key for storing epochs.
 )
 
 func GetAllowedTokenKey(denom string) []byte {
@@ -35,4 +36,8 @@ func GetTokenConfigurationKey(denom string) []byte {
 
 func GetTokenExchangeRateKey(denom string) []byte {
 	return append(TokenExchangeRateKeyPrefix, []byte(denom)...)
+}
+
+func GetEpochKey(identifier string) []byte {
+	return append(EpochKeyPrefix, []byte(identifier)...)
 }
