@@ -16,3 +16,5 @@ func (k Keeper) HasEpochInfo(ctx sdk.Context, identifier string) (bool, error) {
 
 	return has, nil
 }
+
+func (k Keeper) GetEpochInfo(ctx sdk.Context, identifier string) ty
