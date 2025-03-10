@@ -19,9 +19,10 @@ type (
 )
 
 var (
-	AllowedTokenKeyPrefix       = []byte{0x00} // Key for the fee allowed token lists
-	TokenConfigurationKeyPrefix = []byte{0x01} // Key for the token info
-	TokenExchangeRateKeyPrefix  = []byte{0x02} // Key for token exchange rate
+	ParamsKey                   = []byte{0x00} // Prefix for params key
+	AllowedTokenKeyPrefix       = []byte{0x01} // Key for the fee allowed token lists
+	TokenConfigurationKeyPrefix = []byte{0x02} // Key for the token info
+	TokenExchangeRateKeyPrefix  = []byte{0x03} // Key for token exchange rate
 )
 
 func GetAllowedTokenKey(denom string) []byte {
