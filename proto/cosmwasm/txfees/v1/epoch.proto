@@ -1,0 +1,8 @@
+syntax = "proto3";
+package cosmwasm.txfees.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmwasm/txfees/v1/params.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/txfees/types";

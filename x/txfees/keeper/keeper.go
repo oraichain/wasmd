@@ -10,7 +10,6 @@ type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService storetypes.KVStoreService
 	wk           *wasmkeeper.Keeper
-	wq           *wasmkeeper.GrpcQuerier
 	// the address capable of executing a MsgUpdateParams message. Typically, this
 	// should be the x/gov module account.
 	authority string
@@ -26,7 +25,6 @@ func NewKeeper(
 		cdc:          cdc,
 		storeService: storeService,
 		wk:           wk,
-		wq:           wasmkeeper.Querier(wk),
 		authority:    authority,
 	}
 }
