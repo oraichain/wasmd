@@ -1171,6 +1171,7 @@ func (app *WasmApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtype
 				TxFeeChecker:           evmante.NewDynamicFeeChecker(app.EvmKeeper),
 			},
 			AccountKeeper:         app.AccountKeeper,
+			AuthzKeeper:           &app.AuthzKeeper,
 			BankKeeper:            &app.BankKeeper,
 			IBCKeeper:             app.IBCKeeper,
 			EvmKeeper:             app.EvmKeeper,
