@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v0.50.8
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+Upgrade Oraichain mainnet to v0.50.8 to fix gasless contract bug out of gas when execute gasless contract.
+
+### BUG FIXES
+
+- Fix gasless contract out of gas ([\#80](https://github.com/oraichain/wasmd/pull/80))
+
 ## v0.50.7
 
 <!--

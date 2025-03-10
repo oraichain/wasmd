@@ -35,12 +35,13 @@ import (
 	v0505 "github.com/CosmWasm/wasmd/app/upgrades/v0505"
 	v0506 "github.com/CosmWasm/wasmd/app/upgrades/v0506"
 	v0507 "github.com/CosmWasm/wasmd/app/upgrades/v0507"
+	v0508 "github.com/CosmWasm/wasmd/app/upgrades/v0508"
 	v2 "github.com/CosmWasm/wasmd/x/wasm/migrations/v2"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v050.Upgrade, v0501.Upgrade, v0502.Upgrade, v0503.Upgrade, v0504.Upgrade, v0505.Upgrade, v0506.Upgrade, v0507.Upgrade}
+var Upgrades = []upgrades.Upgrade{v050.Upgrade, v0501.Upgrade, v0502.Upgrade, v0503.Upgrade, v0504.Upgrade, v0505.Upgrade, v0506.Upgrade, v0507.Upgrade, v0508.Upgrade}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *WasmApp) RegisterUpgradeHandlers() {

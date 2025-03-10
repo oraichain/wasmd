@@ -1,6 +1,7 @@
 package interchaintest
 
 import (
+	"fmt"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -80,6 +81,7 @@ func TestWasmGasLessContract(t *testing.T) {
 	resAfter, err := orai.ExecuteContract(ctx, oraiUser.KeyName(), contractAddress, executeMsg, "--gas", "auto")
 	require.NoError(t, err)
 	require.Less(t, resAfter.GasUsed, resBefore.GasUsed) // after set gas less gas used should be less than before
+	fmt.Println("Gas after: ", resAfter.GasUsed)
 
 	// Test unset gas less contract successfully
 	proposalUnsetGasLessID, err := helpers.ProposalUnsetGasLessContracts(
