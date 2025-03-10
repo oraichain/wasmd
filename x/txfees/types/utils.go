@@ -15,6 +15,7 @@ func BuildQueryOraidexSpotPriceRequest() []byte {
 
 // TODO: implement
 func GetOraidexSpotPriceResponse(data []byte) math.LegacyDec {
+	//
 	return math.LegacyDec{}
 }
 
