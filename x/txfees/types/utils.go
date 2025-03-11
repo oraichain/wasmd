@@ -2,9 +2,11 @@ package types
 
 import "cosmossdk.io/math"
 
+// '{"get_sqrt_price": {}}'
 type QueryOraidexSpotPriceRequest struct {
 }
 
+// {"data":"632447252548187055131688"}
 type QueryOraidexSpotPriceResponse struct {
 }
 
