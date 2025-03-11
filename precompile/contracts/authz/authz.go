@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 
 	sdkmath "cosmossdk.io/math"
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
@@ -29,6 +30,10 @@ const (
 	SetGrantMethod  = "setGrant"
 	ExecGrantMethod = "execGrant"
 	GrantMethod     = "grant"
+)
+
+const (
+	NoGrantError = "authorization not found for"
 )
 
 type PrecompileExecutor struct {
@@ -306,6 +311,13 @@ func (p PrecompileExecutor) grant(
 
 	res, err := p.authzKeeper.Grants(ctx, grantMsg)
 	if err != nil {
+		if strings.Contains(err.Error(), NoGrantError) {
+			ret, rerr = method.Outputs.Pack(big.NewInt(0))
+			remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+
+			return
+		}
+
 		rerr = err
 		return
 	}

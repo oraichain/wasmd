@@ -131,8 +131,10 @@ func TestQueryGrant(t *testing.T) {
 
 	granterAddr, granterEvmAddr := MockAddressPair()
 	granteeAddr, granteeEvmAddr := MockAddressPair()
+	cosmosAddr, evmAddr := MockAddressPair()
 	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
 	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, cosmosAddr, evmAddr)
 
 	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
 	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
@@ -142,6 +144,7 @@ func TestQueryGrant(t *testing.T) {
 	require.NoError(t, err)
 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, cosmosAddr, grantCoins)
 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
 
 	// grant
@@ -160,6 +163,7 @@ func TestQueryGrant(t *testing.T) {
 	method := authz.ABI.Methods[authz.GrantMethod]
 	suppliedGas := uint64(10_000_000)
 
+	// have grant
 	args, err := method.Inputs.Pack(granterEvmAddr, granteeEvmAddr, denom)
 	require.Nil(t, err)
 	res, _, err := p.Run(&evm, granteeEvmAddr, registry.AddrContractAddress,
@@ -173,6 +177,21 @@ func TestQueryGrant(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, 1, len(output))
 	require.Equal(t, output[0].(*big.Int), big.NewInt(grantCoins[0].Amount.Int64()))
+
+	// no grant
+	args, err = method.Inputs.Pack(granterEvmAddr, evmAddr, denom)
+	require.Nil(t, err)
+	res, _, err = p.Run(&evm, evmAddr, registry.AddrContractAddress,
+		append(method.ID, args...),
+		suppliedGas,
+		false,
+		nil,
+	)
+	require.Nil(t, err)
+	output, err = method.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(*big.Int).Int64(), big.NewInt(0).Int64())
 }
 
 func TestExecGrant(t *testing.T) {
