@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	errors "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	txfeeskeeper "github.com/CosmWasm/wasmd/x/txfees/keeper"
 	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -153,4 +154,69 @@ func DeductFees(bankKeeper BankKeeper, ctx sdk.Context, accAddress sdk.AccAddres
 	return nil
 }
 
-type MempoolFeeDecorator struct{}
+type MempoolFeeDecorator struct {
+	tfk txfeeskeeper.Keeper
+}
+
+func (mpfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	feeTx, ok := tx.(sdk.FeeTx)
+	if !ok {
+		return ctx, errors.Wrap(errorstypes.ErrTxDecode, "Tx must be a FeeTx")
+	}
+
+	// Ensure that the provided fees meet a minimum threshold for the validator,
+	// if this is a CheckTx. This is only for local mempool purposes, and thus
+	// is only ran on check tx.
+	if !ctx.IsCheckTx() || simulate {
+		return next(ctx, tx, simulate)
+	}
+
+	if ctx.BlockHeight() == 0 {
+		return next(ctx, tx, simulate)
+	}
+
+	gas := feeTx.GetGas()
+	requiredBaseFee, err := mpfd.getBaseRequiredFees(ctx, int64(gas))
+	if err != nil {
+		return ctx, err
+	}
+
+	feeCoins := feeTx.GetFee()
+	if len(feeCoins) != 1 {
+		return ctx, errors.Wrapf(errorstypes.ErrInsufficientFee,
+			"Expected 1 fee denom attached, got %d", len(feeCoins))
+	}
+
+	convertedFee, err := mpfd.tfk.ConvertToBaseTokenFee(ctx, feeCoins[0])
+	if err != nil {
+		return ctx, err
+	}
+
+	if !(convertedFee.IsGTE(requiredBaseFee)) {
+		return ctx, errors.Wrapf(errorstypes.ErrInsufficientFee, "insufficient fees; got: %s which converts to %s. required: %s", feeCoins[0], convertedFee, requiredBaseFee)
+
+	}
+
+	return next(ctx, tx, simulate)
+}
+
+func (mpfd MempoolFeeDecorator) getBaseRequiredFees(ctx sdk.Context, gasLimit int64) (sdk.Coin, error) {
+	var (
+		minGasPrices math.LegacyDec
+		err          error
+	)
+
+	baseDenom, err := mpfd.tfk.GetBaseTokenDenom(ctx)
+	if err != nil {
+		return sdk.Coin{}, err
+	}
+
+	minGasPrices = ctx.MinGasPrices().AmountOf(baseDenom)
+	glDec := math.LegacyNewDec(gasLimit)
+
+	// fee = min gas prices * gas limit
+	fee := minGasPrices.Mul(glDec)
+	requiredFees := sdk.NewCoin(baseDenom, fee.Ceil().RoundInt())
+
+	return requiredFees, nil
+}

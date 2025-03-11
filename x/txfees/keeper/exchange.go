@@ -38,3 +38,41 @@ func (k Keeper) QueryOraiDexTokenExchangeRate(ctx sdk.Context, denom string) err
 
 	return nil
 }
+
+func (k Keeper) ConvertToBaseTokenFee(ctx sdk.Context, inputFee sdk.Coin) (sdk.Coin, error) {
+	baseDenom, err := k.GetBaseTokenDenom(ctx)
+	if err != nil {
+		return sdk.Coin{}, err
+	}
+
+	if inputFee.Denom == baseDenom {
+		return inputFee, nil
+	}
+
+	isAllowed, err := k.IsTokenAllowed(ctx, inputFee.Denom)
+	if err != nil {
+		return sdk.Coin{}, err
+	}
+
+	if !isAllowed {
+		return sdk.Coin{}, types.ErrTokenAllowed
+	}
+
+	config, found := k.GetTokenConfiguration(ctx, inputFee.Denom)
+	if !found {
+		return sdk.Coin{}, types.ErrTokenConfigurationNotFound
+	}
+
+	if config.Status != types.FeeTokenStatus_UPDATED {
+		return sdk.Coin{}, types.ErrFeeTokenUnAvailable
+	}
+
+	rate, found := k.GetTokenExchangeRate(ctx, inputFee.Denom)
+	if !found {
+		return sdk.Coin{}, types.ErrInvalidExchangeRate
+	}
+
+	baseAmount := rate.MulInt(inputFee.Amount).RoundInt()
+
+	return sdk.NewCoin(baseDenom, baseAmount), nil
+}
