@@ -116,3 +116,25 @@ func (k Keeper) RemoveTokenExchangeRate(ctx sdk.Context, denom string) error {
 	key := types.GetTokenExchangeRateKey(denom)
 	return store.Delete(key)
 }
+
+// base denom
+func (k Keeper) SetBaseTokenDenom(ctx sdk.Context, denom string) error {
+	store := k.storeService.OpenKVStore(ctx)
+	return store.Set(types.BaseDenomKey, []byte(denom))
+}
+
+func (k Keeper) GetBaseTokenDenom(ctx sdk.Context) (denom string, err error) {
+	store := k.storeService.OpenKVStore(ctx)
+
+	has, err := store.Has(types.BaseDenomKey)
+	if !has || err != nil {
+		return "", err
+	}
+
+	bz, err := store.Get(types.BaseDenomKey)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bz), nil
+}
