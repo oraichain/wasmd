@@ -10,8 +10,6 @@ import (
 func (k Keeper) InitGenesis(ctx sdk.Context, genState types.GenesisState) {
 	k.SetParams(ctx, genState.Params)
 
-	k.Logger(ctx).Error("Txfees InitGenesis")
-
 	for _, epoch := range genState.Epochs {
 		err := k.AddEpochInfo(ctx, epoch)
 		if err != nil {

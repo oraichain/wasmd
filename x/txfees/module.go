@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"cosmossdk.io/api/tendermint/abci"
 	"cosmossdk.io/core/appmodule"
 	"github.com/CosmWasm/wasmd/x/txfees/keeper"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
