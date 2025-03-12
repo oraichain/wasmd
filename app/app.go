@@ -137,7 +137,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/CosmWasm/wasmd/client/docs"
-	"github.com/CosmWasm/wasmd/x/txfees"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -179,6 +179,7 @@ import (
 	erc20keeper "github.com/evmos/ethermint/x/erc20/keeper"
 	erc20types "github.com/evmos/ethermint/x/erc20/types"
 
+	"github.com/CosmWasm/wasmd/x/txfees"
 	txfeeskeeper "github.com/CosmWasm/wasmd/x/txfees/keeper"
 	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
 
