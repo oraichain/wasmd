@@ -10,8 +10,10 @@ import (
 var _ types.QueryServer = Keeper{}
 
 func (k Keeper) Params(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	_ = sdk.UnwrapSDKContext(ctx)
-	// params := k.GetParams(sdkCtx)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	params, _ := k.GetParams(sdkCtx)
 
-	return &types.QueryParamsResponse{}, nil
+	return &types.QueryParamsResponse{
+		Params: params,
+	}, nil
 }
