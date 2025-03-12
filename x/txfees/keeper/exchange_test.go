@@ -108,6 +108,4 @@ func (s *KeeperTestSuite) TestQueryOraiDexTokenExchangeRate() {
 	s.Require().True(found)
 	s.Require().NotNil(rate)
 	s.Require().Equal(queryRate, rate)
-
-	s.Require().True(false)
 }
