@@ -3,16 +3,17 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k Keeper) QueryOraiDexTokenExchangeRate(ctx sdk.Context, denom string) error {
+func (k Keeper) QueryOraiDexTokenExchangeRate(ctx sdk.Context, denom string) (math.LegacyDec, error) {
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		return err
+		return math.LegacyDec{}, err
 	}
 
 	contractAddress := params.PriceContractAddress
@@ -21,7 +22,7 @@ func (k Keeper) QueryOraiDexTokenExchangeRate(ctx sdk.Context, denom string) err
 	// build and query request
 	queryData, err := types.BuildQueryOraidexSpotPriceRequest(denom)
 	if err != nil {
-		return err
+		return math.LegacyDec{}, err
 	}
 
 	req := &wasmtypes.QuerySmartContractStateRequest{
@@ -32,23 +33,24 @@ func (k Keeper) QueryOraiDexTokenExchangeRate(ctx sdk.Context, denom string) err
 	goCtx := sdk.WrapSDKContext(ctx)
 	res, err := querier.SmartContractState(goCtx, req)
 	if err != nil {
-		return err
+		return math.LegacyDec{}, err
 	}
 
 	// parse data and store
-	rate, err := types.GetOraidexSpotPriceResponse(res.Data)
+	sqrtPrice, err := types.GetOraidexSqrtPriceResponse(res.Data)
 	if err != nil {
-		return err
+		return math.LegacyDec{}, err
 	}
 
-	err = k.SetTokenExchangeRate(ctx, denom, rate)
+	exchangeRate := sqrtPrice.Power(2)
+	err = k.SetTokenExchangeRate(ctx, denom, exchangeRate)
 	if err != nil {
-		return err
+		return math.LegacyDec{}, err
 	}
 
-	k.Logger(ctx).Info(fmt.Sprintf("set token exchange rate: token %s rate %s", denom, rate.String()))
+	k.Logger(ctx).Info(fmt.Sprintf("set token exchange rate: token %s rate %s", denom, exchangeRate.String()))
 
-	return nil
+	return exchangeRate, nil
 }
 
 func (k Keeper) ConvertToBaseTokenFee(ctx sdk.Context, inputFee sdk.Coin) (sdk.Coin, error) {

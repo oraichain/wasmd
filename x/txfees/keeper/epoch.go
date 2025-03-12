@@ -107,7 +107,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, identifier string) {
 	switch identifier {
 	case types.DefaultQueryEpochIdentifier:
 		k.IterateAllowedTokenList(ctx, func(denom string) (stop bool) {
-			err := k.QueryOraiDexTokenExchangeRate(ctx, denom)
+			_, err := k.QueryOraiDexTokenExchangeRate(ctx, denom)
 			config, _ := k.GetTokenConfiguration(ctx, denom)
 			if err != nil {
 				config.Status = types.FeeTokenStatus_OUTDATED
