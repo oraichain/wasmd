@@ -9,7 +9,7 @@ import (
 // InitGenesis initializes the tokenfactory module's state from a provided genesis
 // state.
 func (k Keeper) InitGenesis(ctx sdk.Context, genState types.GenesisState) {
-
+	k.Logger(ctx).Error("InitGenesis tokenfactory")
 	if genState.Params.DenomCreationFee == nil {
 		genState.Params.DenomCreationFee = sdk.NewCoins()
 	}
