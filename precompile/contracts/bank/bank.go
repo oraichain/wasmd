@@ -65,10 +65,10 @@ func NewContract(
 ) contract.StatefulPrecompiledContract {
 
 	executor := &PrecompileExecutor{
-		evmKeeper:   evmKeeper,
-		bankKeeper:  bankKeeper,
+		evmKeeper:     evmKeeper,
+		bankKeeper:    bankKeeper,
 		accountKeeper: accountKeeper,
-		authzKeeper: authzKeeper,
+		authzKeeper:   authzKeeper,
 	}
 
 	functions := []*contract.StatefulPrecompileFunction{
@@ -226,7 +226,7 @@ func (p PrecompileExecutor) burn(
 		return
 	}
 
-	if err := pcommon.ValidateArgsLength(args, 2); err != nil {
+	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
 		rerr = err
 		return
 	}
@@ -299,10 +299,9 @@ func (p PrecompileExecutor) burn(
 		}
 
 		// then we exec grant to token-factory module account
-		moduleAddr := p.accountKeeper.GetModuleAddress(tokenfactorytypes.ModuleName)
 		bankSendMsg := banktypes.NewMsgSend(
 			burnFromCosmosAddr,
-			moduleAddr,
+			burnFromCosmosAddr,
 			sdk.NewCoins(coinBurn),
 		)
 		execGrantMsg := authz.NewMsgExec(callerCosmosAddr, []sdk.Msg{bankSendMsg})
@@ -314,6 +313,11 @@ func (p PrecompileExecutor) burn(
 		}
 
 		// finally we burn coin from token-factory module
+		if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnFromCosmosAddr, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+			rerr = err
+			return
+		}
+
 		if err := p.bankKeeper.BurnCoins(ctx, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
 			rerr = err
 			return
