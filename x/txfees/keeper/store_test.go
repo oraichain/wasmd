@@ -1,6 +1,11 @@
 package keeper_test
 
-func (s *KeeperTestSuite) TestAddAllowedToken() {
+import (
+	"cosmossdk.io/math"
+	"github.com/CosmWasm/wasmd/x/txfees/types"
+)
+
+func (s *KeeperTestSuite) TestStoreAllowedToken() {
 	allowedTokenList := []string{"token1", "token2"}
 	unallowedToken := "token3"
 
@@ -28,4 +33,40 @@ func (s *KeeperTestSuite) TestAddAllowedToken() {
 		s.Require().False(isAllowed)
 		s.Require().NoError(err)
 	}
+}
+
+func (s *KeeperTestSuite) TestStoreTokenConfiguration() {
+	config := types.FeeTokenConfiguration{
+		Denom:  "denom",
+		PoolId: "PoolId",
+		Status: types.FeeTokenStatus_UPDATED,
+	}
+
+	// set to store
+	s.feeKeeper.SetTokenConfiguration(s.ctx, config)
+
+	// get from store
+	storedConfig, found := s.feeKeeper.GetTokenConfiguration(s.ctx, "denom")
+	s.Require().True(found)
+	s.Require().Equal(config, storedConfig)
+
+	s.feeKeeper.RemoveTokenConfiguration(s.ctx, "denom")
+	_, found = s.feeKeeper.GetTokenConfiguration(s.ctx, "denom")
+	s.Require().False(found)
+}
+
+func (s *KeeperTestSuite) TestStoreTokenExchangeRate() {
+	rate := math.LegacyOneDec()
+
+	s.feeKeeper.SetTokenExchangeRate(s.ctx, "denom", rate)
+
+	storedRate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "denom")
+	s.Require().True(found)
+	s.Require().Equal(rate, storedRate)
+
+	err := s.feeKeeper.RemoveTokenExchangeRate(s.ctx, "denom")
+	s.Require().NoError(err)
+
+	_, found = s.feeKeeper.GetTokenExchangeRate(s.ctx, "denom")
+	s.Require().False(found)
 }

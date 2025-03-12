@@ -27,3 +27,12 @@ func (k Keeper) GetParams(ctx sdk.Context) (params types.Params, err error) {
 	err = k.cdc.Unmarshal(bz, &params)
 	return params, err
 }
+
+func (k Keeper) GetBaseTokenDenom(ctx sdk.Context) (denom string, err error) {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return params.TokenBaseDenom, nil
+}

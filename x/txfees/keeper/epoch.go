@@ -115,7 +115,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, identifier string) {
 				config.Status = types.FeeTokenStatus_UPDATED
 			}
 
-			k.SetTokenConfiguration(ctx, denom, config)
+			k.SetTokenConfiguration(ctx, config)
 			return false
 		})
 	default:

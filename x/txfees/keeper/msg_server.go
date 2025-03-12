@@ -58,7 +58,7 @@ func (k msgServer) AddFeeToken(goCtx context.Context, msg *types.MsgAddFeeToken)
 		msg.Config.Status = types.FeeTokenStatus_UPDATED
 	}
 
-	err = k.SetTokenConfiguration(ctx, msg.Config.Denom, msg.Config)
+	err = k.SetTokenConfiguration(ctx, msg.Config)
 	if err != nil {
 		return nil, errors.Wrapf(types.ErrTokenAllowed, err.Error())
 	}
