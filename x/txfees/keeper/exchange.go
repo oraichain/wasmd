@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -17,7 +19,11 @@ func (k Keeper) QueryOraiDexTokenExchangeRate(ctx sdk.Context, denom string) err
 	querier := wasmkeeper.Querier(k.wk)
 
 	// build and query request
-	queryData := types.BuildQueryOraidexSpotPriceRequest()
+	queryData, err := types.BuildQueryOraidexSpotPriceRequest(denom)
+	if err != nil {
+		return err
+	}
+
 	req := &wasmtypes.QuerySmartContractStateRequest{
 		Address:   contractAddress,
 		QueryData: queryData,
@@ -30,11 +36,17 @@ func (k Keeper) QueryOraiDexTokenExchangeRate(ctx sdk.Context, denom string) err
 	}
 
 	// parse data and store
-	rate := types.GetOraidexSpotPriceResponse(res.Data)
+	rate, err := types.GetOraidexSpotPriceResponse(res.Data)
+	if err != nil {
+		return err
+	}
+
 	err = k.SetTokenExchangeRate(ctx, denom, rate)
 	if err != nil {
 		return err
 	}
+
+	k.Logger(ctx).Info(fmt.Sprintf("set token exchange rate: token %s rate %s", denom, rate.String()))
 
 	return nil
 }

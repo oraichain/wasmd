@@ -140,8 +140,9 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the txfees module.
-func (am AppModule) BeginBlock(_ context.Context) error {
-	return nil
+func (am AppModule) BeginBlock(ctx context.Context) error {
+	sdkContext := sdk.UnwrapSDKContext(ctx)
+	return am.keeper.BeginBlock(sdkContext)
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the txfees module. It

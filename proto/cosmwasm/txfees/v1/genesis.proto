@@ -3,6 +3,7 @@ package cosmwasm.txfees.v1;
 
 import "gogoproto/gogo.proto";
 import "cosmwasm/txfees/v1/params.proto";
+import "cosmwasm/txfees/v1/epoch.proto";
 
 option go_package = "github.com/CosmWasm/wasmd/x/txfees/types";
 
@@ -10,4 +11,5 @@ option go_package = "github.com/CosmWasm/wasmd/x/txfees/types";
 message GenesisState {
   // params defines the paramaters of the module.
   Params params = 1 [ (gogoproto.nullable) = false ];
+  repeated EpochInfo epochs = 2 [ (gogoproto.nullable) = false ];
 }
