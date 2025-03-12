@@ -2,6 +2,7 @@ package types
 
 func DefaultParams() Params {
 	return Params{
+		TokenBaseDenom:       "orai",
 		PriceContractAddress: "",
 	}
 }

@@ -7,7 +7,7 @@ import (
 )
 
 //	'{"get_sqrt_price": {
-//		"denom": ""
+//		"quote_token": ""
 //	}}'
 
 type OraidexQueryMsgRequest struct {
@@ -19,7 +19,7 @@ type QueryOraidexSqrtPriceResponse struct {
 }
 
 type QueryOraidexSqrtPriceRequest struct {
-	Denom string `json:"denom"`
+	Denom string `json:"quote_token"`
 }
 
 func BuildQueryOraidexSpotPriceRequest(denom string) ([]byte, error) {
