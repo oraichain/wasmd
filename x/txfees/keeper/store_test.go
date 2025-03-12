@@ -20,6 +20,12 @@ func (s *KeeperTestSuite) TestAddAllowedToken() {
 		allowedList = append(allowedList, denom)
 		return false
 	})
-
 	s.Require().Equal(allowedTokenList, allowedList)
+
+	for _, token := range allowedTokenList {
+		s.feeKeeper.RemoveAllowedToken(s.ctx, token)
+		isAllowed, err := s.feeKeeper.IsTokenAllowed(s.ctx, token)
+		s.Require().False(isAllowed)
+		s.Require().NoError(err)
+	}
 }
