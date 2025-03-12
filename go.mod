@@ -74,6 +74,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/rs/cors v1.11.1
+	github.com/test-go/testify v1.1.4
 	github.com/twmb/franz-go v1.18.0
 	github.com/twmb/franz-go/pkg/kadm v1.14.0
 	golang.org/x/sync v0.10.0
