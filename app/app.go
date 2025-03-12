@@ -962,7 +962,7 @@ func NewWasmApp(
 			feemarkettypes.ModuleName:     feemarket.AppModuleBasic{},
 			erc20types.ModuleName:         erc20.AppModuleBasic{},
 			globalfee.ModuleName:          globalfee.AppModuleBasic{},
-			txfeestypes.ModuleName:        txfees.AppModuleBasic{},
+			// txfeestypes.ModuleName:        txfees.AppModuleBasic{},
 		})
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
