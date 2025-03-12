@@ -86,6 +86,8 @@ func (k Keeper) ConvertToBaseTokenFee(ctx sdk.Context, inputFee sdk.Coin) (sdk.C
 		return sdk.Coin{}, types.ErrInvalidExchangeRate
 	}
 
+	// rate = quote_asset/base_asset
+	// => base_amount = rate * quote_asset_amount
 	baseAmount := rate.MulInt(inputFee.Amount).RoundInt()
 
 	return sdk.NewCoin(baseDenom, baseAmount), nil
