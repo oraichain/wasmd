@@ -33,6 +33,7 @@ const (
 	SymbolMethod      = "symbol"
 	DecimalsMethod    = "decimals"
 	SupplyMethod      = "supply"
+	BurnMethod        = "burn"
 )
 
 type CoinBalance struct {
@@ -62,6 +63,10 @@ func NewContract(evmKeeper pcommon.EVMKeeper, bankKeeper pcommon.BankKeeper, acc
 		contract.NewStatefulPrecompileFunction(
 			ABI.Methods[SendMethod].ID,
 			executor.send,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[BurnMethod].ID,
+			executor.burn,
 		),
 		contract.NewStatefulPrecompileFunction(
 			ABI.Methods[BalanceMethod].ID,
@@ -160,6 +165,85 @@ func (p PrecompileExecutor) send(accessibleState contract.AccessibleState,
 	senderCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
 	receiverCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, receiverEvmAddr)
 	if err := p.bankKeeper.SendCoins(ctx, senderCosmosAddr, receiverCosmosAddr, sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount)))); err != nil {
+		rerr = err
+		return
+	}
+
+	ret, rerr = method.Outputs.Pack(true)
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	return
+}
+
+func (p PrecompileExecutor) burn(
+	accessibleState contract.AccessibleState,
+	caller common.Address,
+	callingContract common.Address,
+	packedInput []byte,
+	suppliedGas uint64,
+	readOnly bool,
+	value *big.Int,
+) (ret []byte, remainingGas uint64, rerr error) {
+	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	if rerr != nil {
+		return
+	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			ret = nil
+			remainingGas = 0
+			rerr = fmt.Errorf("%s", err)
+			return
+		}
+	}()
+	method := ABI.Methods[BurnMethod]
+
+	args, err := method.Inputs.Unpack(packedInput)
+	if err != nil {
+		rerr = err
+		return
+	}
+
+	if readOnly {
+		rerr = errors.New("cannot call burn from staticcall")
+		return
+	}
+	
+	if err := pcommon.ValidateNonPayable(value); err != nil {
+		rerr = err
+		return
+	}
+
+	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
+		rerr = err
+		return
+	}
+
+	burnEvmAddr := args[0].(common.Address)
+
+	denom := args[1].(string)
+	if denom == "" {
+		rerr = errors.New("invalid denom")
+		return
+	}
+
+	amount := args[2].(*big.Int)
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		// short circuit
+		ret, rerr = method.Outputs.Pack(true)
+		return
+	}
+
+	coinBurn := sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount))
+	burnCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, burnEvmAddr)
+	// first send coin from account to module
+	if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnCosmosAddr, banktypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+		rerr = err
+		return
+	}
+
+	// then burn coin from module
+	if err := p.bankKeeper.BurnCoins(ctx, banktypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
 		rerr = err
 		return
 	}
