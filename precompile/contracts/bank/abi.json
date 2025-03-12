@@ -60,11 +60,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
         "internalType": "string",
         "name": "denom",
         "type": "string"

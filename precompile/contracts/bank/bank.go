@@ -8,9 +8,9 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/contract"
@@ -215,20 +215,18 @@ func (p PrecompileExecutor) burn(
 		return
 	}
 
-	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
+	if err := pcommon.ValidateArgsLength(args, 2); err != nil {
 		rerr = err
 		return
 	}
 
-	burnEvmAddr := args[0].(common.Address)
-
-	denom := args[1].(string)
+	denom := args[0].(string)
 	if denom == "" {
 		rerr = errors.New("invalid denom")
 		return
 	}
 
-	amount := args[2].(*big.Int)
+	amount := args[1].(*big.Int)
 	if amount.Cmp(big.NewInt(0)) == 0 {
 		// short circuit
 		ret, rerr = method.Outputs.Pack(true)
@@ -236,7 +234,7 @@ func (p PrecompileExecutor) burn(
 	}
 
 	coinBurn := sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount))
-	burnCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, burnEvmAddr)
+	burnCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
 	// first send coin from account to token-factory module
 	if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnCosmosAddr, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
 		rerr = err

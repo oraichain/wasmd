@@ -121,7 +121,7 @@ func TestBurn(t *testing.T) {
 	method := bank.ABI.Methods[bank.BurnMethod]
 	suppliedGas := uint64(10_000_000)
 
-	args, err := method.Inputs.Pack(burnEvmAddr, denom, burnCoins[0].Amount.BigInt())
+	args, err := method.Inputs.Pack(denom, burnCoins[0].Amount.BigInt())
 	require.Nil(t, err)
 	res, _, err := p.Run(&evm, burnEvmAddr, registry.AddrContractAddress,
 		append(method.ID, args...),
