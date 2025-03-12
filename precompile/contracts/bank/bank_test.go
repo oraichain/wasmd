@@ -95,6 +95,50 @@ func TestSend(t *testing.T) {
 	require.Equal(t, balance.Amount, sdkmath.NewInt(10))
 }
 
+func TestBurn(t *testing.T) {
+	denom := "ukava"
+	tApp := app.Setup(t)
+	ctx := tApp.NewContext(true)
+	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
+
+	burnCosmosAddr, burnEvmAddr := MockAddressPair()
+	tApp.EvmKeeper.SetAddressMapping(ctx, burnCosmosAddr, burnEvmAddr)
+
+	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10000)))
+	sentCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
+	burnCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
+	bankKeeper := tApp.GetBankKeeper()
+	accountKeeper := tApp.GetAccountKeeper()
+	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
+	require.NoError(t, err)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, burnCosmosAddr, sentCoins)
+	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
+
+	evm := vm.EVM{
+		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
+	}
+	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
+	method := bank.ABI.Methods[bank.BurnMethod]
+	suppliedGas := uint64(10_000_000)
+
+	args, err := method.Inputs.Pack(burnEvmAddr, denom, burnCoins[0].Amount.BigInt())
+	require.Nil(t, err)
+	res, _, err := p.Run(&evm, burnEvmAddr, registry.AddrContractAddress,
+		append(method.ID, args...),
+		suppliedGas,
+		false,
+		nil,
+	)
+	require.Nil(t, err)
+	output, err := method.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(bool), true)
+
+	balance := bankKeeper.GetBalance(ctx, burnCosmosAddr, denom)
+	require.Equal(t, balance.Amount, sentCoins[0].Amount.Sub(burnCoins[0].Amount))
+}
+
 func TestBalance(t *testing.T) {
 	denom := "ukava"
 	tApp := app.Setup(t)

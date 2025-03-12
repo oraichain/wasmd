@@ -10,6 +10,7 @@ import (
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/contract"
@@ -208,7 +209,7 @@ func (p PrecompileExecutor) burn(
 		rerr = errors.New("cannot call burn from staticcall")
 		return
 	}
-	
+
 	if err := pcommon.ValidateNonPayable(value); err != nil {
 		rerr = err
 		return
@@ -236,14 +237,14 @@ func (p PrecompileExecutor) burn(
 
 	coinBurn := sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount))
 	burnCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, burnEvmAddr)
-	// first send coin from account to module
-	if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnCosmosAddr, banktypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+	// first send coin from account to token-factory module
+	if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnCosmosAddr, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
 		rerr = err
 		return
 	}
 
-	// then burn coin from module
-	if err := p.bankKeeper.BurnCoins(ctx, banktypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+	// then burn coin from token-factory module
+	if err := p.bankKeeper.BurnCoins(ctx, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
 		rerr = err
 		return
 	}
