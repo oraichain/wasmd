@@ -24,6 +24,9 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
+	txfeesante "github.com/CosmWasm/wasmd/x/txfees/ante"
+	txfeeskeeper "github.com/CosmWasm/wasmd/x/txfees/keeper"
+
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	storetypes "cosmossdk.io/store/types"
@@ -56,6 +59,7 @@ type HandlerOptions struct {
 	MaxTxGasWanted        uint64
 	CircuitKeeper         *circuitkeeper.Keeper
 	BankKeeper            *bankkeeper.BaseKeeper
+	TxFeesKeeper          txfeeskeeper.Keeper
 	DisabledAuthzMsgs     []string
 	BypassMinFeeMsgTypes  []string
 }
@@ -187,7 +191,9 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
 		// nil so that it only checks with the min gas price of the chain, not the custom fee checker. For cosmos messages, the default tx fee checker is enough
 		globalfeeante.NewFeeDecorator(options.BypassMinFeeMsgTypes, options.GlobalFeeKeeper, options.StakingKeeper, maxBypassMinFeeMsgGasUsage),
-		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, nil),
+		// ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, nil),
+		txfeesante.NewMempoolFeeDecorator(options.BypassMinFeeMsgTypes, options.TxFeesKeeper),
+		txfeesante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeesKeeper),
 		// we use evmante.NewSetPubKeyDecorator so that for eth_secp256k1 accs, we can validate the signer using the evm-cosmos mapping logic
 		evmante.NewSetPubKeyDecorator(options.AccountKeeper, options.EvmKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),

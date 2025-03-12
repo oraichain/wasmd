@@ -8,6 +8,7 @@ import (
 	"cosmossdk.io/math"
 	txfeeskeeper "github.com/CosmWasm/wasmd/x/txfees/keeper"
 	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
+	tmstrings "github.com/cometbft/cometbft/libs/strings"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errorstypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -20,7 +21,7 @@ type DeductFeeDecorator struct {
 	tfk txfeeskeeper.Keeper
 }
 
-func NewTxFeesDeductFeeDecorator(
+func NewDeductFeeDecorator(
 	ak AccountKeeper,
 	bk BankKeeper,
 	fgk FeegrantKeeper,
@@ -155,7 +156,15 @@ func DeductFees(bankKeeper BankKeeper, ctx sdk.Context, accAddress sdk.AccAddres
 }
 
 type MempoolFeeDecorator struct {
-	tfk txfeeskeeper.Keeper
+	BypassMinFeeMsgTypes []string
+	tfk                  txfeeskeeper.Keeper
+}
+
+func NewMempoolFeeDecorator(bypassMsgTypes []string, tfk txfeeskeeper.Keeper) MempoolFeeDecorator {
+	return MempoolFeeDecorator{
+		BypassMinFeeMsgTypes: bypassMsgTypes,
+		tfk:                  tfk,
+	}
 }
 
 func (mpfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
@@ -172,6 +181,10 @@ func (mpfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	}
 
 	if ctx.BlockHeight() == 0 {
+		return next(ctx, tx, simulate)
+	}
+
+	if mpfd.ContainsOnlyBypassMinFeeMsgs(feeTx.GetMsgs()) {
 		return next(ctx, tx, simulate)
 	}
 
@@ -219,4 +232,15 @@ func (mpfd MempoolFeeDecorator) getBaseRequiredFees(ctx sdk.Context, gasLimit in
 	requiredFees := sdk.NewCoin(baseDenom, fee.Ceil().RoundInt())
 
 	return requiredFees, nil
+}
+
+func (mpfd MempoolFeeDecorator) ContainsOnlyBypassMinFeeMsgs(msgs []sdk.Msg) bool {
+	for _, msg := range msgs {
+		if tmstrings.StringInSlice(sdk.MsgTypeURL(msg), mpfd.BypassMinFeeMsgTypes) {
+			continue
+		}
+		return false
+	}
+
+	return true
 }
