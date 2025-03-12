@@ -20,6 +20,22 @@ func (s *KeeperTestSuite) TestQueryOraiDexTokenExchangeRate() {
 	s.SetupTest()
 
 	// store mock contract oraidex v3
+	priceContract := s.SetupPriceContract()
+
+	s.feeKeeper.SetParams(s.ctx, types.Params{
+		TokenBaseDenom:       "orai",
+		PriceContractAddress: priceContract.String(),
+	})
+	queryRate, err := s.feeKeeper.QueryOraiDexTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
+	s.Require().NoError(err)
+
+	rate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
+	s.Require().True(found)
+	s.Require().NotNil(rate)
+	s.Require().Equal(queryRate, rate)
+}
+
+func (s *KeeperTestSuite) SetupPriceContract() sdk.AccAddress {
 	_, _, sender := KeyTestPubAddr()
 	msgStoreCode := wasmtypes.MsgStoreCodeFixture(func(m *wasmtypes.MsgStoreCode) {
 		m.WASMByteCode = mockOraidexv3Contract
@@ -97,15 +113,5 @@ func (s *KeeperTestSuite) TestQueryOraiDexTokenExchangeRate() {
 	_, err = s.wasmKeeper.QuerySmart(s.ctx, priceContractAccAddress, []byte(queryMsg)) // "578941100392495845759830"
 	s.Require().NoError(err)
 
-	s.feeKeeper.SetParams(s.ctx, types.Params{
-		TokenBaseDenom:       "orai",
-		PriceContractAddress: instantiateResult.Address,
-	})
-	queryRate, err := s.feeKeeper.QueryOraiDexTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
-	s.Require().NoError(err)
-
-	rate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
-	s.Require().True(found)
-	s.Require().NotNil(rate)
-	s.Require().Equal(queryRate, rate)
+	return priceContractAccAddress
 }
