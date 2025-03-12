@@ -11,6 +11,8 @@ import (
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/contract"
@@ -43,8 +45,10 @@ type CoinBalance struct {
 }
 
 type PrecompileExecutor struct {
-	evmKeeper  pcommon.EVMKeeper
-	bankKeeper pcommon.BankKeeper
+	evmKeeper     pcommon.EVMKeeper
+	bankKeeper    pcommon.BankKeeper
+	accountKeeper pcommon.AccountKeeper
+	authzKeeper   pcommon.AuthzKeeper
 }
 
 // NewContract returns a new wasmd stateful precompiled contract.
@@ -53,11 +57,18 @@ type PrecompileExecutor struct {
 //	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
 //	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
 //	still to be determined.
-func NewContract(evmKeeper pcommon.EVMKeeper, bankKeeper pcommon.BankKeeper, accountKeeper pcommon.AccountKeeper) contract.StatefulPrecompiledContract {
+func NewContract(
+	evmKeeper pcommon.EVMKeeper,
+	bankKeeper pcommon.BankKeeper,
+	accountKeeper pcommon.AccountKeeper,
+	authzKeeper pcommon.AuthzKeeper,
+) contract.StatefulPrecompiledContract {
 
 	executor := &PrecompileExecutor{
-		evmKeeper:  evmKeeper,
-		bankKeeper: bankKeeper,
+		evmKeeper:   evmKeeper,
+		bankKeeper:  bankKeeper,
+		accountKeeper: accountKeeper,
+		authzKeeper: authzKeeper,
 	}
 
 	functions := []*contract.StatefulPrecompileFunction{
@@ -220,13 +231,15 @@ func (p PrecompileExecutor) burn(
 		return
 	}
 
-	denom := args[0].(string)
+	burnFromEvmAddr := args[0].(common.Address)
+
+	denom := args[1].(string)
 	if denom == "" {
 		rerr = errors.New("invalid denom")
 		return
 	}
 
-	amount := args[1].(*big.Int)
+	amount := args[2].(*big.Int)
 	if amount.Cmp(big.NewInt(0)) == 0 {
 		// short circuit
 		ret, rerr = method.Outputs.Pack(true)
@@ -234,17 +247,77 @@ func (p PrecompileExecutor) burn(
 	}
 
 	coinBurn := sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount))
-	burnCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
-	// first send coin from account to token-factory module
-	if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnCosmosAddr, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
-		rerr = err
-		return
-	}
+	burnFromCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, burnFromEvmAddr)
+	callerCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
 
-	// then burn coin from token-factory module
-	if err := p.bankKeeper.BurnCoins(ctx, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
-		rerr = err
-		return
+	// case caller equal burnFrom then just burn coin of caller
+	if burnFromCosmosAddr.Equals(callerCosmosAddr) {
+		// first send coin from account to token-factory module
+		if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnFromCosmosAddr, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+			rerr = err
+			return
+		}
+
+		// then burn coin from token-factory module
+		if err := p.bankKeeper.BurnCoins(ctx, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+			rerr = err
+			return
+		}
+	} else {
+		// case caller is not equal burnFrom then check grant of caller and burnFrom, burnFrom = granter and caller = grantee
+		// if has grant then burn coin from burnFrom account
+		// if not then return error
+
+		// first we get grant of caller and burnFrom account
+		// We consider pagination = nil
+		grantMsg := &authz.QueryGrantsRequest{
+			Granter:    burnFromCosmosAddr.String(),
+			Grantee:    callerCosmosAddr.String(),
+			MsgTypeUrl: banktypes.SendAuthorization{}.MsgTypeURL(),
+			Pagination: nil,
+		}
+		res, err := p.authzKeeper.Grants(ctx, grantMsg)
+		if err != nil {
+			rerr = err
+			return
+		}
+
+		var sendAuthorization banktypes.SendAuthorization
+		var grantCoin sdk.Coin
+		for _, grant := range res.Grants {
+			sendAuthorization.Unmarshal(grant.Authorization.Value)
+
+			for _, coin := range sendAuthorization.SpendLimit {
+				if coin.Denom == denom {
+					grantCoin = coin
+				}
+			}
+		}
+		if grantCoin.Denom == "" {
+			rerr = errors.New("invalid grant denom")
+			return
+		}
+
+		// then we exec grant to token-factory module account
+		moduleAddr := p.accountKeeper.GetModuleAddress(tokenfactorytypes.ModuleName)
+		bankSendMsg := banktypes.NewMsgSend(
+			burnFromCosmosAddr,
+			moduleAddr,
+			sdk.NewCoins(coinBurn),
+		)
+		execGrantMsg := authz.NewMsgExec(callerCosmosAddr, []sdk.Msg{bankSendMsg})
+
+		_, err = p.authzKeeper.Exec(ctx, &execGrantMsg)
+		if err != nil {
+			rerr = err
+			return
+		}
+
+		// finally we burn coin from token-factory module
+		if err := p.bankKeeper.BurnCoins(ctx, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+			rerr = err
+			return
+		}
 	}
 
 	ret, rerr = method.Outputs.Pack(true)
@@ -269,7 +342,7 @@ func (p PrecompileExecutor) balance(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying balance using precompile: ", rerr.Error())
 			return
 		}
@@ -325,7 +398,7 @@ func (p PrecompileExecutor) allBalances(accessibleState contract.AccessibleState
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying allBalances using precompile: ", rerr.Error())
 			return
 		}
@@ -384,7 +457,7 @@ func (p PrecompileExecutor) name(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying name using precompile: ", rerr.Error())
 			return
 		}
@@ -419,7 +492,7 @@ func (p PrecompileExecutor) symbol(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying symbol using precompile: ", rerr.Error())
 			return
 		}
@@ -454,7 +527,7 @@ func (p PrecompileExecutor) decimals(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying decimals using precompile: ", rerr.Error())
 			return
 		}
@@ -483,7 +556,7 @@ func (p PrecompileExecutor) supply(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying supply using precompile: ", rerr.Error())
 			return
 		}
@@ -540,7 +613,7 @@ func (p PrecompileExecutor) getMetadata(accessibleState contract.AccessibleState
 	denom := args[0].(string)
 	metadata, found := p.bankKeeper.GetDenomMetaData(ctx, denom)
 	if !found {
-		return nil, fmt.Errorf("Could not find the metadata of denom %s\n", denom)
+		return nil, fmt.Errorf("could not find the metadata of denom %s", denom)
 	}
 	return &metadata, nil
 }

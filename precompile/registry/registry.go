@@ -35,7 +35,7 @@ func InitializePrecompiles(
 	register(WasmdContractAddress, wasmd.NewContract(wasmdKeeper, wasmdViewKeeper, evmKeeper))
 	register(JsonContractAddress, json.NewContract())
 	register(AddrContractAddress, addr.NewContract(evmKeeper))
-	register(BankContractAddress, bank.NewContract(evmKeeper, bankKeeper, accountKeeper))
+	register(BankContractAddress, bank.NewContract(evmKeeper, bankKeeper, accountKeeper, authzKeeper))
 	register(AuthzContractAddress, authz.NewContract(evmKeeper, authzKeeper))
 }
 

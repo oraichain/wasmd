@@ -65,6 +65,7 @@ func TestSend(t *testing.T) {
 	sentCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
 	bankKeeper := tApp.GetBankKeeper()
 	accountKeeper := tApp.GetAccountKeeper()
+	authzKeeper := tApp.GetAuthzKeeper()
 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
 	require.NoError(t, err)
 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, mockAddr, sentCoins)
@@ -73,7 +74,7 @@ func TestSend(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
+	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper, authzKeeper)
 	method := bank.ABI.Methods[bank.SendMethod]
 	suppliedGas := uint64(10_000_000)
 
@@ -109,6 +110,7 @@ func TestBurn(t *testing.T) {
 	burnCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
 	bankKeeper := tApp.GetBankKeeper()
 	accountKeeper := tApp.GetAccountKeeper()
+	authzKeeper := tApp.GetAuthzKeeper()
 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
 	require.NoError(t, err)
 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, burnCosmosAddr, sentCoins)
@@ -117,7 +119,7 @@ func TestBurn(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
+	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper, authzKeeper)
 	method := bank.ABI.Methods[bank.BurnMethod]
 	suppliedGas := uint64(10_000_000)
 
@@ -150,6 +152,7 @@ func TestBalance(t *testing.T) {
 	sentCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
 	bankKeeper := tApp.GetBankKeeper()
 	accountKeeper := tApp.GetAccountKeeper()
+	authzKeeper := tApp.GetAuthzKeeper()
 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
 	require.NoError(t, err)
 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, mockAddr, sentCoins)
@@ -158,7 +161,7 @@ func TestBalance(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
+	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper, authzKeeper)
 	method := bank.ABI.Methods[bank.BalanceMethod]
 	suppliedGas := uint64(10_000_000)
 
@@ -185,6 +188,7 @@ func TestSupply(t *testing.T) {
 	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
 	bankKeeper := tApp.GetBankKeeper()
 	accountKeeper := tApp.GetAccountKeeper()
+	authzKeeper := tApp.GetAuthzKeeper()
 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
 	require.NoError(t, err)
 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
@@ -192,7 +196,7 @@ func TestSupply(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper)
+	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper, authzKeeper)
 	method := bank.ABI.Methods[bank.SupplyMethod]
 	suppliedGas := uint64(10_000_000)
 
