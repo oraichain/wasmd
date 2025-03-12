@@ -1261,6 +1261,7 @@ func (app *WasmApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*a
 	if err != nil {
 		panic(err)
 	}
+	ctx.Logger().Error("Initchainer")
 	response, err := app.ModuleManager.InitGenesis(ctx, app.appCodec, genesisState)
 	return response, err
 }

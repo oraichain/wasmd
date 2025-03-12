@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -8,6 +10,7 @@ import (
 // InitGenesis initializes the txfees module's state from a provided genesis
 // state.
 func (k Keeper) InitGenesis(ctx sdk.Context, genState types.GenesisState) {
+	fmt.Println("Testing init genesis=======================")
 	k.SetParams(ctx, genState.Params)
 
 	for _, epoch := range genState.Epochs {
