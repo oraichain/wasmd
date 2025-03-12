@@ -19,12 +19,12 @@ type (
 )
 
 var (
-	ParamsKey                   = []byte{0x00} // Prefix for params key
-	AllowedTokenKeyPrefix       = []byte{0x01} // Key for the fee allowed token lists
-	TokenConfigurationKeyPrefix = []byte{0x02} // Key for the token info
-	TokenExchangeRateKeyPrefix  = []byte{0x03} // Key for token exchange rate
-	EpochKeyPrefix              = []byte{0x04} // KeyPrefixEpoch defines prefix key for storing epochs.
-	BaseDenomKey                = []byte{0x05} // BaseDenomKey
+	ParamsKey                   = []byte("params_key")     // Prefix for params key
+	AllowedTokenKeyPrefix       = []byte("allowed_token")  // Key for the fee allowed token lists
+	TokenConfigurationKeyPrefix = []byte("token_config")   // Key for the token info
+	TokenExchangeRateKeyPrefix  = []byte("token_exchange") // Key for token exchange rate
+	EpochKeyPrefix              = []byte("epoch")          // KeyPrefixEpoch defines prefix key for storing epochs.
+	BaseDenomKey                = []byte("base_denom")     // BaseDenomKey
 )
 
 func GetAllowedTokenKey(denom string) []byte {

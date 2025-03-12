@@ -12,7 +12,7 @@ import (
 func (k Keeper) AddAllowedToken(ctx sdk.Context, denom string) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetAllowedTokenKey(denom)
-	store.Set(key, []byte{1})
+	store.Set(key, []byte(denom))
 }
 
 func (k Keeper) RemoveAllowedToken(ctx sdk.Context, denom string) error {
@@ -38,7 +38,7 @@ func (k Keeper) IterateAllowedTokenList(ctx sdk.Context, cb func(denom string) (
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		denom := string(iterator.Key())
+		denom := string(iterator.Value())
 		if cb(denom) {
 			break
 		}
