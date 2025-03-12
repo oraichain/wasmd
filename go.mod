@@ -281,7 +281,7 @@ replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
 	github.com/CosmosContracts/juno/v18/x/clock => github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597
-	github.com/CosmosContracts/juno/v18/x/globalfee => github.com/oraichain/juno/x/globalfee v0.0.0-20240925043856-fe3d1d8b9ad3
+	github.com/CosmosContracts/juno/v18/x/globalfee => github.com/oraichain/juno/x/globalfee v0.0.0-20250312030216-ffe51b3d33e8
 
 	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20250207043129-6ccdb4a201d3
 
