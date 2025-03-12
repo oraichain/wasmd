@@ -50,7 +50,7 @@ func (k msgServer) AddFeeToken(goCtx context.Context, msg *types.MsgAddFeeToken)
 
 	k.AddAllowedToken(ctx, msg.Config.Denom)
 
-	err := k.QueryOraiDexTokenExchangeRate(ctx, msg.Config.Denom)
+	_, err := k.QueryOraiDexTokenExchangeRate(ctx, msg.Config.Denom)
 	if err != nil {
 		// we need to force this to Frozen because there is no exchange price
 		msg.Config.Status = types.FeeTokenStatus_FROZEN

@@ -37,27 +37,22 @@ func BuildQueryOraidexSpotPriceRequest(denom string) ([]byte, error) {
 	return bz, nil
 }
 
-func GetOraidexSpotPriceResponse(input []byte) (math.LegacyDec, error) {
-	var data QueryOraidexSqrtPriceResponse
-	err := json.Unmarshal(input, &data)
-	if err != nil {
-		return math.LegacyDec{}, err
+func GetOraidexSqrtPriceResponse(input []byte) (math.LegacyDec, error) {
+	strSqrtPrice := string(input)[1:(len(string(input)) - 1)]
+	// this sqrtPrice is decimal 24. We will truncate to decimal 6 by remove 18 character in the last
+	lengthDecimal := len(strSqrtPrice)
+	if lengthDecimal > 18 {
+		strPrice := strSqrtPrice[:(lengthDecimal - 18)]
+		sqrtPrice, ok := math.NewIntFromString(strPrice)
+		if !ok {
+			panic("bigIntOverflows")
+		}
+		decSqrtPrice := math.LegacyNewDecFromIntWithPrec(sqrtPrice, 6)
+		return decSqrtPrice, nil
+
 	}
 
-	var sqrtPrice math.Int
-	// this sqrtPrice is decimal 24. We will truncate to decimal 9 by remove 15 character in the last
-	lengthDecimal := len(data.SqrtPrice)
-	if lengthDecimal > 15 {
-		strPrice := data.SqrtPrice[:(lengthDecimal - 15)]
-		sqrtPrice, _ = math.NewIntFromString(strPrice)
-
-	} else {
-		sqrtPrice = math.ZeroInt()
-	}
-
-	decSqrtPrice := math.LegacyNewDecFromIntWithPrec(sqrtPrice, 9)
-
-	return decSqrtPrice, nil
+	return math.LegacyNewDecFromIntWithPrec(math.OneInt(), 6), nil
 }
 
 type QueryOraidexTwapRequest struct {

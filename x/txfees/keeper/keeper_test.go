@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/x/txfees/keeper"
@@ -9,6 +10,8 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	"github.com/stretchr/testify/suite"
@@ -28,7 +31,7 @@ type KeeperTestSuite struct {
 
 func (s *KeeperTestSuite) SetupTest() {
 	s.app = app.Setup(s.T())
-	s.ctx = s.app.NewContextLegacy(true, cmtproto.Header{Height: 1})
+	s.ctx = s.app.NewContextLegacy(true, cmtproto.Header{Height: 1, Time: time.Now()})
 
 	s.feeKeeper = s.app.TxFeesKeeper
 	s.wasmKeeper = s.app.WasmKeeper
@@ -57,4 +60,11 @@ func (s *KeeperTestSuite) TestSetParams() {
 	storedParams, err := s.feeKeeper.GetParams(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Equal(params, storedParams)
+}
+
+func KeyTestPubAddr() (cryptotypes.PrivKey, cryptotypes.PubKey, sdk.AccAddress) {
+	key := secp256k1.GenPrivKey()
+	pub := key.PubKey()
+	addr := sdk.AccAddress(pub.Address())
+	return key, pub, addr
 }
