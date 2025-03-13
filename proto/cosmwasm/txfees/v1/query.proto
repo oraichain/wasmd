@@ -16,6 +16,9 @@ service Query {
     option (google.api.http).get = "/cosmwasm/txfees/v1/params";
   }
 
+  rpc AllowedTokens(QueryAllowedTokensRequest) returns (QueryAllowedTokensResponse) {
+    option (google.api.http).get = "/cosmwasm/txfees/v1/allowed_tokens";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -25,4 +28,13 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params defines the parameters of the module.
   Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryAllowedTokensRequest is the request type for the Query/AllowedTokens RPC method.
+message QueryAllowedTokensRequest {}
+
+// QueryAllowedTokensResponse is the response type for the Query/AllowedTokens RPC method.
+message QueryAllowedTokensResponse {
+  // tokens defines the parameters of the module.
+  repeated string tokens = 1 [ (gogoproto.nullable) = false ];
 }

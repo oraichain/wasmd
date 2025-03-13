@@ -17,3 +17,16 @@ func (k Keeper) Params(ctx context.Context, _ *types.QueryParamsRequest) (*types
 		Params: params,
 	}, nil
 }
+
+func (k Keeper) AllowedTokens(ctx context.Context, _ *types.QueryAllowedTokensRequest) (*types.QueryAllowedTokensResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	var tokens []string
+
+	k.IterateAllowedTokenList(sdkCtx, func(denom string) (stop bool) {
+		tokens = append(tokens, denom)
+
+		return false
+	})
+
+	return &types.QueryAllowedTokensResponse{Tokens: tokens}, nil
+}
