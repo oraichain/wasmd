@@ -23,6 +23,7 @@ func GetQueryCmd() *cobra.Command {
 	// TODO: add query command here
 	cmd.AddCommand(
 		GetParams(),
+		GetAllowedTokens(),
 	)
 
 	return cmd
@@ -42,6 +43,33 @@ func GetParams() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			res, err := queryClient.Params(cmd.Context(), &types.QueryParamsRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// GetAllowedTokens returns the allowed tokens for the module
+func GetAllowedTokens() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "allowed-tokens [flags]",
+		Short: "Get the allowed tokens for the x/txfees module",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.AllowedTokens(cmd.Context(), &types.QueryAllowedTokensRequest{})
 			if err != nil {
 				return err
 			}
