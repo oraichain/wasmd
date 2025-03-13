@@ -24,6 +24,7 @@ func GetQueryCmd() *cobra.Command {
 		GetParams(),
 		GetAllowedTokens(),
 		GetTokenExchangeRate(),
+		GetTokensConfig(),
 	)
 
 	return cmd
@@ -83,7 +84,7 @@ func GetAllowedTokens() *cobra.Command {
 	return cmd
 }
 
-// GetTokenExchangeRate returns the exchange rate of allowed tokens for the module
+// GetTokenExchangeRate returns the exchange rate of allowed token for the module
 func GetTokenExchangeRate() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token-exchange-rate [denom] [flags]",
@@ -112,3 +113,29 @@ func GetTokenExchangeRate() *cobra.Command {
 	return cmd
 }
 
+// GetTokensConfig returns the config of allowed tokens for the module
+func GetTokensConfig() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "tokens-config [flags]",
+		Short: "Get the configuration of allowed tokens for the x/txfees module",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.TokensConfig(cmd.Context(), &types.QueryTokensConfigRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
