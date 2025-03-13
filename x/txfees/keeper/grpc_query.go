@@ -66,3 +66,14 @@ func (k Keeper) TokenConfig(ctx context.Context, req *types.QueryTokenConfigRequ
 
 	return &types.QueryTokenConfigResponse{Config: config}, nil
 }
+
+func (k Keeper) TokenExchangeRate(ctx context.Context, req *types.QueryTokenExchangeRateRequest) (*types.QueryTokenExchangeRateResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	rate, found := k.GetTokenExchangeRate(sdkCtx, req.Denom)
+	if !found {
+		return &types.QueryTokenExchangeRateResponse{}, types.ErrInvalidExchangeRate
+	}
+
+	return &types.QueryTokenExchangeRateResponse{Rate: rate.String()}, nil
+}

@@ -4,6 +4,7 @@ import (
 	"slices"
 	"sort"
 
+	"cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -299,6 +300,59 @@ func (s *KeeperTestSuite) TestQueryTokenConfig() {
 				s.Require().NoError(err)
 
 				tc.assert(res.Config)
+			}
+
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestQueryTokenExchangeRate() {
+	testCases := []struct {
+		name     string
+		malleate func()
+		msg      *types.QueryTokenExchangeRateRequest
+		expErr   bool
+		assert   func(rate string)
+	}{
+		{
+			name:     "query token exchange rate failed with invalid exchange rate",
+			malleate: func() {},
+			msg:      &types.QueryTokenExchangeRateRequest{Denom: "usdai"},
+			expErr:   true,
+			assert:   func(rate string) {},
+		},
+		{
+			name: "query token exchange rate successfully",
+			malleate: func() {
+				sdkCtx := sdk.UnwrapSDKContext(s.ctx)
+				rate := math.LegacyOneDec()
+
+				s.feeKeeper.SetTokenExchangeRate(sdkCtx, "usdai", rate)
+			},
+			msg:    &types.QueryTokenExchangeRateRequest{Denom: "usdai"},
+			expErr: false,
+			assert: func(rate string) {
+				expectedRate := math.LegacyOneDec().String()
+
+				s.Require().Equal(expectedRate, rate)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.SetupTest()
+		tc := tc
+
+		s.Run(tc.name, func() {
+			tc.malleate()
+			res, err := s.queryClient.TokenExchangeRate(s.ctx, tc.msg)
+
+			if tc.expErr {
+				s.Require().Error(err)
+			} else {
+				s.Require().NoError(err)
+
+				tc.assert(res.Rate)
 			}
 
 		})

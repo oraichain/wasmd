@@ -31,6 +31,11 @@ service Query {
   rpc TokenConfig(QueryTokenConfigRequest) returns (QueryTokenConfigResponse) {
     option (google.api.http).get = "/cosmwasm/txfees/v1/token_config";
   }
+
+  // TokenExchangeRate defines a gRPC query method that returns the exchange rate of allowed token
+  rpc TokenExchangeRate(QueryTokenExchangeRateRequest) returns (QueryTokenExchangeRateResponse) {
+    option (google.api.http).get = "/cosmwasm/txfees/v1/token_exchange_rate";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -70,4 +75,16 @@ message QueryTokenConfigRequest {
 message QueryTokenConfigResponse {
   // config defines the parameters of the module.
   FeeTokenConfiguration config = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryTokenExchangeRateRequest is the request type for the Query/TokenExchangeRate RPC method.
+message QueryTokenExchangeRateRequest {
+  // denom defines the parameters of the module.
+  string denom = 1;
+}
+
+// QueryTokenExchangeRateResponse is the response type for the Query/TokenExchangeRate RPC method.
+message QueryTokenExchangeRateResponse {
+  // configs defines the parameters of the module.
+  string rate = 1;
 }
