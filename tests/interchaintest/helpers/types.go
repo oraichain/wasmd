@@ -46,3 +46,7 @@ type HackatomExampleInitMsg struct {
 	Verifier    string `json:"verifier"`
 	Beneficiary string `json:"beneficiary"`
 }
+
+type QuerySqrtPriceResponse struct {
+	Data string `json:"data,omitempty"`
+}
