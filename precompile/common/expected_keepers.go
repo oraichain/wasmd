@@ -4,6 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -34,6 +35,8 @@ type BankKeeper interface {
 	GetDenomMetaData(ctx context.Context, denom string) (banktypes.Metadata, bool)
 	GetSupply(ctx context.Context, denom string) sdk.Coin
 	SpendableCoins(ctx context.Context, addr sdk.AccAddress) sdk.Coins
+	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	BurnCoins(ctx context.Context, moduleName string, amt sdk.Coins) error
 }
 
 type AccountKeeper interface {
@@ -41,4 +44,11 @@ type AccountKeeper interface {
 	SetAccount(ctx context.Context, acc sdk.AccountI)
 	RemoveAccount(ctx context.Context, acc sdk.AccountI)
 	NewAccountWithAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
+	GetModuleAddress(moduleName string) sdk.AccAddress
+}
+
+type AuthzKeeper interface {
+	Grant(ctx context.Context, msg *authz.MsgGrant) (*authz.MsgGrantResponse, error)
+	Grants(ctx context.Context, req *authz.QueryGrantsRequest) (*authz.QueryGrantsResponse, error)
+	Exec(ctx context.Context, msg *authz.MsgExec) (*authz.MsgExecResponse, error)
 }

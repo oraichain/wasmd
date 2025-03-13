@@ -8,8 +8,11 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/contract"
@@ -33,6 +36,7 @@ const (
 	SymbolMethod      = "symbol"
 	DecimalsMethod    = "decimals"
 	SupplyMethod      = "supply"
+	BurnMethod        = "burn"
 )
 
 type CoinBalance struct {
@@ -41,8 +45,10 @@ type CoinBalance struct {
 }
 
 type PrecompileExecutor struct {
-	evmKeeper  pcommon.EVMKeeper
-	bankKeeper pcommon.BankKeeper
+	evmKeeper     pcommon.EVMKeeper
+	bankKeeper    pcommon.BankKeeper
+	accountKeeper pcommon.AccountKeeper
+	authzKeeper   pcommon.AuthzKeeper
 }
 
 // NewContract returns a new wasmd stateful precompiled contract.
@@ -51,17 +57,28 @@ type PrecompileExecutor struct {
 //	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
 //	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
 //	still to be determined.
-func NewContract(evmKeeper pcommon.EVMKeeper, bankKeeper pcommon.BankKeeper, accountKeeper pcommon.AccountKeeper) contract.StatefulPrecompiledContract {
+func NewContract(
+	evmKeeper pcommon.EVMKeeper,
+	bankKeeper pcommon.BankKeeper,
+	accountKeeper pcommon.AccountKeeper,
+	authzKeeper pcommon.AuthzKeeper,
+) contract.StatefulPrecompiledContract {
 
 	executor := &PrecompileExecutor{
-		evmKeeper:  evmKeeper,
-		bankKeeper: bankKeeper,
+		evmKeeper:     evmKeeper,
+		bankKeeper:    bankKeeper,
+		accountKeeper: accountKeeper,
+		authzKeeper:   authzKeeper,
 	}
 
 	functions := []*contract.StatefulPrecompileFunction{
 		contract.NewStatefulPrecompileFunction(
 			ABI.Methods[SendMethod].ID,
 			executor.send,
+		),
+		contract.NewStatefulPrecompileFunction(
+			ABI.Methods[BurnMethod].ID,
+			executor.burn,
 		),
 		contract.NewStatefulPrecompileFunction(
 			ABI.Methods[BalanceMethod].ID,
@@ -169,6 +186,137 @@ func (p PrecompileExecutor) send(accessibleState contract.AccessibleState,
 	return
 }
 
+func (p PrecompileExecutor) burn(
+	accessibleState contract.AccessibleState,
+	caller common.Address,
+	callingContract common.Address,
+	packedInput []byte,
+	suppliedGas uint64,
+	readOnly bool,
+	value *big.Int,
+) (ret []byte, remainingGas uint64, rerr error) {
+	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	if rerr != nil {
+		return
+	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			ret = nil
+			remainingGas = 0
+			rerr = fmt.Errorf("%s", err)
+			return
+		}
+	}()
+	method := ABI.Methods[BurnMethod]
+
+	args, err := method.Inputs.Unpack(packedInput)
+	if err != nil {
+		rerr = err
+		return
+	}
+
+	if readOnly {
+		rerr = errors.New("cannot call burn from staticcall")
+		return
+	}
+
+	if err := pcommon.ValidateNonPayable(value); err != nil {
+		rerr = err
+		return
+	}
+
+	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
+		rerr = err
+		return
+	}
+
+	burnFromEvmAddr := args[0].(common.Address)
+
+	denom := args[1].(string)
+	if denom == "" {
+		rerr = errors.New("invalid denom")
+		return
+	}
+
+	amount := args[2].(*big.Int)
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		// short circuit
+		ret, rerr = method.Outputs.Pack(true)
+		return
+	}
+
+	coinBurn := sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount))
+	burnFromCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, burnFromEvmAddr)
+	callerCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
+
+	if !burnFromCosmosAddr.Equals(callerCosmosAddr) {
+		// case caller is not equal burnFrom then check grant of caller and burnFrom, burnFrom = granter and caller = grantee
+		// if has grant then burn coin from burnFrom account
+		// if not then return error
+
+		// first we get grant of caller and burnFrom account
+		// We consider pagination = nil
+		grantMsg := &authz.QueryGrantsRequest{
+			Granter:    burnFromCosmosAddr.String(),
+			Grantee:    callerCosmosAddr.String(),
+			MsgTypeUrl: banktypes.SendAuthorization{}.MsgTypeURL(),
+			Pagination: nil,
+		}
+		res, err := p.authzKeeper.Grants(ctx, grantMsg)
+		if err != nil {
+			rerr = err
+			return
+		}
+
+		var sendAuthorization banktypes.SendAuthorization
+		var grantCoin sdk.Coin
+		for _, grant := range res.Grants {
+			sendAuthorization.Unmarshal(grant.Authorization.Value)
+
+			for _, coin := range sendAuthorization.SpendLimit {
+				if coin.Denom == denom {
+					grantCoin = coin
+				}
+			}
+		}
+		if grantCoin.Denom == "" {
+			rerr = errors.New("invalid grant denom")
+			return
+		}
+
+		// then we exec grant to token-factory module account
+		bankSendMsg := banktypes.NewMsgSend(
+			burnFromCosmosAddr,
+			burnFromCosmosAddr,
+			sdk.NewCoins(coinBurn),
+		)
+		execGrantMsg := authz.NewMsgExec(callerCosmosAddr, []sdk.Msg{bankSendMsg})
+
+		_, err = p.authzKeeper.Exec(ctx, &execGrantMsg)
+		if err != nil {
+			rerr = err
+			return
+		}
+	}
+
+	// first send coin from account to token-factory module
+	if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnFromCosmosAddr, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+		rerr = err
+		return
+	}
+
+	// then burn coin from token-factory module
+	if err := p.bankKeeper.BurnCoins(ctx, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+		rerr = err
+		return
+	}
+
+	ret, rerr = method.Outputs.Pack(true)
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	return
+}
+
 func (p PrecompileExecutor) balance(accessibleState contract.AccessibleState,
 	caller common.Address,
 	callingContract common.Address,
@@ -186,7 +334,7 @@ func (p PrecompileExecutor) balance(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying balance using precompile: ", rerr.Error())
 			return
 		}
@@ -242,7 +390,7 @@ func (p PrecompileExecutor) allBalances(accessibleState contract.AccessibleState
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying allBalances using precompile: ", rerr.Error())
 			return
 		}
@@ -301,7 +449,7 @@ func (p PrecompileExecutor) name(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying name using precompile: ", rerr.Error())
 			return
 		}
@@ -336,7 +484,7 @@ func (p PrecompileExecutor) symbol(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying symbol using precompile: ", rerr.Error())
 			return
 		}
@@ -371,7 +519,7 @@ func (p PrecompileExecutor) decimals(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying decimals using precompile: ", rerr.Error())
 			return
 		}
@@ -400,7 +548,7 @@ func (p PrecompileExecutor) supply(accessibleState contract.AccessibleState,
 		if err := recover(); err != nil {
 			ret = nil
 			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
+			rerr = fmt.Errorf("%s", err)
 			ctx.Logger().Error("Error querying supply using precompile: ", rerr.Error())
 			return
 		}
@@ -457,7 +605,7 @@ func (p PrecompileExecutor) getMetadata(accessibleState contract.AccessibleState
 	denom := args[0].(string)
 	metadata, found := p.bankKeeper.GetDenomMetaData(ctx, denom)
 	if !found {
-		return nil, fmt.Errorf("Could not find the metadata of denom %s\n", denom)
+		return nil, fmt.Errorf("could not find the metadata of denom %s", denom)
 	}
 	return &metadata, nil
 }

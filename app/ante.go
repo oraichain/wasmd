@@ -17,6 +17,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
@@ -43,6 +44,7 @@ const maxBypassMinFeeMsgGasUsage = 1_000_000
 type HandlerOptions struct {
 	ante.HandlerOptions
 	AccountKeeper         evmtypes.AccountKeeper
+	AuthzKeeper           *authzkeeper.Keeper
 	IBCKeeper             *keeper.Keeper
 	EvmKeeper             *evmkeeper.Keeper
 	GlobalFeeKeeper       globalfeekeeper.Keeper
@@ -103,7 +105,14 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ctx sdk.Context, tx sdk.Tx, sim bool,
 	) (newCtx sdk.Context, err error) {
 
-		registry.InitializePrecompiles(options.ContractKeeper, options.WasmKeeper, options.EvmKeeper, options.BankKeeper, options.AccountKeeper)
+		registry.InitializePrecompiles(
+			options.ContractKeeper,
+			options.WasmKeeper,
+			options.EvmKeeper,
+			options.BankKeeper,
+			options.AccountKeeper,
+			options.AuthzKeeper,
+		)
 
 		var anteHandler sdk.AnteHandler
 

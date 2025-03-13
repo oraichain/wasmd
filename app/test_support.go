@@ -11,6 +11,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -32,6 +33,10 @@ func (app *WasmApp) GetBaseApp() *baseapp.BaseApp {
 
 func (app *WasmApp) GetBankKeeper() bankkeeper.Keeper {
 	return app.BankKeeper
+}
+
+func (app *WasmApp) GetAuthzKeeper() authzkeeper.Keeper {
+	return app.AuthzKeeper
 }
 
 func (app *WasmApp) GetStakingKeeper() *stakingkeeper.Keeper {
