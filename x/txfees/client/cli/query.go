@@ -25,6 +25,7 @@ func GetQueryCmd() *cobra.Command {
 		GetAllowedTokens(),
 		GetTokenExchangeRate(),
 		GetTokensConfig(),
+		GetTokenConfig(),
 	)
 
 	return cmd
@@ -127,6 +128,35 @@ func GetTokensConfig() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			res, err := queryClient.TokensConfig(cmd.Context(), &types.QueryTokensConfigRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// GetTokenConfig returns the config of single allowed token for the module
+func GetTokenConfig() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "token-config [denom] [flags]",
+		Short: "Get the configuration of single allowed token for the x/txfees module",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.TokenConfig(cmd.Context(), &types.QueryTokenConfigRequest{
+				Denom: args[0],
+			})
 			if err != nil {
 				return err
 			}
