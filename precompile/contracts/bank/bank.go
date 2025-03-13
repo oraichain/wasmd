@@ -250,20 +250,7 @@ func (p PrecompileExecutor) burn(
 	burnFromCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, burnFromEvmAddr)
 	callerCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
 
-	// case caller equal burnFrom then just burn coin of caller
-	if burnFromCosmosAddr.Equals(callerCosmosAddr) {
-		// first send coin from account to token-factory module
-		if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnFromCosmosAddr, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
-			rerr = err
-			return
-		}
-
-		// then burn coin from token-factory module
-		if err := p.bankKeeper.BurnCoins(ctx, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
-			rerr = err
-			return
-		}
-	} else {
+	if !burnFromCosmosAddr.Equals(callerCosmosAddr) {
 		// case caller is not equal burnFrom then check grant of caller and burnFrom, burnFrom = granter and caller = grantee
 		// if has grant then burn coin from burnFrom account
 		// if not then return error
@@ -311,17 +298,18 @@ func (p PrecompileExecutor) burn(
 			rerr = err
 			return
 		}
+	}
 
-		// finally we burn coin from token-factory module
-		if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnFromCosmosAddr, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
-			rerr = err
-			return
-		}
+	// first send coin from account to token-factory module
+	if err := p.bankKeeper.SendCoinsFromAccountToModule(ctx, burnFromCosmosAddr, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+		rerr = err
+		return
+	}
 
-		if err := p.bankKeeper.BurnCoins(ctx, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
-			rerr = err
-			return
-		}
+	// then burn coin from token-factory module
+	if err := p.bankKeeper.BurnCoins(ctx, tokenfactorytypes.ModuleName, sdk.NewCoins(coinBurn)); err != nil {
+		rerr = err
+		return
 	}
 
 	ret, rerr = method.Outputs.Pack(true)
