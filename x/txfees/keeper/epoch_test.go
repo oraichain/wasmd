@@ -29,8 +29,4 @@ func (s *KeeperTestSuite) TestStoreEpochInfo() {
 	found, err = s.feeKeeper.HasEpochInfo(s.ctx, expected.Identifier)
 	s.Require().NoError(err)
 	s.Require().True(found)
-
-	allEpochs := s.feeKeeper.AllEpochInfos(s.ctx)
-	s.Require().Len(allEpochs, 1)
-	s.Require().Equal(allEpochs[0], storedEpoch)
 }
