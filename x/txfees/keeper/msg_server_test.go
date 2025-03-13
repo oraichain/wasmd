@@ -159,14 +159,82 @@ func (s *KeeperTestSuite) TestMsgRemoveFeeToken() {
 		malleate func()
 		msg      *types.MsgRemoveFeeToken
 		expErr   bool
-		assert   func(s *KeeperTestSuite)
+		assert   func()
 	}{
 		{
 			name: "remove fee token successfully",
 			malleate: func() {
+				s.SetupPriceContract()
+				msg := &types.MsgAddFeeToken{
+					Authority: s.feeKeeper.GetAuthority(),
+					Config: types.FeeTokenConfiguration{
+						Denom:  "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
+						PoolId: "",
+						Status: types.FeeTokenStatus_FROZEN,
+					},
+				}
+				_, err := s.msgServer.AddFeeToken(s.ctx, msg)
+				s.Require().NoError(err)
 
+				config, found := s.feeKeeper.GetTokenConfiguration(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
+				s.Require().True(found)
+				s.Require().Equal(types.FeeTokenStatus_UPDATED, config.Status)
+
+				exchangeRate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
+				s.Require().True(found)
+				s.Require().NotEmpty(exchangeRate)
+			},
+			msg: &types.MsgRemoveFeeToken{
+				Authority: s.feeKeeper.GetAuthority(),
+				Denom:     "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
+			},
+			expErr: false,
+			assert: func() {
+				_, found := s.feeKeeper.GetTokenConfiguration(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
+				s.Require().False(found)
+
+				exchangeRate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
+				s.Require().False(found)
+				s.Require().Empty(exchangeRate)
 			},
 		},
+		{
+			name:     "remove fee token error invalid authority",
+			malleate: func() {},
+			msg: &types.MsgRemoveFeeToken{
+				Authority: "invalid_address",
+				Denom:     "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
+			},
+			expErr: true,
+			assert: func() {},
+		},
+		{
+			name:     "remove fee token error invalid token not registed",
+			malleate: func() {},
+			msg: &types.MsgRemoveFeeToken{
+				Authority: s.feeKeeper.GetAuthority(),
+				Denom:     "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
+			},
+			expErr: true,
+			assert: func() {},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.SetupTest()
+		tc := tc
+		s.Run(tc.name, func() {
+			tc.malleate()
+			_, err := s.msgServer.RemoveFeeToken(s.ctx, tc.msg)
+
+			if tc.expErr {
+				s.Require().Error(err)
+			} else {
+				s.Require().NoError(err)
+			}
+
+			tc.assert()
+		})
 	}
 
 }
