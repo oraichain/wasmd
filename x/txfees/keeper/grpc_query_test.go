@@ -239,3 +239,68 @@ func (s *KeeperTestSuite) TestQueryTokensConfig() {
 		})
 	}
 }
+
+func (s *KeeperTestSuite) TestQueryTokenConfig() {
+	testCases := []struct {
+		name     string
+		malleate func()
+		msg      *types.QueryTokenConfigRequest
+		expErr   bool
+		assert   func(tokenConfig types.FeeTokenConfiguration)
+	}{
+		{
+			name:     "query token config failed with 0 token",
+			malleate: func() {},
+			msg:      &types.QueryTokenConfigRequest{Denom: "usdai"},
+			expErr:   true,
+			assert:   func(tokenConfig types.FeeTokenConfiguration) {},
+		},
+		{
+			name: "query token config successfully with 1 token",
+			malleate: func() {
+				sdkCtx := sdk.UnwrapSDKContext(s.ctx)
+				configs := []types.FeeTokenConfiguration{
+					{
+						Denom:  "usdai",
+						PoolId: "some_id",
+						Status: types.FeeTokenStatus_FROZEN,
+					},
+				}
+
+				for _, config := range configs {
+					s.feeKeeper.SetTokenConfiguration(sdkCtx, config)
+				}
+			},
+			msg:    &types.QueryTokenConfigRequest{Denom: "usdai"},
+			expErr: false,
+			assert: func(tokenConfig types.FeeTokenConfiguration) {
+				expectedTokenConfig := types.FeeTokenConfiguration{
+					Denom:  "usdai",
+					PoolId: "some_id",
+					Status: types.FeeTokenStatus_FROZEN,
+				}
+
+				s.Require().Equal(expectedTokenConfig, tokenConfig)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.SetupTest()
+		tc := tc
+
+		s.Run(tc.name, func() {
+			tc.malleate()
+			res, err := s.queryClient.TokenConfig(s.ctx, tc.msg)
+
+			if tc.expErr {
+				s.Require().Error(err)
+			} else {
+				s.Require().NoError(err)
+
+				tc.assert(res.Config)
+			}
+
+		})
+	}
+}

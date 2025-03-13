@@ -26,6 +26,11 @@ service Query {
   rpc TokensConfig(QueryTokensConfigRequest) returns (QueryTokensConfigResponse) {
     option (google.api.http).get = "/cosmwasm/txfees/v1/tokens_config";
   }
+
+  // TokenConfig defines a gRPC query method that returns the fee configuration of allowed token
+  rpc TokenConfig(QueryTokenConfigRequest) returns (QueryTokenConfigResponse) {
+    option (google.api.http).get = "/cosmwasm/txfees/v1/token_config";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -53,4 +58,16 @@ message QueryTokensConfigRequest {}
 message QueryTokensConfigResponse {
   // configs defines the parameters of the module.
   repeated FeeTokenConfiguration configs = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryTokenConfigRequest is the request type for the Query/TokenConfig RPC method.
+message QueryTokenConfigRequest {
+  // denom defines the parameters of the module.
+  string denom = 1;
+}
+
+// QueryTokenConfigResponse is the response type for the Query/TokenConfig RPC method.
+message QueryTokenConfigResponse {
+  // config defines the parameters of the module.
+  FeeTokenConfiguration config = 1 [ (gogoproto.nullable) = false ];
 }

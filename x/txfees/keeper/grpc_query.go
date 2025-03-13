@@ -55,3 +55,14 @@ func (k Keeper) TokensConfig(ctx context.Context, _ *types.QueryTokensConfigRequ
 
 	return &types.QueryTokensConfigResponse{Configs: configs}, nil
 }
+
+func (k Keeper) TokenConfig(ctx context.Context, req *types.QueryTokenConfigRequest) (*types.QueryTokenConfigResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	config, found := k.GetTokenConfiguration(sdkCtx, req.Denom)
+	if !found {
+		return &types.QueryTokenConfigResponse{}, errors.Wrapf(types.ErrTokenConfigurationNotFound, "token configuration not found %s", req.Denom)
+	}
+
+	return &types.QueryTokenConfigResponse{Config: config}, nil
+}
