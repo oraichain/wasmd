@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/core/appmodule"
+	"github.com/CosmWasm/wasmd/x/txfees/client/cli"
 	"github.com/CosmWasm/wasmd/x/txfees/keeper"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -76,7 +77,7 @@ func (a AppModuleBasic) GetTxCmd() *cobra.Command {
 
 // GetQueryCmd returns the x/txfees module's root query command.
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return nil
+	return cli.GetQueryCmd()
 }
 
 type AppModule struct {
