@@ -26,8 +26,8 @@ func ProposalTxfeesUpdateParams(
 	proposal := cosmos.TxProposalv1{
 		Metadata: "none",
 		Deposit:  deposit.String(),
-		Title:    "add fee token",
-		Summary:  "add fee token",
+		Title:    "update params",
+		Summary:  "update params",
 	}
 
 	message := txfeestypes.MsgUpdateParams{
