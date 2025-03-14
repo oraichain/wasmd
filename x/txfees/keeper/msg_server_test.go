@@ -64,7 +64,6 @@ func (s *KeeperTestSuite) TestMsgAddFeeToken() {
 				Authority: s.feeKeeper.GetAuthority(),
 				Config: types.FeeTokenConfiguration{
 					Denom:  "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
-					PoolId: "",
 					Status: types.FeeTokenStatus_FROZEN,
 				},
 			},
@@ -88,7 +87,6 @@ func (s *KeeperTestSuite) TestMsgAddFeeToken() {
 				Authority: s.feeKeeper.GetAuthority(),
 				Config: types.FeeTokenConfiguration{
 					Denom:  "denom",
-					PoolId: "",
 					Status: types.FeeTokenStatus_FROZEN,
 				},
 			},
@@ -112,7 +110,6 @@ func (s *KeeperTestSuite) TestMsgAddFeeToken() {
 				Authority: s.feeKeeper.GetAuthority(),
 				Config: types.FeeTokenConfiguration{
 					Denom:  "denom",
-					PoolId: "",
 					Status: types.FeeTokenStatus_FROZEN,
 				},
 			},
@@ -126,7 +123,6 @@ func (s *KeeperTestSuite) TestMsgAddFeeToken() {
 				Authority: "invalid-address",
 				Config: types.FeeTokenConfiguration{
 					Denom:  "denom",
-					PoolId: "",
 					Status: types.FeeTokenStatus_FROZEN,
 				},
 			},
@@ -169,7 +165,6 @@ func (s *KeeperTestSuite) TestMsgRemoveFeeToken() {
 					Authority: s.feeKeeper.GetAuthority(),
 					Config: types.FeeTokenConfiguration{
 						Denom:  "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
-						PoolId: "",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 				}

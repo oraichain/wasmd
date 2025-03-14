@@ -38,7 +38,6 @@ func (s *KeeperTestSuite) TestStoreAllowedToken() {
 func (s *KeeperTestSuite) TestStoreTokenConfiguration() {
 	config := types.FeeTokenConfiguration{
 		Denom:  "denom",
-		PoolId: "PoolId",
 		Status: types.FeeTokenStatus_UPDATED,
 	}
 
