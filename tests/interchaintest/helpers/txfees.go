@@ -79,7 +79,6 @@ func ProposalTxfeesAddFeeToken(
 		Authority: sdk.MustBech32ifyAddressBytes(chain.Config().Bech32Prefix, authtypes.NewModuleAddress(govtypes.ModuleName)),
 		Config: txfeestypes.FeeTokenConfiguration{
 			Denom:  denom,
-			PoolId: "",
 			Status: txfeestypes.FeeTokenStatus_FROZEN,
 		},
 	}
