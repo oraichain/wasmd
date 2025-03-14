@@ -74,13 +74,13 @@ func (s *KeeperTestSuite) SetupPriceContract() sdk.AccAddress {
 	s.Require().Equal(uint64(2), storeResult.CodeID)
 
 	// instantiate price query contract
-	intMsg := fmt.Sprintf(`{"base_token": "orai", "oraidex_v3_addr": "%s"}`, instantiateResult.Address)
+	initMsg := fmt.Sprintf(`{"base_token": "orai", "oraidex_v3_addr": "%s"}`, instantiateResult.Address)
 	msgInstantiate = wasmtypes.MsgInstantiateContractFixture(func(m *wasmtypes.MsgInstantiateContract) {
 		m.Sender = sender.String()
 		m.Admin = sender.String()
 		m.CodeID = 2
 		m.Label = "query-price-contract"
-		m.Msg = []byte(intMsg)
+		m.Msg = []byte(initMsg)
 		m.Funds = sdk.Coins{}
 	})
 

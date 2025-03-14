@@ -1,0 +1,17 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.txfees.v1.MsgUpdateParams",
+      "authority": "orai10d07y265gmmuvt4z0w9aw880jnsr700jf39xhq",
+      "params": {
+        "token_base_denom": "orai",
+        "price_contract_address": "orai149eps23rjaedn8m9qlcgcx3py5h49aaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ],
+  "metadata": "foobar",
+  "title": "txfees",
+  "deposit": "10000000orai",
+  "summary": "txfees",
+  "expedited": false
+}

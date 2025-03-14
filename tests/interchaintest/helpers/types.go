@@ -37,6 +37,10 @@ type QueryWasmGasLessContracts struct {
 	Pagination        PageResponse `json:"pagination"`
 }
 
+type QueryTxfeesTokenExchangeRate struct {
+	Rate string `json:"rate`
+}
+
 type PageResponse struct {
 	NextKey []byte `json:"next_key"`
 	Total   string `json:"total"`
@@ -45,4 +49,8 @@ type PageResponse struct {
 type HackatomExampleInitMsg struct {
 	Verifier    string `json:"verifier"`
 	Beneficiary string `json:"beneficiary"`
+}
+
+type QuerySqrtPriceResponse struct {
+	Data string `json:"data,omitempty"`
 }
