@@ -15,6 +15,5 @@ enum FeeTokenStatus {
 
 message FeeTokenConfiguration {
     string denom = 1;
-    string pool_id = 2;
-    FeeTokenStatus status = 3;
+    FeeTokenStatus status = 2;
 }
