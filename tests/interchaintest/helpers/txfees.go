@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -13,17 +14,57 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 )
 
-var (
-	USDAI = "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3"
-)
-
-func ProposalAddFeeToken(
+func ProposalTxfeesUpdateParams(
 	ctx context.Context,
 	chain *cosmos.CosmosChain,
 	user ibc.Wallet,
-	contractAddress []string,
+	params txfeestypes.Params,
 	deposit sdk.Coin,
-	gas uint64,
+) (uint64, error) {
+	tn := chain.GetNode()
+
+	proposal := cosmos.TxProposalv1{
+		Metadata: "none",
+		Deposit:  deposit.String(),
+		Title:    "add fee token",
+		Summary:  "add fee token",
+	}
+
+	message := txfeestypes.MsgUpdateParams{
+		Authority: sdk.MustBech32ifyAddressBytes(chain.Config().Bech32Prefix, authtypes.NewModuleAddress(govtypes.ModuleName)),
+		Params:    params,
+	}
+
+	msg, err := chain.Config().EncodingConfig.Codec.MarshalInterfaceJSON(&message)
+	if err != nil {
+		return 0, err
+	}
+	proposal.Messages = append(proposal.Messages, msg)
+
+	txHash, err := tn.SubmitProposal(ctx, user.KeyName(), proposal)
+	if err != nil {
+		return 0, err
+	}
+
+	txProposal, err := txProposal(chain, txHash)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse tx proposal information: %w", err)
+	}
+
+	propId, err := strconv.ParseUint(txProposal.ProposalID, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse tx proposal information proposal ID: %w", err)
+	}
+
+	return propId, nil
+}
+
+func ProposalTxfeesAddFeeToken(
+	ctx context.Context,
+	chain *cosmos.CosmosChain,
+	user ibc.Wallet,
+	denom string,
+	deposit sdk.Coin,
 ) (uint64, error) {
 	tn := chain.GetNode()
 
@@ -37,7 +78,7 @@ func ProposalAddFeeToken(
 	message := txfeestypes.MsgAddFeeToken{
 		Authority: sdk.MustBech32ifyAddressBytes(chain.Config().Bech32Prefix, authtypes.NewModuleAddress(govtypes.ModuleName)),
 		Config: txfeestypes.FeeTokenConfiguration{
-			Denom:  USDAI,
+			Denom:  denom,
 			PoolId: "",
 			Status: txfeestypes.FeeTokenStatus_FROZEN,
 		},
@@ -65,4 +106,23 @@ func ProposalAddFeeToken(
 	}
 
 	return propId, nil
+}
+
+// Query helpers
+func QueryTokenExchangeRate(
+	ctx context.Context,
+	chain *cosmos.CosmosChain,
+	denom string,
+) (string, error) {
+	tn := chain.GetNode()
+	stdout, _, err := tn.ExecQuery(ctx, "txfees", "token-exchange-rate", denom)
+	if err != nil {
+		return "", err
+	}
+	var res QueryTxfeesTokenExchangeRate
+	err = json.Unmarshal(stdout, &res)
+	if err != nil {
+		return "", err
+	}
+	return res.Rate, nil
 }

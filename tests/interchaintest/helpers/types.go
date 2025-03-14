@@ -37,6 +37,10 @@ type QueryWasmGasLessContracts struct {
 	Pagination        PageResponse `json:"pagination"`
 }
 
+type QueryTxfeesTokenExchangeRate struct {
+	Rate string `json:"rate`
+}
+
 type PageResponse struct {
 	NextKey []byte `json:"next_key"`
 	Total   string `json:"total"`

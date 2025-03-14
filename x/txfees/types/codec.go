@@ -3,7 +3,6 @@ package types
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 )
@@ -23,13 +22,13 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
-var (
-	amino     = codec.NewLegacyAmino()
-	ModuleCdc = codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
-)
+// var (
+// 	amino     = codec.NewLegacyAmino()
+// 	ModuleCdc = codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
+// )
 
-func init() {
-	RegisterLegacyAminoCodec(amino)
-	sdk.RegisterLegacyAminoCodec(amino)
-	cryptocodec.RegisterCrypto(amino)
-}
+// func init() {
+// 	RegisterLegacyAminoCodec(amino)
+// 	sdk.RegisterLegacyAminoCodec(amino)
+// 	cryptocodec.RegisterCrypto(amino)
+// }

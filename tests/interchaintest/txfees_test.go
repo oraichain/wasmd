@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	"cosmossdk.io/math"
+	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/stretchr/testify/require"
@@ -63,10 +67,51 @@ func TestAddFeeToken(t *testing.T) {
 	_, err = orai.ExecuteContract(ctx, oraiUser.KeyName(), priceContractAddress, exeMsg, "--gas", "auto")
 	require.NoError(t, err)
 
-	var res helpers.QuerySqrtPriceResponse
-	queryMsg := fmt.Sprintf(`{"get_sqrt_price": {"quote_token": "%s"}}`, expectedDenom)
-	err = orai.QueryContract(ctx, priceContractAddress, queryMsg, &res)
+	// var res helpers.QuerySqrtPriceResponse
+	// queryMsg := fmt.Sprintf(`{"get_sqrt_price": {"quote_token": "%s"}}`, expectedDenom)
+	// err = orai.QueryContract(ctx, priceContractAddress, queryMsg, &res)
+	// require.NoError(t, err)
+
+	// fmt.Println(res.Data)
+
+	// create proposal update params
+	proposalUpdateParams, err := helpers.ProposalTxfeesUpdateParams(
+		ctx,
+		orai,
+		oraiUser,
+		txfeestypes.Params{
+			TokenBaseDenom:       "orai",
+			PriceContractAddress: priceContractAddress,
+		},
+		sdk.NewCoin(orai.Config().Denom, math.NewIntFromUint64(100_000_000)),
+	)
 	require.NoError(t, err)
 
-	fmt.Println(res.Data)
+	// vote on created proposal and waiting for passed proposal
+	err = orai.VoteOnProposalAllValidators(ctx, proposalUpdateParams, cosmos.ProposalVoteYes)
+	require.NoError(t, err, "failed to submit votes")
+	height, _ := orai.Height(ctx)
+	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, proposalUpdateParams, govv1beta1.StatusPassed)
+	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
+
+	// create proposal add token fee
+	proposalAddFeeToken, err := helpers.ProposalTxfeesAddFeeToken(
+		ctx,
+		orai,
+		oraiUser,
+		expectedDenom,
+		sdk.NewCoin(orai.Config().Denom, math.NewIntFromUint64(100_000_000)),
+	)
+	require.NoError(t, err)
+
+	// vote on created proposal and waiting for passed proposal
+	err = orai.VoteOnProposalAllValidators(ctx, proposalAddFeeToken, cosmos.ProposalVoteYes)
+	require.NoError(t, err, "failed to submit votes")
+	height, _ = orai.Height(ctx)
+	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, proposalAddFeeToken, govv1beta1.StatusPassed)
+	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
+
+	rate, err := helpers.QueryTokenExchangeRate(ctx, orai, expectedDenom)
+	require.NoError(t, err)
+	fmt.Println(rate)
 }
