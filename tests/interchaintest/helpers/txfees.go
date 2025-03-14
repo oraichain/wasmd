@@ -126,3 +126,14 @@ func QueryTokenExchangeRate(
 	}
 	return res.Rate, nil
 }
+
+// BankSend sends tokens from one account to another.
+func BankSend(ctx context.Context, chain *cosmos.CosmosChain, keyName string, amount ibc.WalletAmount, fee sdk.Coin) error {
+	tn := chain.GetNode()
+	_, err := tn.ExecTx(ctx,
+		keyName, "bank", "send", keyName,
+		amount.Address, fmt.Sprintf("%s%s", amount.Amount.String(), amount.Denom),
+		"--fees", fee.String(),
+	)
+	return err
+}

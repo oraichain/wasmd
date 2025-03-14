@@ -10,6 +10,7 @@ import (
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
+	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 	"github.com/stretchr/testify/require"
 )
 
@@ -111,7 +112,23 @@ func TestAddFeeToken(t *testing.T) {
 	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, proposalAddFeeToken, govv1beta1.StatusPassed)
 	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
 
+	// execute a transaction with new fee token
 	rate, err := helpers.QueryTokenExchangeRate(ctx, orai, expectedDenom)
 	require.NoError(t, err)
-	fmt.Println(rate)
+	require.NotEmpty(t, rate)
+
+	receiver := CreateTestingUser(t, ctx, t.Name(), math.OneInt(), chains...)[0]
+	sendAmount := ibc.WalletAmount{
+		Address: receiver.FormattedAddress(),
+		Denom:   expectedDenom,
+		Amount:  math.NewInt(1_000_000),
+	}
+
+	// send successfully
+	err = helpers.BankSend(ctx, orai, oraiUser.KeyName(), sendAmount, sdk.NewCoin(expectedDenom, math.NewInt(10_000)))
+	require.NoError(t, err)
+
+	// send error insufficient fees
+	err = helpers.BankSend(ctx, orai, oraiUser.KeyName(), sendAmount, sdk.NewCoin(expectedDenom, math.NewInt(100)))
+	require.Error(t, err)
 }
