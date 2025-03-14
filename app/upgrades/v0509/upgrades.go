@@ -38,7 +38,6 @@ func CreateUpgradeHandler(
 	cdc codec.BinaryCodec,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		// set params
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 		// set params
