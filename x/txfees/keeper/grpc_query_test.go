@@ -129,7 +129,6 @@ func (s *KeeperTestSuite) TestQueryTokensConfig() {
 				configs := []types.FeeTokenConfiguration{
 					{
 						Denom:  "usdai",
-						PoolId: "some_id",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 				}
@@ -145,7 +144,6 @@ func (s *KeeperTestSuite) TestQueryTokensConfig() {
 				expectedTokensConfig := []types.FeeTokenConfiguration{
 					{
 						Denom:  "usdai",
-						PoolId: "some_id",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 				}
@@ -168,17 +166,14 @@ func (s *KeeperTestSuite) TestQueryTokensConfig() {
 				configs := []types.FeeTokenConfiguration{
 					{
 						Denom:  "usdai",
-						PoolId: "some_id",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 					{
 						Denom:  "usdtai",
-						PoolId: "some_id",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 					{
 						Denom:  "usdcai",
-						PoolId: "some_id",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 				}
@@ -194,17 +189,14 @@ func (s *KeeperTestSuite) TestQueryTokensConfig() {
 				expectedTokensConfig := []types.FeeTokenConfiguration{
 					{
 						Denom:  "usdai",
-						PoolId: "some_id",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 					{
 						Denom:  "usdtai",
-						PoolId: "some_id",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 					{
 						Denom:  "usdcai",
-						PoolId: "some_id",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 				}
@@ -263,7 +255,6 @@ func (s *KeeperTestSuite) TestQueryTokenConfig() {
 				configs := []types.FeeTokenConfiguration{
 					{
 						Denom:  "usdai",
-						PoolId: "some_id",
 						Status: types.FeeTokenStatus_FROZEN,
 					},
 				}
@@ -277,7 +268,6 @@ func (s *KeeperTestSuite) TestQueryTokenConfig() {
 			assert: func(tokenConfig types.FeeTokenConfiguration) {
 				expectedTokenConfig := types.FeeTokenConfiguration{
 					Denom:  "usdai",
-					PoolId: "some_id",
 					Status: types.FeeTokenStatus_FROZEN,
 				}
 
