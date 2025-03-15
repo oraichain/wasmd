@@ -80,7 +80,7 @@ type FractionalBalance struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// amount indicates amount of only the fractional balance owned by the
 	// address. FractionalBalance currently only supports tracking 1 single asset,
-	// e.g. fractional balances of ukava.
+	// e.g. fractional balances of orai.
 	Amount cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=amount,proto3,customtype=cosmossdk.io/math.Int" json:"amount"`
 }
 

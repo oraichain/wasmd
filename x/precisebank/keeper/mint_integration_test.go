@@ -39,7 +39,7 @@ func (suite *mintIntegrationTestSuite) TestBlockedRecipient() {
 
 	// To x/precisebank
 	toAddr := suite.AccountKeeper.GetModuleAddress(types.ModuleName)
-	amount := cs(c("ukava", 1000))
+	amount := cs(c("orai", 1000))
 
 	msg := banktypes.NewMsgSend(fromAddr, toAddr, amount)
 
@@ -67,7 +67,7 @@ func (suite *mintIntegrationTestSuite) TestMintCoins_MatchingErrors() {
 		{
 			"invalid module",
 			"notamodule",
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			"",
 			"module account notamodule does not exist: unknown address",
 		},
@@ -75,15 +75,15 @@ func (suite *mintIntegrationTestSuite) TestMintCoins_MatchingErrors() {
 			"no mint permissions",
 			// Check app.go to ensure this module has no mint permissions
 			authtypes.FeeCollectorName,
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			"",
 			"module account fee_collector does not have permissions to mint tokens: unauthorized",
 		},
 		{
 			"invalid amount",
 			minttypes.ModuleName,
-			sdk.Coins{sdk.Coin{Denom: "ukava", Amount: sdkmath.NewInt(-100)}},
-			"-100ukava: invalid coins",
+			sdk.Coins{sdk.Coin{Denom: "orai", Amount: sdkmath.NewInt(-100)}},
+			"-100orai: invalid coins",
 			"",
 		},
 	}
@@ -298,10 +298,10 @@ func (suite *mintIntegrationTestSuite) TestMintCoins() {
 				// -------------------------------------------------------------
 				// Check FULL balances
 				// x/bank balances + x/precisebank balance
-				// Exclude "ukava" as x/precisebank balance will include it
+				// Exclude "orai" as x/precisebank balance will include it
 				bankCoins := suite.BankKeeper.GetAllBalances(suite.Ctx, recipientAddr)
 
-				// Only use x/bank balances for non-ukava denoms
+				// Only use x/bank balances for non-orai denoms
 				var denoms []string
 				for _, coin := range bankCoins {
 					// Ignore integer coins, query the extended denom instead
@@ -314,7 +314,7 @@ func (suite *mintIntegrationTestSuite) TestMintCoins() {
 
 				// Add the extended denom to the list of denoms to balance check
 				// Will be included in balance check even if x/bank doesn't have
-				// ukava.
+				// orai.
 				denoms = append(denoms, types.ExtendedCoinDenom)
 
 				// All balance queries through x/precisebank

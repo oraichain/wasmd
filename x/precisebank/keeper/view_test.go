@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"context"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -23,7 +24,7 @@ func TestKeeper_GetBalance(t *testing.T) {
 		{
 			"extended denom - no fractional balance",
 			types.ExtendedCoinDenom,
-			// queried bank balance in ukava when querying for akava
+			// queried bank balance in orai when querying for aorai
 			sdk.NewCoins(sdk.NewCoin(types.IntegerCoinDenom, sdkmath.NewInt(1000))),
 			sdkmath.ZeroInt(),
 			// integer + fractional
@@ -54,18 +55,18 @@ func TestKeeper_GetBalance(t *testing.T) {
 			sdk.NewCoin(types.ExtendedCoinDenom, sdkmath.NewInt(1000_999_999_999_999)),
 		},
 		{
-			"non-extended denom - ukava returns ukava",
+			"non-extended denom - orai returns orai",
 			types.IntegerCoinDenom,
 			sdk.NewCoins(sdk.NewCoin(types.IntegerCoinDenom, sdkmath.NewInt(1000))),
 			sdkmath.NewInt(0),
-			sdk.NewCoin("ukava", sdkmath.NewInt(1000)),
+			sdk.NewCoin("orai", sdkmath.NewInt(1000)),
 		},
 		{
 			"non-extended denom - unaffected by fractional balance",
-			"ukava",
-			sdk.NewCoins(sdk.NewCoin("ukava", sdkmath.NewInt(1000))),
+			"orai",
+			sdk.NewCoins(sdk.NewCoin("orai", sdkmath.NewInt(1000))),
 			sdkmath.NewInt(100),
-			sdk.NewCoin("ukava", sdkmath.NewInt(1000)),
+			sdk.NewCoin("orai", sdkmath.NewInt(1000)),
 		},
 		{
 			"unrelated denom - no fractional",
@@ -102,7 +103,7 @@ func TestKeeper_GetBalance(t *testing.T) {
 				// No balance pass through
 				tk.bk.EXPECT().
 					GetBalance(tk.ctx, addr, types.IntegerCoinDenom).
-					RunAndReturn(func(_ sdk.Context, _ sdk.AccAddress, _ string) sdk.Coin {
+					RunAndReturn(func(_ context.Context, _ sdk.AccAddress, _ string) sdk.Coin {
 						amt := tt.giveBankBal.AmountOf(types.IntegerCoinDenom)
 						return sdk.NewCoin(types.IntegerCoinDenom, amt)
 					}).
@@ -111,7 +112,7 @@ func TestKeeper_GetBalance(t *testing.T) {
 				// Pass through to x/bank for denoms except ExtendedCoinDenom
 				tk.bk.EXPECT().
 					GetBalance(tk.ctx, addr, tt.giveDenom).
-					RunAndReturn(func(ctx sdk.Context, aa sdk.AccAddress, s string) sdk.Coin {
+					RunAndReturn(func(ctx context.Context, aa sdk.AccAddress, s string) sdk.Coin {
 						require.Equal(t, s, tt.giveDenom, "unexpected denom passed to x/bank.GetBalance")
 
 						return sdk.NewCoin(tt.giveDenom, tt.giveBankBal.AmountOf(s))
@@ -138,7 +139,7 @@ func TestKeeper_SpendableCoin(t *testing.T) {
 		{
 			"extended denom - no fractional balance",
 			types.ExtendedCoinDenom,
-			// queried bank balance in ukava when querying for akava
+			// queried bank balance in orai when querying for aorai
 			sdk.NewCoins(sdk.NewCoin(types.IntegerCoinDenom, sdkmath.NewInt(1000))),
 			sdkmath.ZeroInt(),
 			// integer + fractional
@@ -169,18 +170,18 @@ func TestKeeper_SpendableCoin(t *testing.T) {
 			sdk.NewCoin(types.ExtendedCoinDenom, sdkmath.NewInt(1000_999_999_999_999)),
 		},
 		{
-			"non-extended denom - ukava returns ukava",
+			"non-extended denom - orai returns orai",
 			types.IntegerCoinDenom,
 			sdk.NewCoins(sdk.NewCoin(types.IntegerCoinDenom, sdkmath.NewInt(1000))),
 			sdkmath.NewInt(0),
-			sdk.NewCoin("ukava", sdkmath.NewInt(1000)),
+			sdk.NewCoin("orai", sdkmath.NewInt(1000)),
 		},
 		{
 			"non-extended denom - unaffected by fractional balance",
-			"ukava",
-			sdk.NewCoins(sdk.NewCoin("ukava", sdkmath.NewInt(1000))),
+			"orai",
+			sdk.NewCoins(sdk.NewCoin("orai", sdkmath.NewInt(1000))),
 			sdkmath.NewInt(100),
-			sdk.NewCoin("ukava", sdkmath.NewInt(1000)),
+			sdk.NewCoin("orai", sdkmath.NewInt(1000)),
 		},
 		{
 			"unrelated denom - no fractional",
@@ -217,7 +218,7 @@ func TestKeeper_SpendableCoin(t *testing.T) {
 				// No balance pass through
 				tk.bk.EXPECT().
 					SpendableCoin(tk.ctx, addr, types.IntegerCoinDenom).
-					RunAndReturn(func(_ sdk.Context, _ sdk.AccAddress, _ string) sdk.Coin {
+					RunAndReturn(func(_ context.Context, _ sdk.AccAddress, _ string) sdk.Coin {
 						amt := tt.giveBankBal.AmountOf(types.IntegerCoinDenom)
 						return sdk.NewCoin(types.IntegerCoinDenom, amt)
 					}).
@@ -226,7 +227,7 @@ func TestKeeper_SpendableCoin(t *testing.T) {
 				// Pass through to x/bank for denoms except ExtendedCoinDenom
 				tk.bk.EXPECT().
 					SpendableCoin(tk.ctx, addr, tt.giveDenom).
-					RunAndReturn(func(ctx sdk.Context, aa sdk.AccAddress, s string) sdk.Coin {
+					RunAndReturn(func(ctx context.Context, aa sdk.AccAddress, s string) sdk.Coin {
 						require.Equal(t, s, tt.giveDenom, "unexpected denom passed to x/bank.GetBalance")
 
 						return sdk.NewCoin(tt.giveDenom, tt.giveBankBal.AmountOf(s))
@@ -257,15 +258,15 @@ func TestHiddenReserve(t *testing.T) {
 		denom           string
 		expectedBalance sdk.Coin
 	}{
-		{"akava", types.ExtendedCoinDenom, sdk.NewCoin(types.ExtendedCoinDenom, sdkmath.ZeroInt())},
-		{"ukava", types.IntegerCoinDenom, sdk.NewCoin(types.IntegerCoinDenom, sdkmath.NewInt(1))},
+		{"aorai", types.ExtendedCoinDenom, sdk.NewCoin(types.ExtendedCoinDenom, sdkmath.ZeroInt())},
+		{"orai", types.IntegerCoinDenom, sdk.NewCoin(types.IntegerCoinDenom, sdkmath.NewInt(1))},
 		{"unrelated denom", "cat", sdk.NewCoin("cat", sdkmath.ZeroInt())},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// 2 calls for GetBalance and SpendableCoin, only for reserve coins
-			if tt.denom == "akava" {
+			if tt.denom == "aorai" {
 				tk.ak.EXPECT().GetModuleAddress(types.ModuleName).
 					Return(moduleAddr).
 					Twice()

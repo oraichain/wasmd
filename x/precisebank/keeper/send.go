@@ -352,9 +352,7 @@ func (k Keeper) updateInsufficientFundsError(
 	// full, including locked, balance then this should be updated to deduct
 	// locked coins.
 
-	// Use sdk.NewCoins() so that it removes empty balances - ie. prints
-	// empty string if balance is 0. This is to match x/bank behavior.
-	spendable := sdk.NewCoins(bal)
+	spendable := sdk.NewCoin(bal.Denom, bal.Amount)
 
 	return errorsmod.Wrapf(
 		sdkerrors.ErrInsufficientFunds,

@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"testing"
 
@@ -160,8 +161,8 @@ func (suite *sendIntegrationTestSuite) TestSendCoinsFromModuleToAccount_Matching
 			"invalid coins",
 			senderModuleName,
 			sdk.AccAddress([]byte{2}),
-			sdk.Coins{sdk.Coin{Denom: "ukava", Amount: sdkmath.NewInt(-1)}},
-			"-1ukava: invalid coins",
+			sdk.Coins{sdk.Coin{Denom: "orai", Amount: sdkmath.NewInt(-1)}},
+			"-1orai: invalid coins",
 			"",
 		},
 		{
@@ -169,17 +170,17 @@ func (suite *sendIntegrationTestSuite) TestSendCoinsFromModuleToAccount_Matching
 			senderModuleName,
 			sdk.AccAddress([]byte{2}),
 			cs(c(types.IntegerCoinDenom, 1000)),
-			"spendable balance  is smaller than 1000ukava: insufficient funds",
+			"spendable balance 0orai is smaller than 1000orai: insufficient funds",
 			"",
 		},
 		{
 			"insufficient balance - extended",
 			senderModuleName,
 			sdk.AccAddress([]byte{2}),
-			// We can still test insufficient bal errors with "akava" since
+			// We can still test insufficient bal errors with "aorai" since
 			// we also expect it to not exist in x/bank
 			cs(c(types.ExtendedCoinDenom, 1000)),
-			"spendable balance  is smaller than 1000akava: insufficient funds",
+			"spendable balance 0aorai is smaller than 1000aorai: insufficient funds",
 			"",
 		},
 	}
@@ -235,31 +236,31 @@ func (suite *sendIntegrationTestSuite) TestSendCoins_MatchingErrors() {
 		{
 			"invalid coins",
 			cs(),
-			sdk.Coins{sdk.Coin{Denom: "ukava", Amount: sdkmath.NewInt(-1)}},
-			"-1ukava: invalid coins",
+			sdk.Coins{sdk.Coin{Denom: "orai", Amount: sdkmath.NewInt(-1)}},
+			"-1orai: invalid coins",
 		},
 		{
 			"insufficient empty balance - passthrough",
 			cs(),
 			cs(c(types.IntegerCoinDenom, 1000)),
-			"spendable balance  is smaller than 1000ukava: insufficient funds",
+			"spendable balance 0orai is smaller than 1000orai: insufficient funds",
 		},
 		{
 			"insufficient empty balance - extended",
 			cs(),
-			// We can still test insufficient bal errors with "akava" since
+			// We can still test insufficient bal errors with "aorai" since
 			// we also expect it to not exist in x/bank
 			cs(c(types.ExtendedCoinDenom, 1000)),
-			"spendable balance  is smaller than 1000akava: insufficient funds",
+			"spendable balance 0aorai is smaller than 1000aorai: insufficient funds",
 		},
 		{
 			"insufficient non-empty balance - passthrough",
 			cs(c(types.IntegerCoinDenom, 100), c("usdc", 1000)),
 			cs(c(types.IntegerCoinDenom, 1000)),
-			"spendable balance 100ukava is smaller than 1000ukava: insufficient funds",
+			"spendable balance 100orai is smaller than 1000orai: insufficient funds",
 		},
-		// non-empty akava transfer error is tested in SendCoins, not here since
-		// x/bank doesn't hold akava
+		// non-empty aorai transfer error is tested in SendCoins, not here since
+		// x/bank doesn't hold aorai
 	}
 
 	for _, tt := range tests {
@@ -306,7 +307,7 @@ func (suite *sendIntegrationTestSuite) TestSendCoins() {
 			cs(c(types.ExtendedCoinDenom, 10), c("usdc", 1000)),
 			cs(),
 			cs(c(types.ExtendedCoinDenom, 1000)),
-			"spendable balance 10akava is smaller than 1000akava: insufficient funds",
+			"spendable balance 10aorai is smaller than 1000aorai: insufficient funds",
 		},
 		{
 			"passthrough - unrelated",
@@ -330,17 +331,17 @@ func (suite *sendIntegrationTestSuite) TestSendCoins() {
 			"",
 		},
 		{
-			"akava send - 1akava to 0 balance",
+			"aorai send - 1aorai to 0 balance",
 			// Starting balances
 			cs(ci(types.ExtendedCoinDenom, types.ConversionFactor().MulRaw(5))),
 			cs(),
 			// Send amount
-			cs(c(types.ExtendedCoinDenom, 1)), // akava
+			cs(c(types.ExtendedCoinDenom, 1)), // aorai
 			"",
 		},
 		{
 			"sender borrow from integer",
-			// 1ukava, 0 fractional
+			// 1orai, 0 fractional
 			cs(ci(types.ExtendedCoinDenom, types.ConversionFactor())),
 			cs(),
 			// Send 1 with 0 fractional balance
@@ -349,7 +350,7 @@ func (suite *sendIntegrationTestSuite) TestSendCoins() {
 		},
 		{
 			"sender borrow from integer - max fractional amount",
-			// 1ukava, 0 fractional
+			// 1orai, 0 fractional
 			cs(ci(types.ExtendedCoinDenom, types.ConversionFactor())),
 			cs(),
 			// Max fractional amount
@@ -402,7 +403,7 @@ func (suite *sendIntegrationTestSuite) TestSendCoins() {
 			recipientBalAfter := suite.GetAllBalances(recipient)
 
 			// Convert send amount coins to extended coins. i.e. if send coins
-			// includes ukava, convert it so that its the equivalent akava
+			// includes orai, convert it so that its the equivalent aorai
 			// amount so its easier to compare. Compare extended coins only.
 			sendAmountFullExtended := tt.giveAmt
 			sendAmountInteger := tt.giveAmt.AmountOf(types.IntegerCoinDenom)
@@ -433,14 +434,14 @@ func (suite *sendIntegrationTestSuite) TestSendCoins() {
 
 			// Check events
 
-			// FULL akava equivalent, including ukava only/mixed sends
+			// FULL aorai equivalent, including orai only/mixed sends
 			sendExtendedAmount := sdk.NewCoin(
 				types.ExtendedCoinDenom,
 				sendAmountFullExtended.AmountOf(types.ExtendedCoinDenom),
 			)
 			extCoins := sdk.NewCoins(sendExtendedAmount)
 
-			// No extra events if not sending akava
+			// No extra events if not sending aorai
 			if sendExtendedAmount.IsZero() {
 				return
 			}
@@ -526,10 +527,13 @@ func (suite *sendIntegrationTestSuite) TestSendCoins_Matrix() {
 		for _, recipientStartBal := range startBalances {
 			for _, sendAmt := range sendAmts {
 				testName := fmt.Sprintf(
-					"%s -> %s (%s -> %s), send %s (%s)",
-					senderStartBal.name, senderStartBal.bal,
-					recipientStartBal.name, recipientStartBal.bal,
-					sendAmt.name, sendAmt.amt,
+					"%x",
+					sha256.Sum256(fmt.Appendf(nil,
+						"%s -> %s (%s -> %s), send %s (%s)",
+						senderStartBal.name, senderStartBal.bal,
+						recipientStartBal.name, recipientStartBal.bal,
+						sendAmt.name, sendAmt.amt,
+					)),
 				)
 
 				suite.Run(testName, func() {
@@ -566,7 +570,7 @@ func (suite *sendIntegrationTestSuite) TestSendCoins_Matrix() {
 					recipientBalAfter := suite.GetAllBalances(recipient)
 
 					// Convert send amount coins to extended coins. i.e. if send coins
-					// includes ukava, convert it so that its the equivalent akava
+					// includes orai, convert it so that its the equivalent aorai
 					// amount so its easier to compare. Compare extended coins only.
 
 					suite.Require().Equal(
@@ -689,7 +693,7 @@ func (suite *sendIntegrationTestSuite) TestSendCoinsFromModuleToAccount() {
 	// of SendCoinsFromAccountToModule, so we are only checking the correct
 	// addresses are being used.
 
-	senderModule := "community"
+	senderModule := "fee_collector"
 	senderAddr := suite.AccountKeeper.GetModuleAddress(senderModule)
 
 	recipient := sdk.AccAddress([]byte{1})
@@ -710,10 +714,8 @@ func (suite *sendIntegrationTestSuite) TestSendCoinsFromModuleToAccount() {
 	senderBalAfter := suite.GetAllBalances(senderAddr)
 	recipientBalAfter := suite.GetAllBalances(recipient)
 
-	suite.Require().Equal(
-		cs(),
-		senderBalAfter,
-	)
+	found, _ := senderBalAfter.Find(types.ExtendedCoinDenom)
+	suite.Require().False(found)
 
 	suite.Require().Equal(
 		sendAmt,

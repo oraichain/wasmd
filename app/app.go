@@ -964,6 +964,7 @@ func NewWasmApp(
 			feemarkettypes.ModuleName:     feemarket.AppModuleBasic{},
 			erc20types.ModuleName:         erc20.AppModuleBasic{},
 			globalfee.ModuleName:          globalfee.AppModuleBasic{},
+			precisebanktypes.ModuleName:   precisebank.AppModuleBasic{},
 		})
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
@@ -1044,7 +1045,7 @@ func NewWasmApp(
 		// simd modules
 		authtypes.ModuleName, banktypes.ModuleName,
 		distrtypes.ModuleName, stakingtypes.ModuleName, slashingtypes.ModuleName, govtypes.ModuleName,
-		minttypes.ModuleName, crisistypes.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
+		minttypes.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
 		feegrant.ModuleName,
 		// nft.ModuleName,
 		group.ModuleName,
@@ -1066,6 +1067,7 @@ func NewWasmApp(
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
 		precisebanktypes.ModuleName,
+		crisistypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)

@@ -33,7 +33,7 @@ func TestMintCoins_PanicValidations(t *testing.T) {
 					Return(nil).
 					Once()
 			},
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			"module account notamodule does not exist: unknown address",
 		},
 		{
@@ -49,7 +49,7 @@ func TestMintCoins_PanicValidations(t *testing.T) {
 					)).
 					Once()
 			},
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			"module account mint does not have permissions to mint tokens: unauthorized",
 		},
 		{
@@ -68,11 +68,11 @@ func TestMintCoins_PanicValidations(t *testing.T) {
 
 				// Will call x/bank MintCoins coins
 				td.bk.EXPECT().
-					MintCoins(td.ctx, minttypes.ModuleName, cs(c("ukava", 1000))).
+					MintCoins(td.ctx, minttypes.ModuleName, cs(c("orai", 1000))).
 					Return(nil).
 					Once()
 			},
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			"",
 		},
 		{
@@ -82,7 +82,7 @@ func TestMintCoins_PanicValidations(t *testing.T) {
 				// No mock setup needed since this is checked before module
 				// account checks
 			},
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			"module account precisebank cannot be minted to: unauthorized",
 		},
 	}
@@ -133,10 +133,10 @@ func TestMintCoins_Errors(t *testing.T) {
 					Once()
 			},
 			sdk.Coins{sdk.Coin{
-				Denom:  "ukava",
+				Denom:  "orai",
 				Amount: sdkmath.NewInt(-1000),
 			}},
-			"-1000ukava: invalid coins",
+			"-1000orai: invalid coins",
 		},
 	}
 
@@ -175,7 +175,7 @@ func TestMintCoins_ExpectedCalls(t *testing.T) {
 		{
 			"passthrough mint - integer denom",
 			sdkmath.ZeroInt(),
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			sdkmath.ZeroInt(),
 		},
 

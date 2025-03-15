@@ -60,7 +60,7 @@ func TestGenesisStateValidate_Basic(t *testing.T) {
 				},
 				sdkmath.ZeroInt(),
 			),
-			"invalid balances: duplicate address kava1qy0xn7za",
+			"invalid balances: duplicate address orai1qykws498",
 		},
 		{
 			"invalid - calls (single) FractionalBalance.Validate()",
@@ -71,7 +71,7 @@ func TestGenesisStateValidate_Basic(t *testing.T) {
 				},
 				sdkmath.ZeroInt(),
 			),
-			"invalid balances: invalid fractional balance for kava1qg7c45n6: non-positive amount -1",
+			"invalid balances: invalid fractional balance for orai1qg8skl5q: non-positive amount -1",
 		},
 		{
 			"invalid - calls (slice) FractionalBalances.Validate()",
@@ -82,7 +82,7 @@ func TestGenesisStateValidate_Basic(t *testing.T) {
 				},
 				sdkmath.ZeroInt(),
 			),
-			"invalid balances: duplicate address kava1qy0xn7za",
+			"invalid balances: duplicate address orai1qykws498",
 		},
 		{
 			"invalid - negative remainder",

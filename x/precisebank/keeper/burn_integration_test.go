@@ -44,7 +44,7 @@ func (suite *burnIntegrationTestSuite) TestBurnCoins_MatchingErrors() {
 			"invalid module",
 			"notamodule",
 			func() {},
-			cs(c("ukava", 1000)),
+			cs(c("stake", 1000)),
 			"",
 			"module account notamodule does not exist: unknown address",
 		},
@@ -53,7 +53,7 @@ func (suite *burnIntegrationTestSuite) TestBurnCoins_MatchingErrors() {
 			// Check app.go to ensure this module has no burn permissions
 			authtypes.FeeCollectorName,
 			func() {},
-			cs(c("ukava", 1000)),
+			cs(c("stake", 1000)),
 			"",
 			"module account fee_collector does not have permissions to burn tokens: unauthorized",
 		},
@@ -62,16 +62,16 @@ func (suite *burnIntegrationTestSuite) TestBurnCoins_MatchingErrors() {
 			// Has burn permissions so it goes to the amt check
 			ibctransfertypes.ModuleName,
 			func() {},
-			sdk.Coins{sdk.Coin{Denom: "ukava", Amount: sdkmath.NewInt(-100)}},
-			"-100ukava: invalid coins",
+			sdk.Coins{sdk.Coin{Denom: "stake", Amount: sdkmath.NewInt(-100)}},
+			"-100stake: invalid coins",
 			"",
 		},
 		{
 			"insufficient balance - empty",
 			ibctransfertypes.ModuleName,
 			func() {},
-			cs(c("ukava", 1000)),
-			"spendable balance  is smaller than 1000ukava: insufficient funds",
+			cs(c("stake", 1000)),
+			"spendable balance 0stake is smaller than 1000stake: insufficient funds",
 			"",
 		},
 	}
@@ -158,8 +158,8 @@ func (suite *burnIntegrationTestSuite) TestBurnCoins() {
 			cs(ci(types.ExtendedCoinDenom, types.ConversionFactor())),
 			cs(ci(types.ExtendedCoinDenom, types.ConversionFactor().MulRaw(2))),
 			cs(),
-			// Returns correct error with akava balance (rewrites Bank BurnCoins err)
-			"spendable balance 1000000000000akava is smaller than 2000000000000akava: insufficient funds",
+			// Returns correct error with aorai balance (rewrites Bank BurnCoins err)
+			"spendable balance 1000000000000aorai is smaller than 2000000000000aorai: insufficient funds",
 		},
 		{
 			"error - insufficient fractional, borrow",
@@ -167,7 +167,7 @@ func (suite *burnIntegrationTestSuite) TestBurnCoins() {
 			cs(c(types.ExtendedCoinDenom, 2000)),
 			cs(),
 			// Error from SendCoins to reserve
-			"spendable balance 1000akava is smaller than 2000akava: insufficient funds",
+			"spendable balance 1000aorai is smaller than 2000aorai: insufficient funds",
 		},
 	}
 
@@ -196,7 +196,7 @@ func (suite *burnIntegrationTestSuite) TestBurnCoins() {
 			// -------------------------------------------------------------
 			// Check FULL balances
 			// x/bank balances + x/precisebank balance
-			// Exclude "ukava" as x/precisebank balance will include it
+			// Exclude "orai" as x/precisebank balance will include it
 			afterBalance := suite.GetAllBalances(recipientAddr)
 
 			suite.Require().Equal(

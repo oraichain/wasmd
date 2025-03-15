@@ -72,7 +72,7 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 				},
 				sdkmath.ZeroInt(),
 			),
-			"failed to validate precisebank genesis state: invalid balances: duplicate address kava1qy0xn7za",
+			"failed to validate precisebank genesis state: invalid balances: duplicate address cosmos1qyfkm2y3",
 		},
 		{
 			"invalid - module balance insufficient",
@@ -85,7 +85,7 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 				// 2 leftover from 0.999... + 0.999...
 				sdkmath.NewInt(2),
 			),
-			"module account balance does not match sum of fractional balances and remainder, balance is 0ukava but expected 2000000000000akava (2ukava)",
+			"module account balance does not match sum of fractional balances and remainder, balance is 0orai but expected 2000000000000aorai (2orai)",
 		},
 		{
 			"invalid - module balance excessive",
@@ -105,7 +105,7 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 				},
 				sdkmath.NewInt(2),
 			),
-			"module account balance does not match sum of fractional balances and remainder, balance is 100ukava but expected 2000000000000akava (2ukava)",
+			"module account balance does not match sum of fractional balances and remainder, balance is 100orai but expected 2000000000000aorai (2orai)",
 		},
 		{
 			"sets module account",

@@ -39,13 +39,6 @@ func (suite *Suite) SetupTest() {
 	suite.AccountKeeper = tApp.GetAccountKeeper()
 	suite.Keeper = tApp.GetPrecisebankKeeper()
 
-	cdc := suite.App.AppCodec()
-	coins := sdk.NewCoins(sdk.NewInt64Coin("ukava", 1000_000_000_000_000_000))
-	authGS := app.NewFundedGenStateWithSameCoins(cdc, coins, []sdk.AccAddress{})
-
-	gs := app.GenesisState{}
-	suite.App.InitializeFromGenesisStates(authGS, gs)
-
 	// consensus key - needed to set up evm module
 	consPriv, err := ethsecp256k1.GenerateKey()
 	suite.Require().NoError(err)
@@ -91,7 +84,7 @@ func (suite *Suite) Commit() {
 }
 
 // MintToAccount mints coins to an account with the x/precisebank methods. This
-// must be used when minting extended coins, ie. akava coins. This depends on
+// must be used when minting extended coins, ie. aorai coins. This depends on
 // the methods to be properly tested to be implemented correctly.
 func (suite *Suite) MintToAccount(addr sdk.AccAddress, amt sdk.Coins) {
 	accBalancesBefore := suite.GetAllBalances(addr)

@@ -10,12 +10,12 @@ import (
 // amount in extended coins. This is intended to get the full value to emit in
 // events.
 func SumExtendedCoin(amt sdk.Coins) sdk.Coin {
-	// ukava converted to akava
+	// orai converted to aorai
 	integerAmount := amt.AmountOf(IntegerCoinDenom).Mul(conversionFactor)
-	// akava as is
+	// aorai as is
 	extendedAmount := amt.AmountOf(ExtendedCoinDenom)
 
-	// total of ukava and akava amounts
+	// total of orai and aorai amounts
 	fullEmissionAmount := integerAmount.Add(extendedAmount)
 
 	return sdk.NewCoin(

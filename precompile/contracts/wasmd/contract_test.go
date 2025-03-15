@@ -110,8 +110,8 @@ func TestExecuteAndQuery(t *testing.T) {
 	tApp.GetWasmKeeper().SetParams(ctx, wasmtypes.DefaultParams())
 	mockAddr, mockEVMAddr := MockAddressPair()
 	tApp.EvmKeeper.SetAddressMapping(ctx, mockAddr, mockEVMAddr)
-	sdk.RegisterDenom("ukava", sdkmath.LegacyNewDec(6))
-	amts := sdk.NewCoins(sdk.NewCoin("ukava", sdkmath.NewInt(1000)))
+	sdk.RegisterDenom("orai", sdkmath.LegacyNewDec(6))
+	amts := sdk.NewCoins(sdk.NewCoin("orai", sdkmath.NewInt(1000)))
 	tApp.GetBankKeeper().MintCoins(ctx, evmtypes.ModuleName, amts)
 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, mockAddr, amts)
 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
@@ -147,7 +147,7 @@ func TestExecuteAndQuery(t *testing.T) {
 
 	// test execute
 	executeMethod := wasmd.ABI.Methods["execute"]
-	funds := sdk.NewCoins(sdk.NewCoin("ukava", sdkmath.NewInt(10)))
+	funds := sdk.NewCoins(sdk.NewCoin("orai", sdkmath.NewInt(10)))
 	err = tApp.GetBankKeeper().IsSendEnabledCoins(ctx, funds...)
 	require.Nil(t, err)
 
@@ -167,7 +167,7 @@ func TestExecuteAndQuery(t *testing.T) {
 	t.Logf("res %s, gas remained %v", response, suppliedGas)
 
 	// check balance after sent funds. Should drop
-	balanceAfterExecute := tApp.GetBankKeeper().GetBalance(ctx, mockAddr, "ukava")
+	balanceAfterExecute := tApp.GetBankKeeper().GetBalance(ctx, mockAddr, "orai")
 	require.Equal(t, balanceAfterExecute, amts[0].Sub(funds[0]))
 
 	// test query

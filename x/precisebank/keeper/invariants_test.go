@@ -137,7 +137,7 @@ func TestValidFractionalAmountsInvariant(t *testing.T) {
 				store.Set(types.FractionalBalanceKey(addr), amountBytes)
 			},
 			true,
-			"precisebank: valid-fractional-balances invariant\namount of invalid fractional balances found 1\n\tkava1qy0xn7za has an invalid fractional amount of 1000000000000\n\n",
+			"precisebank: valid-fractional-balances invariant\namount of invalid fractional balances found 1\n\tcosmos1qyfkm2y3 has an invalid fractional amount of 1000000000000\n\n",
 		},
 	}
 
@@ -169,10 +169,10 @@ func TestFractionalDenomNotInBankInvariant(t *testing.T) {
 		wantMsg    string
 	}{
 		{
-			"valid - integer denom (ukava) supply",
+			"valid - integer denom (orai) supply",
 			func(ctx sdk.Context, bk *mocks.MockBankKeeper) {
 				// No fractional balance in x/bank
-				// This also enforces there is no GetSupply() call for IntegerCoinDenom / ukava
+				// This also enforces there is no GetSupply() call for IntegerCoinDenom / orai
 				bk.EXPECT().
 					GetSupply(ctx, types.ExtendedCoinDenom).
 					Return(sdk.NewCoin(types.ExtendedCoinDenom, sdkmath.ZeroInt())).
@@ -182,7 +182,7 @@ func TestFractionalDenomNotInBankInvariant(t *testing.T) {
 			"",
 		},
 		{
-			"invalid - x/bank contains fractional denom (akava)",
+			"invalid - x/bank contains fractional denom (aorai)",
 			func(ctx sdk.Context, bk *mocks.MockBankKeeper) {
 				bk.EXPECT().
 					GetSupply(ctx, types.ExtendedCoinDenom).
@@ -190,7 +190,7 @@ func TestFractionalDenomNotInBankInvariant(t *testing.T) {
 					Once()
 			},
 			true,
-			"precisebank: fractional-denom-not-in-bank invariant\nx/bank should not hold any akava but has supply of 1000akava\n",
+			"precisebank: fractional-denom-not-in-bank invariant\nx/bank should not hold any aorai but has supply of 1000aorai\n",
 		},
 	}
 

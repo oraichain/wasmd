@@ -34,7 +34,7 @@ func TestBurnCoins_PanicValidations(t *testing.T) {
 					Return(nil).
 					Once()
 			},
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			"module account notamodule does not exist: unknown address",
 		},
 		{
@@ -50,7 +50,7 @@ func TestBurnCoins_PanicValidations(t *testing.T) {
 					)).
 					Once()
 			},
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			fmt.Sprintf("module account %s does not have permissions to burn tokens: unauthorized", burnerModuleName),
 		},
 		{
@@ -69,11 +69,11 @@ func TestBurnCoins_PanicValidations(t *testing.T) {
 
 				// Will call x/bank BurnCoins coins
 				td.bk.EXPECT().
-					BurnCoins(td.ctx, burnerModuleName, cs(c("ukava", 1000))).
+					BurnCoins(td.ctx, burnerModuleName, cs(c("orai", 1000))).
 					Return(nil).
 					Once()
 			},
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			"",
 		},
 		{
@@ -83,7 +83,7 @@ func TestBurnCoins_PanicValidations(t *testing.T) {
 				// No mock setup needed since this is checked before module
 				// account checks
 			},
-			cs(c("ukava", 1000)),
+			cs(c("orai", 1000)),
 			"module account precisebank cannot be burned from: unauthorized",
 		},
 	}
@@ -134,10 +134,10 @@ func TestBurnCoins_Errors(t *testing.T) {
 					Once()
 			},
 			sdk.Coins{sdk.Coin{
-				Denom:  "ukava",
+				Denom:  "orai",
 				Amount: sdkmath.NewInt(-1000),
 			}},
-			"-1000ukava: invalid coins",
+			"-1000orai: invalid coins",
 		},
 	}
 

@@ -8,7 +8,7 @@ outpkg: "mocks"
 filename: "Mock{{.InterfaceName}}.go"
 
 packages:
-  github.com/oraichain/wasmd/x/precisebank/types:
+  github.com/CosmWasm/wasmd/x/precisebank/types:
     # package-specific config
     config:
     interfaces:

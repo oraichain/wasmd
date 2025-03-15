@@ -70,7 +70,7 @@ func (suite *invariantsIntegrationTestSuite) TestReserveBackingFractionalInvaria
 				k.SetRemainderAmount(ctx, types.ConversionFactor().QuoRaw(2))
 			},
 			true,
-			"precisebank: module reserve backing total fractional balances invariant\nakava reserve balance 0 mismatches 500000000000 (fractional balances 0 + remainder 500000000000)\n\n",
+			"precisebank: module reserve backing total fractional balances invariant\naorai reserve balance 0 mismatches 500000000000 (fractional balances 0 + remainder 500000000000)\n\n",
 		},
 		{
 			"invalid - insufficient reserve backing",
@@ -87,7 +87,7 @@ func (suite *invariantsIntegrationTestSuite) TestReserveBackingFractionalInvaria
 				suite.FundReserve(sdkmath.NewInt(1))
 			},
 			true,
-			"precisebank: module reserve backing total fractional balances invariant\nakava reserve balance 1000000000000 mismatches 2000000000000 (fractional balances 1500000000000 + remainder 500000000000)\n\n",
+			"precisebank: module reserve backing total fractional balances invariant\naorai reserve balance 1000000000000 mismatches 2000000000000 (fractional balances 1500000000000 + remainder 500000000000)\n\n",
 		},
 		{
 			"invalid - excess reserve backing",
@@ -104,7 +104,7 @@ func (suite *invariantsIntegrationTestSuite) TestReserveBackingFractionalInvaria
 				suite.FundReserve(sdkmath.NewInt(3))
 			},
 			true,
-			"precisebank: module reserve backing total fractional balances invariant\nakava reserve balance 3000000000000 mismatches 2000000000000 (fractional balances 1500000000000 + remainder 500000000000)\n\n",
+			"precisebank: module reserve backing total fractional balances invariant\naorai reserve balance 3000000000000 mismatches 2000000000000 (fractional balances 1500000000000 + remainder 500000000000)\n\n",
 		},
 	}
 
