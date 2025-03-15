@@ -27,6 +27,7 @@ echo "Waiting for the REST & JSONRPC servers to be up ..."
   done
 } 2>/dev/null
 
+sleep 1
 inflation=$(curl --no-progress-meter http://localhost:1317/cosmos/mint/v1beta1/inflation | jq '.inflation | tonumber')
 if ! [[ $inflation =~ $re ]] ; then
    echo "Error: Cannot query inflation => Potentially missing Go GRPC backport" >&2;
