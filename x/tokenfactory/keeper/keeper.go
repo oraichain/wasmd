@@ -52,6 +52,10 @@ func NewKeeper(
 	}
 }
 
+func (k Keeper) Capabilities(ctx sdk.Context) []string {
+	return k.enabledCapabilities
+}
+
 // Logger returns a logger for the x/tokenfactory module
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))

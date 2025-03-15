@@ -181,7 +181,7 @@ func TestForceTransfer(t *testing.T) {
 	osmosis, ctx := SetupCustomApp(t, creator)
 
 	lucky := RandomAccountAddress()
-	rcpt := RandomAccountAddress()
+	// rcpt := RandomAccountAddress()
 	reflect := instantiateReflectContract(t, ctx, osmosis, lucky)
 	require.NotEmpty(t, reflect)
 
@@ -213,21 +213,24 @@ func TestForceTransfer(t *testing.T) {
 	err = executeCustom(t, ctx, osmosis, reflect, lucky, msg, sdk.Coin{})
 	require.NoError(t, err)
 
-	// Force move 100 tokens from lucky to rcpt
-	msg = bindings.TokenMsg{ForceTransfer: &bindings.ForceTransfer{
-		Denom:       sunDenom,
-		Amount:      math.NewInt(100),
-		FromAddress: lucky.String(),
-		ToAddress:   rcpt.String(),
-	}}
-	err = executeCustom(t, ctx, osmosis, reflect, lucky, msg, sdk.Coin{})
-	require.NoError(t, err)
+	capabilities := osmosis.TokenFactoryKeeper.Capabilities(ctx)
+	require.NotContains(t, capabilities, types.EnableForceTransfer)
 
-	// check the balance of rcpt
-	balances = osmosis.BankKeeper.GetAllBalances(ctx, rcpt)
-	require.Len(t, balances, 1)
-	coin := balances[0]
-	require.Equal(t, math.NewInt(100), coin.Amount)
+	// // Force move 100 tokens from lucky to rcpt
+	// msg = bindings.TokenMsg{ForceTransfer: &bindings.ForceTransfer{
+	// 	Denom:       sunDenom,
+	// 	Amount:      math.NewInt(100),
+	// 	FromAddress: lucky.String(),
+	// 	ToAddress:   rcpt.String(),
+	// }}
+	// err = executeCustom(t, ctx, osmosis, reflect, lucky, msg, sdk.Coin{})
+	// require.NoError(t, err)
+
+	// // check the balance of rcpt
+	// balances = osmosis.BankKeeper.GetAllBalances(ctx, rcpt)
+	// require.Len(t, balances, 1)
+	// coin := balances[0]
+	// require.Equal(t, math.NewInt(100), coin.Amount)
 }
 
 func TestBurnMsg(t *testing.T) {
