@@ -298,7 +298,7 @@ replace (
 	// See: https://github.com/cosmos/cosmos-sdk/issues/13134
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
 
-	github.com/ethereum/go-ethereum => github.com/oraichain/go-ethereum v0.0.0-20240919025041-184f816b9d65
+	github.com/ethereum/go-ethereum => github.com/oraichain/go-ethereum v0.0.0-20250315003641-c426e3d92f1e
 
 	github.com/evmos/ethermint => github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20250317195325-2af05316a10b
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
