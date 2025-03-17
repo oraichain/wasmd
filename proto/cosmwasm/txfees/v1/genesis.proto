@@ -1,0 +1,13 @@
+syntax = "proto3";
+package cosmwasm.txfees.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmwasm/txfees/v1/params.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/txfees/types";
+
+// GenesisState defines the txfees module's genesis state.
+message GenesisState {
+  // params defines the paramaters of the module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}

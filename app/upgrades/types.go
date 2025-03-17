@@ -8,6 +8,7 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	txfeeskeeper "github.com/CosmWasm/wasmd/x/txfees/keeper"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/keeper"
@@ -31,6 +32,7 @@ type AppKeepers struct {
 	ScopedIBCKeeper           *capabilitykeeper.ScopedKeeper
 	GovKeeper                 *govkeeper.Keeper
 	ICAControllerKeeper       icacontrollerkeeper.Keeper
+	TxFeesKeeper              txfeeskeeper.Keeper
 	IBCFeeKeeper              ibcfeekeeper.Keeper
 	IBCKeeper                 *ibckeeper.Keeper
 	MintKeeper                *mintkeeper.Keeper

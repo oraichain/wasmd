@@ -963,8 +963,8 @@ github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705 h1:++dP
 github.com/oraichain/ibc-go-fork/v8 v8.4.1-0.20241202080239-8bdb6f914705/go.mod h1:zh6x1osR0hNvEcFrC/lhGD08sMfQmr9wHVvZ/mRWMCs=
 github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597 h1:vFCKH25Q+BVNWRImFym0rYzno6BW8+l9GplszOdZ9no=
 github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597/go.mod h1:JAaOF+0j23OoyEgd6uhE3cgNDpZcfVZx4/DBbnMjUsc=
-github.com/oraichain/juno/x/globalfee v0.0.0-20240925043856-fe3d1d8b9ad3 h1:/Um//l2b6eGaAcVRwkzv2U7xTAqlYfiyaqG71bUyyac=
-github.com/oraichain/juno/x/globalfee v0.0.0-20240925043856-fe3d1d8b9ad3/go.mod h1:T9g8covTFLipVYRou8cuvfjg+xtPmQINjxFjzRxEbo8=
+github.com/oraichain/juno/x/globalfee v0.0.0-20250312030216-ffe51b3d33e8 h1:ccMFmwQIfCZmKCFtBIeF+9vzJgMY46HxPCB7jQc8i04=
+github.com/oraichain/juno/x/globalfee v0.0.0-20250312030216-ffe51b3d33e8/go.mod h1:T9g8covTFLipVYRou8cuvfjg+xtPmQINjxFjzRxEbo8=
 github.com/ory/dockertest v3.3.5+incompatible h1:iLLK6SQwIhcbrG783Dghaaa3WPzGc+4Emza6EbVUUGA=
 github.com/ory/dockertest v3.3.5+incompatible/go.mod h1:1vX4m9wsvi00u5bseYwXaSnhNrne+V0E6LAcBILJdPs=
 github.com/ory/dockertest/v3 v3.9.1 h1:v4dkG+dlu76goxMiTT2j8zV7s4oPPEppKT8K8p2f1kY=
@@ -1128,6 +1128,8 @@ github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 h1:epCh84lMvA70
 github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7/go.mod h1:q4W45IWZaF22tdD+VEXcAWRA037jwmWEB5VWYORlTpc=
 github.com/tendermint/go-amino v0.16.0 h1:GyhmgQKvqF82e2oZeuMSp9JTN0N09emoSZlb2lyGa2E=
 github.com/tendermint/go-amino v0.16.0/go.mod h1:TQU0M1i/ImAo+tYpZi73AU3V/dKeCoMC9Sphe2ZwGME=
+github.com/test-go/testify v1.1.4 h1:Tf9lntrKUMHiXQ07qBScBTSA0dhYQlu83hswqelv1iE=
+github.com/test-go/testify v1.1.4/go.mod h1:rH7cfJo/47vWGdi4GPj16x3/t1xGOj2YxzmNQzk2ghU=
 github.com/tidwall/btree v1.7.0 h1:L1fkJH/AuEh5zBnnBbmTwQ5Lt+bRJ5A8EWecslvo9iI=
 github.com/tidwall/btree v1.7.0/go.mod h1:twD9XRA5jj9VUQGELzDO4HPQTNJsoWWfYEL+EUQ2cKY=
 github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=

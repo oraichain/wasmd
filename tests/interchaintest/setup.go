@@ -8,12 +8,16 @@ import (
 	"strings"
 	"testing"
 
+	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
+	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+
 	"cosmossdk.io/math"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/docker/docker/client"
 	"github.com/icza/dyno"
 	"github.com/strangelove-ventures/interchaintest/v8"
-	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos/wasm"
+	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 	"github.com/strangelove-ventures/interchaintest/v8/relayer"
 	"github.com/strangelove-ventures/interchaintest/v8/testreporter"
@@ -92,9 +96,13 @@ var (
 // oraiEncoding registers the Orai specific module codecs so that the associated types and msgs
 // will be supported when writing to the blocksdb sqlite database.
 func oraiEncoding() *moduletestutil.TestEncodingConfig {
-	cfg := wasm.WasmEncoding()
+	cfg := cosmos.DefaultEncoding()
 
-	return cfg
+	wasmtypes.RegisterInterfaces(cfg.InterfaceRegistry)
+	txfeestypes.RegisterInterfaces(cfg.InterfaceRegistry)
+	tokenfactorytypes.RegisterInterfaces(cfg.InterfaceRegistry)
+
+	return &cfg
 }
 
 // GetDockerImageInfo returns the appropriate repo and branch version string for integration with the CI pipeline.
