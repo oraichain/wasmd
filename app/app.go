@@ -1082,8 +1082,8 @@ func NewWasmApp(
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
 		precisebanktypes.ModuleName,
-		crisistypes.ModuleName,
 		txfeestypes.ModuleName,
+		crisistypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
