@@ -10,7 +10,7 @@ import (
 
 var testGasLimit uint64 = 200_000
 
-func (s *AnteTestSuite) TestGlobalFeeMinimumGasFeeAnteHandler() {
+func (s *AnteTestSuite) TestTxFeesAntehandler() {
 
 	denominator := int64(100000)
 	med := math.LegacyNewDec(200).Quo(math.LegacyNewDec(denominator)) // 0.002
@@ -27,7 +27,7 @@ func (s *AnteTestSuite) TestGlobalFeeMinimumGasFeeAnteHandler() {
 	}{
 		"successfully with orai": {
 			malleate: func(msg sdk.Msg, feeAmount sdk.Coins, gasLimit uint64) signing.Tx {
-				FundAccount(s.ctx, s.bk, s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
+				s.FundAccount(s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
 				privs, accNums, accSeqs := []cryptotypes.PrivKey{s.TestAccount.priv}, []uint64{s.TestAccount.acc.GetAccountNumber()}, []uint64{s.TestAccount.acc.GetSequence()}
 				s.Require().NoError(s.txBuilder.SetMsgs(msg))
 				s.txBuilder.SetFeeAmount(feeAmount)
@@ -52,7 +52,7 @@ func (s *AnteTestSuite) TestGlobalFeeMinimumGasFeeAnteHandler() {
 				// add token
 				s.tfk.AddAllowedToken(s.ctx, "usdai")
 
-				FundAccount(s.ctx, s.bk, s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("usdai", math.NewInt(100000))))
+				s.FundAccount(s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("usdai", math.NewInt(100000))))
 				privs, accNums, accSeqs := []cryptotypes.PrivKey{s.TestAccount.priv}, []uint64{s.TestAccount.acc.GetAccountNumber()}, []uint64{s.TestAccount.acc.GetSequence()}
 				s.Require().NoError(s.txBuilder.SetMsgs(msg))
 				s.txBuilder.SetFeeAmount(feeAmount)
@@ -77,7 +77,7 @@ func (s *AnteTestSuite) TestGlobalFeeMinimumGasFeeAnteHandler() {
 				// add token
 				s.tfk.AddAllowedToken(s.ctx, "usdai")
 
-				FundAccount(s.ctx, s.bk, s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("usdai", math.NewInt(100000))))
+				s.FundAccount(s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("usdai", math.NewInt(100000))))
 				privs, accNums, accSeqs := []cryptotypes.PrivKey{s.TestAccount.priv}, []uint64{s.TestAccount.acc.GetAccountNumber()}, []uint64{s.TestAccount.acc.GetSequence()}
 				s.Require().NoError(s.txBuilder.SetMsgs(msg))
 				s.txBuilder.SetFeeAmount(feeAmount)
@@ -102,7 +102,7 @@ func (s *AnteTestSuite) TestGlobalFeeMinimumGasFeeAnteHandler() {
 				// add token
 				s.tfk.AddAllowedToken(s.ctx, "usdai")
 
-				FundAccount(s.ctx, s.bk, s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("usdai", math.NewInt(100000))))
+				s.FundAccount(s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("usdai", math.NewInt(100000))))
 				privs, accNums, accSeqs := []cryptotypes.PrivKey{s.TestAccount.priv}, []uint64{s.TestAccount.acc.GetAccountNumber()}, []uint64{s.TestAccount.acc.GetSequence()}
 				s.Require().NoError(s.txBuilder.SetMsgs(msg))
 				s.txBuilder.SetFeeAmount(feeAmount)
@@ -127,7 +127,7 @@ func (s *AnteTestSuite) TestGlobalFeeMinimumGasFeeAnteHandler() {
 				// add token
 				s.tfk.AddAllowedToken(s.ctx, "usdc") // we allow this token but price contract not have usdc data => query error
 
-				FundAccount(s.ctx, s.bk, s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("usdc", math.NewInt(100000))))
+				s.FundAccount(s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("usdc", math.NewInt(100000))))
 				privs, accNums, accSeqs := []cryptotypes.PrivKey{s.TestAccount.priv}, []uint64{s.TestAccount.acc.GetAccountNumber()}, []uint64{s.TestAccount.acc.GetSequence()}
 				s.Require().NoError(s.txBuilder.SetMsgs(msg))
 				s.txBuilder.SetFeeAmount(feeAmount)

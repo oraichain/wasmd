@@ -148,12 +148,12 @@ func (s *AnteTestSuite) CreateTestAccounts(numAccs int) []TestAccount {
 	return accounts
 }
 
-func FundAccount(ctx sdk.Context, bankKeeper bankkeeper.Keeper, addr sdk.AccAddress, amounts sdk.Coins) error {
-	if err := bankKeeper.MintCoins(ctx, minttypes.ModuleName, amounts); err != nil {
+func (s *AnteTestSuite) FundAccount(addr sdk.AccAddress, amounts sdk.Coins) error {
+	if err := s.bk.MintCoins(s.ctx, minttypes.ModuleName, amounts); err != nil {
 		return err
 	}
 
-	return bankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, addr, amounts)
+	return s.bk.SendCoinsFromModuleToAccount(s.ctx, minttypes.ModuleName, addr, amounts)
 }
 
 func (s *AnteTestSuite) CreateTestTx(privs []cryptotypes.PrivKey, accNums []uint64, accSeqs []uint64, chainID string) (xauthsigning.Tx, error) {
