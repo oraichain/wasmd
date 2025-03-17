@@ -82,7 +82,7 @@ func (k Keeper) IterateEpochInfo(ctx sdk.Context, cb func(index int64, epochInfo
 		epoch := types.EpochInfo{}
 		err := k.cdc.Unmarshal(iterator.Value(), &epoch)
 		if err != nil {
-			panic(err)
+			continue
 		}
 
 		stop := cb(i, epoch)
@@ -111,6 +111,7 @@ func (k Keeper) AfterEpochEnd(ctx sdk.Context, identifier string) {
 			config, found := k.GetTokenConfiguration(ctx, denom)
 			if !found {
 				config.Denom = denom
+				config.Status = types.FeeTokenStatus_FROZEN
 			}
 			if err != nil {
 				config.Status = types.FeeTokenStatus_OUTDATED
