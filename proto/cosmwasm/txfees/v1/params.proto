@@ -1,0 +1,14 @@
+syntax = "proto3";
+package cosmwasm.txfees.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/txfees/types";
+
+// Params defines the parameters for the txfees module.
+message Params {
+    string token_base_denom = 1;
+    string price_contract_address = 2;
+}
