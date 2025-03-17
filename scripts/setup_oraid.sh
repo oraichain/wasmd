@@ -31,4 +31,4 @@ oraid genesis collect-gentxs --home $NODE_HOME >$HIDE_LOGS
 
 jq '.initial_height="1"' $NODE_HOME/config/genesis.json > tmp.$$.json && mv tmp.$$.json $NODE_HOME/config/genesis.json
 
-oraid start $START_ARGS
+oraid start $START_ARGS --log_level=error
