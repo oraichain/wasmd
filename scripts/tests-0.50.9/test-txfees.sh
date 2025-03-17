@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ux
+set -eu
 
 PRICE_QUERY_WASM_PATH=${PRICE_QUERY_WASM_PATH:-"$PWD/scripts/wasm_file/price-query-local.wasm"}
 WASM_MOCK_ORAIDEX_PATH=${WASM_MOCK_ORAIDEX_PATH:-"$PWD/scripts/wasm_file/mock-oraidex-v3.wasm"}
@@ -122,7 +122,7 @@ update_proposal() {
     cat $ADD_FEE_PROPOSAL_FILE | jq "$1" >$PWD/scripts/json/temp_proposal.json && mv $PWD/scripts/json/temp_proposal.json $ADD_FEE_PROPOSAL_FILE
 }
 
-update_proposal ".messages[0][\"config\"][\"denom\"]=\"$full_denom_name\""
+update_proposal ".messages[0][\"denom\"]=\"$full_denom_name\""
 
 tx_hash=$(oraid tx gov submit-proposal $ADD_FEE_PROPOSAL_FILE $ARGS --output json | jq -r '.txhash')
 sleep 2
@@ -131,8 +131,8 @@ proposal_id=$(oraid query tx $tx_hash --output json | jq -r '.events[] | select(
 oraid tx gov vote $proposal_id yes $ARGS >$HIDE_LOGS
 sleep 30
 
-query_denom_config=$(oraid query txfees token-config $full_denom_name --output json | jq -r '.config.denom')
-if ! [[ $query_denom_config =~ $full_denom_name ]]; then
+query_denom_allowed=$(oraid query txfees allowed-tokens --output json | jq -r '.tokens[0]')
+if ! [[ $query_denom_allowed =~ $full_denom_name ]]; then
     echo "Txfees tests failed. Can not add token fee"
     exit 1
 fi
