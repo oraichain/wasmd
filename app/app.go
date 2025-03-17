@@ -172,7 +172,6 @@ import (
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 	protov2 "google.golang.org/protobuf/proto"
 
-	appconfig "github.com/CosmWasm/wasmd/cmd/config"
 	enccodec "github.com/evmos/ethermint/encoding/codec"
 	"github.com/evmos/ethermint/x/erc20"
 	erc20keeper "github.com/evmos/ethermint/x/erc20/keeper"
@@ -641,12 +640,18 @@ func NewWasmApp(
 		appCodec, Authority, runtime.NewKVStoreService(keys[feemarkettypes.StoreKey]), tkeys[feemarkettypes.TransientKey], feeMarketSs,
 	)
 
+	app.PrecisebankKeeper = precisebankkeeper.NewKeeper(
+		app.appCodec,
+		keys[precisebanktypes.StoreKey],
+		app.BankKeeper,
+		app.AccountKeeper,
+	)
+
 	evmSs := app.GetSubspace(evmtypes.ModuleName)
 	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
-	evmBankKeeper := evmkeeper.NewEvmBankKeeperWithDenoms(app.BankKeeper, app.AccountKeeper, appconfig.EvmDenom, appconfig.CosmosDenom)
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec, runtime.NewKVStoreService(keys[evmtypes.StoreKey]), tkeys[evmtypes.TransientKey], Authority,
-		app.AccountKeeper, evmBankKeeper, app.PrecisebankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
+		app.AccountKeeper, app.PrecisebankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
 		nil, geth.NewEVM, tracer, evmSs,
 	)
 
@@ -696,13 +701,6 @@ func NewWasmApp(
 	// 	app.AccountKeeper,
 	// 	app.BankKeeper,
 	// )
-
-	app.PrecisebankKeeper = precisebankkeeper.NewKeeper(
-		app.appCodec,
-		keys[precisebanktypes.StoreKey],
-		app.BankKeeper,
-		app.AccountKeeper,
-	)
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
