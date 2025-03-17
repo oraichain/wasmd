@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
@@ -43,76 +42,4 @@ func (k Keeper) IterateAllowedTokenList(ctx sdk.Context, cb func(denom string) (
 			break
 		}
 	}
-}
-
-// Fee token configuration store
-func (k Keeper) SetTokenConfiguration(ctx sdk.Context, config types.FeeTokenConfiguration) error {
-	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetTokenConfigurationKey(config.Denom)
-
-	bz, err := k.cdc.Marshal(&config)
-	if err != nil {
-		return err
-	}
-
-	store.Set(key, bz)
-	return nil
-}
-
-func (k Keeper) GetTokenConfiguration(ctx sdk.Context, denom string) (types.FeeTokenConfiguration, bool) {
-	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetTokenConfigurationKey(denom)
-
-	bz, _ := store.Get(key)
-	if bz == nil {
-		return types.FeeTokenConfiguration{}, false
-	}
-
-	var config types.FeeTokenConfiguration
-	k.cdc.MustUnmarshal(bz, &config)
-
-	return config, true
-}
-
-func (k Keeper) RemoveTokenConfiguration(ctx sdk.Context, denom string) error {
-	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetTokenConfigurationKey(denom)
-
-	return store.Delete(key)
-}
-
-// Token exchange rate store
-func (k Keeper) SetTokenExchangeRate(ctx sdk.Context, denom string, price math.LegacyDec) error {
-	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetTokenExchangeRateKey(denom)
-	bz, err := price.Marshal()
-	if err != nil {
-		return err
-	}
-
-	store.Set(key, bz)
-	return nil
-}
-
-func (k Keeper) GetTokenExchangeRate(ctx sdk.Context, denom string) (math.LegacyDec, bool) {
-	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetTokenExchangeRateKey(denom)
-
-	bz, _ := store.Get(key)
-	if bz == nil {
-		return math.LegacyDec{}, false
-	}
-
-	var rate math.LegacyDec
-	if err := rate.Unmarshal(bz); err != nil {
-		return math.LegacyDec{}, false
-	}
-
-	return rate, true
-}
-
-func (k Keeper) RemoveTokenExchangeRate(ctx sdk.Context, denom string) error {
-	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetTokenExchangeRateKey(denom)
-	return store.Delete(key)
 }

@@ -112,11 +112,6 @@ func TestAddFeeToken(t *testing.T) {
 	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, proposalAddFeeToken, govv1beta1.StatusPassed)
 	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
 
-	// execute a transaction with new fee token
-	rate, err := helpers.QueryTokenExchangeRate(ctx, orai, expectedDenom)
-	require.NoError(t, err)
-	require.NotEmpty(t, rate)
-
 	receiver := CreateTestingUser(t, ctx, t.Name(), math.OneInt(), chains...)[0]
 	sendAmount := ibc.WalletAmount{
 		Address: receiver.FormattedAddress(),

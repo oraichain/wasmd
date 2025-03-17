@@ -77,15 +77,6 @@ func (tdfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 		if !isAllowed {
 			return ctx, errors.Wrapf(txfeestypes.ErrTokenAllowed, "token not allowed %s", feeDenom)
 		}
-
-		config, found := tdfd.tfk.GetTokenConfiguration(ctx, feeDenom)
-		if !found {
-			return ctx, errors.Wrapf(txfeestypes.ErrTokenConfigurationNotFound, "token configuration not found %s", feeDenom)
-		}
-
-		if config.Status != txfeestypes.FeeTokenStatus_UPDATED {
-			return ctx, errors.Wrapf(txfeestypes.ErrFeeTokenUnAvailable, "token status not ready %s", feeDenom)
-		}
 	}
 
 	return tdfd.DeductFeeAnteHandle(ctx, tx, simulate, next, feeTx)

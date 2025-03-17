@@ -42,14 +42,7 @@ func CreateUpgradeHandler(
 
 		// set params
 		ak.TxFeesKeeper.SetParams(sdkCtx, txfeestypes.DefaultParams())
-
-		// allow USDAI for fee
-		config := txfeestypes.FeeTokenConfiguration{
-			Denom:  USDAI,
-			Status: txfeestypes.FeeTokenStatus_FROZEN,
-		}
-		ak.TxFeesKeeper.AddAllowedToken(sdkCtx, config.Denom)
-		ak.TxFeesKeeper.SetTokenConfiguration(sdkCtx, config)
+		ak.TxFeesKeeper.AddAllowedToken(sdkCtx, USDAI)
 
 		return mm.RunMigrations(ctx, configurator, fromVM)
 	}

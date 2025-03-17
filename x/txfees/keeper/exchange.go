@@ -43,11 +43,6 @@ func (k Keeper) QueryOraiDexTokenExchangeRate(ctx sdk.Context, denom string) (ma
 	}
 
 	exchangeRate := sqrtPrice.Power(2)
-	err = k.SetTokenExchangeRate(ctx, denom, exchangeRate)
-	if err != nil {
-		return math.LegacyDec{}, err
-	}
-
 	k.Logger(ctx).Info(fmt.Sprintf("set token exchange rate: token %s rate %s", denom, exchangeRate.String()))
 
 	return exchangeRate, nil
@@ -72,18 +67,9 @@ func (k Keeper) ConvertToBaseTokenFee(ctx sdk.Context, inputFee sdk.Coin) (sdk.C
 		return sdk.Coin{}, types.ErrTokenAllowed
 	}
 
-	config, found := k.GetTokenConfiguration(ctx, inputFee.Denom)
-	if !found {
-		return sdk.Coin{}, types.ErrTokenConfigurationNotFound
-	}
-
-	if config.Status != types.FeeTokenStatus_UPDATED {
-		return sdk.Coin{}, types.ErrFeeTokenUnAvailable
-	}
-
-	rate, found := k.GetTokenExchangeRate(ctx, inputFee.Denom)
-	if !found {
-		return sdk.Coin{}, types.ErrInvalidExchangeRate
+	rate, err := k.QueryOraiDexTokenExchangeRate(ctx, inputFee.Denom)
+	if err != nil {
+		return sdk.Coin{}, err
 	}
 
 	// rate = quote_asset/base_asset

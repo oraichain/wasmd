@@ -77,10 +77,7 @@ func ProposalTxfeesAddFeeToken(
 
 	message := txfeestypes.MsgAddFeeToken{
 		Authority: sdk.MustBech32ifyAddressBytes(chain.Config().Bech32Prefix, authtypes.NewModuleAddress(govtypes.ModuleName)),
-		Config: txfeestypes.FeeTokenConfiguration{
-			Denom:  denom,
-			Status: txfeestypes.FeeTokenStatus_FROZEN,
-		},
+		Denom:     denom,
 	}
 
 	msg, err := chain.Config().EncodingConfig.Codec.MarshalInterfaceJSON(&message)

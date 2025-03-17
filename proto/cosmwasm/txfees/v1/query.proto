@@ -5,7 +5,6 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "cosmwasm/txfees/v1/params.proto";
-import "cosmwasm/txfees/v1/fee_token.proto";
 
 option go_package = "github.com/CosmWasm/wasmd/x/txfees/types";
 
@@ -22,20 +21,6 @@ service Query {
     option (google.api.http).get = "/cosmwasm/txfees/v1/allowed_tokens";
   }
 
-  // TokensConfig defines a gRPC query method that returns the fee configuration of allowed tokens
-  rpc TokensConfig(QueryTokensConfigRequest) returns (QueryTokensConfigResponse) {
-    option (google.api.http).get = "/cosmwasm/txfees/v1/tokens_config";
-  }
-
-  // TokenConfig defines a gRPC query method that returns the fee configuration of allowed token
-  rpc TokenConfig(QueryTokenConfigRequest) returns (QueryTokenConfigResponse) {
-    option (google.api.http).get = "/cosmwasm/txfees/v1/token_config";
-  }
-
-  // TokenExchangeRate defines a gRPC query method that returns the exchange rate of allowed token
-  rpc TokenExchangeRate(QueryTokenExchangeRateRequest) returns (QueryTokenExchangeRateResponse) {
-    option (google.api.http).get = "/cosmwasm/txfees/v1/token_exchange_rate";
-  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -54,37 +39,4 @@ message QueryAllowedTokensRequest {}
 message QueryAllowedTokensResponse {
   // tokens defines the parameters of the module.
   repeated string tokens = 1 [ (gogoproto.nullable) = false ];
-}
-
-// QueryTokensConfigRequest is the request type for the Query/TokensConfig RPC method.
-message QueryTokensConfigRequest {}
-
-// QueryTokensConfigResponse is the response type for the Query/TokensConfig RPC method.
-message QueryTokensConfigResponse {
-  // configs defines the parameters of the module.
-  repeated FeeTokenConfiguration configs = 1 [ (gogoproto.nullable) = false ];
-}
-
-// QueryTokenConfigRequest is the request type for the Query/TokenConfig RPC method.
-message QueryTokenConfigRequest {
-  // denom defines the parameters of the module.
-  string denom = 1;
-}
-
-// QueryTokenConfigResponse is the response type for the Query/TokenConfig RPC method.
-message QueryTokenConfigResponse {
-  // config defines the parameters of the module.
-  FeeTokenConfiguration config = 1 [ (gogoproto.nullable) = false ];
-}
-
-// QueryTokenExchangeRateRequest is the request type for the Query/TokenExchangeRate RPC method.
-message QueryTokenExchangeRateRequest {
-  // denom defines the parameters of the module.
-  string denom = 1;
-}
-
-// QueryTokenExchangeRateResponse is the response type for the Query/TokenExchangeRate RPC method.
-message QueryTokenExchangeRateResponse {
-  // configs defines the parameters of the module.
-  string rate = 1;
 }

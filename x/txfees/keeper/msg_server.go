@@ -43,25 +43,12 @@ func (k msgServer) AddFeeToken(goCtx context.Context, msg *types.MsgAddFeeToken)
 		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
 	}
 
-	isAllowed, _ := k.IsTokenAllowed(ctx, msg.Config.Denom)
+	isAllowed, _ := k.IsTokenAllowed(ctx, msg.Denom)
 	if isAllowed {
-		return nil, errors.Wrapf(types.ErrTokenAllowed, "fee token allowed %s", msg.Config.Denom)
+		return nil, errors.Wrapf(types.ErrTokenAllowed, "fee token allowed %s", msg.Denom)
 	}
 
-	k.AddAllowedToken(ctx, msg.Config.Denom)
-
-	_, err := k.QueryOraiDexTokenExchangeRate(ctx, msg.Config.Denom)
-	if err != nil {
-		// we need to force this to Frozen because there is no exchange price
-		msg.Config.Status = types.FeeTokenStatus_FROZEN
-	} else {
-		msg.Config.Status = types.FeeTokenStatus_UPDATED
-	}
-
-	err = k.SetTokenConfiguration(ctx, msg.Config)
-	if err != nil {
-		return nil, errors.Wrapf(types.ErrTokenAllowed, err.Error())
-	}
+	k.AddAllowedToken(ctx, msg.Denom)
 
 	return &types.MsgAddFeeTokenResponse{}, nil
 }
@@ -79,16 +66,5 @@ func (k msgServer) RemoveFeeToken(goCtx context.Context, msg *types.MsgRemoveFee
 	}
 
 	k.RemoveAllowedToken(ctx, msg.Denom)
-
-	err := k.RemoveTokenConfiguration(ctx, msg.Denom)
-	if err != nil {
-		return nil, errors.Wrapf(types.ErrTokenAllowed, err.Error())
-	}
-
-	err = k.RemoveTokenExchangeRate(ctx, msg.Denom)
-	if err != nil {
-		return nil, errors.Wrapf(types.ErrTokenAllowed, err.Error())
-	}
-
 	return &types.MsgRemoveFeeTokenResponse{}, nil
 }
