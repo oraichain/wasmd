@@ -114,7 +114,7 @@ func (tdfd DeductFeeDecorator) DeductFeeAnteHandle(
 
 	deductFeesFromAcc := tdfd.ak.GetAccount(ctx, deductFeesFrom)
 	if deductFeesFromAcc == nil {
-		return ctx, errors.Wrapf(errorstypes.ErrUnknownAddress, "fee payer address: %s does not exist", deductFeesFrom)
+		return ctx, errors.Wrapf(errorstypes.ErrUnknownAddress, "fee payer address: %s does not exist", sdk.AccAddress(deductFeesFrom).String())
 	}
 
 	// deduct the fees
