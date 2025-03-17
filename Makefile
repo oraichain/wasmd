@@ -91,6 +91,9 @@ build-windows-client: go.sum
 
 install: go.sum
 	go install -mod=readonly $(BUILD_FLAGS) ./cmd/wasmd
+	@if [ -f $(GOPATH)/bin/wasmd ]; then \
+		cp $(GOPATH)/bin/wasmd $(GOPATH)/bin/oraid; \
+	fi
 
 ########################################
 ### Tools & dependencies

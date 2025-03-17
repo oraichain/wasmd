@@ -42,7 +42,7 @@ RUN sha256sum /lib/libwasmvm_muslc.x86_64.a | grep 8dab08434a5fe57a6fbbcb8041794
 COPY . .
 
 # Build oraid binary
-RUN LEDGER_ENABLED=false BUILD_TAGS=muslc LINK_STATICALLY=true make build
+RUN LEDGER_ENABLED=false BUILD_TAGS=muslc LINK_STATICALLY=true make install
 RUN echo "Ensuring binary is statically linked ..." \
   && (file /go/bin/oraid | grep "statically linked")
 
