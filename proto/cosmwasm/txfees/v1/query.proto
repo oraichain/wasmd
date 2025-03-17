@@ -1,0 +1,42 @@
+syntax = "proto3";
+package cosmwasm.txfees.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmwasm/txfees/v1/params.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/txfees/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Params defines a gRPC query method that returns the txfees module's
+  // parameters.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/cosmwasm/txfees/v1/params";
+  }
+
+  // AllowedTokens defines a gRPC query method that returns the allowed tokens can be charge fees
+  rpc AllowedTokens(QueryAllowedTokensRequest) returns (QueryAllowedTokensResponse) {
+    option (google.api.http).get = "/cosmwasm/txfees/v1/allowed_tokens";
+  }
+
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryAllowedTokensRequest is the request type for the Query/AllowedTokens RPC method.
+message QueryAllowedTokensRequest {}
+
+// QueryAllowedTokensResponse is the response type for the Query/AllowedTokens RPC method.
+message QueryAllowedTokensResponse {
+  // tokens defines the parameters of the module.
+  repeated string tokens = 1 [ (gogoproto.nullable) = false ];
+}

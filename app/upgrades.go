@@ -71,6 +71,7 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 		IBCKeeper:                 app.IBCKeeper,
 		MintKeeper:                &app.MintKeeper,
 		GovKeeper:                 &app.GovKeeper,
+		TxFeesKeeper:              app.TxFeesKeeper,
 		ICAControllerKeeper:       app.ICAControllerKeeper,
 		IBCFeeKeeper:              app.IBCFeeKeeper,
 		Codec:                     app.appCodec,

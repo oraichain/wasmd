@@ -1,0 +1,14 @@
+{
+  "messages": [
+    {
+      "@type": "/cosmwasm.txfees.v1.MsgAddFeeToken",
+      "authority": "orai10d07y265gmmuvt4z0w9aw880jnsr700jf39xhq",
+      "denom": "factory/orai1r3n94y6vm8e0evd65pmysaa72g7kkg7smw4733/usdai"
+    }
+  ],
+  "metadata": "foobar",
+  "title": "txfees",
+  "deposit": "10000000orai",
+  "summary": "txfees",
+  "expedited": false
+}

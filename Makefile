@@ -182,6 +182,10 @@ ictest-tf-force-transfer-ibc:
 # Executes wasm gas less tests via interchaintest
 ictest-wasm-gasless:
 	cd tests/interchaintest && go test -race -v -run TestWasmGasLessContract .
+
+# Executes txfees tests via interchaintest
+ictest-txfees-add-fee-token:
+	cd tests/interchaintest && go test -race -v -run TestAddFeeToken .
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################

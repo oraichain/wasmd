@@ -137,6 +137,7 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/CosmWasm/wasmd/client/docs"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -177,6 +178,10 @@ import (
 	"github.com/evmos/ethermint/x/erc20"
 	erc20keeper "github.com/evmos/ethermint/x/erc20/keeper"
 	erc20types "github.com/evmos/ethermint/x/erc20/types"
+
+	"github.com/CosmWasm/wasmd/x/txfees"
+	txfeeskeeper "github.com/CosmWasm/wasmd/x/txfees/keeper"
+	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
 
 	"github.com/CosmosContracts/juno/v18/x/globalfee"
 	globalfeekeeper "github.com/CosmosContracts/juno/v18/x/globalfee/keeper"
@@ -308,6 +313,7 @@ type WasmApp struct {
 	Erc20Keeper     erc20keeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
 	GlobalFeeKeeper globalfeekeeper.Keeper
+	TxFeesKeeper    txfeeskeeper.Keeper
 
 	PrecisebankKeeper precisebankkeeper.Keeper
 
@@ -436,7 +442,7 @@ func NewWasmApp(
 		capabilitytypes.StoreKey, ibcexported.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		wasmtypes.StoreKey, icahosttypes.StoreKey,
 		icacontrollertypes.StoreKey, clocktypes.StoreKey, globalfeetypes.StoreKey, ibchookstypes.StoreKey, packetforwardtypes.StoreKey, tokenfactorytypes.StoreKey,
-		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, precisebanktypes.StoreKey,
+		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, precisebanktypes.StoreKey, txfeestypes.StoreKey,
 	)
 
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
@@ -837,6 +843,13 @@ func NewWasmApp(
 		AuthorityAddr,
 	)
 
+	app.TxFeesKeeper = txfeeskeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[txfeestypes.StoreKey]),
+		&app.WasmKeeper,
+		AuthorityAddr,
+	)
+
 	app.TokenFactoryKeeper = tokenfactorykeeper.NewKeeper(
 		keys[tokenfactorytypes.StoreKey],
 		app.GetSubspace(tokenfactorytypes.ModuleName),
@@ -940,6 +953,7 @@ func NewWasmApp(
 		feemarket.NewAppModule(app.FeeMarketKeeper, feeMarketSs),
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
 		precisebank.NewAppModule(app.PrecisebankKeeper, app.BankKeeper, app.AccountKeeper),
+		txfees.NewAppModule(app.TxFeesKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -965,6 +979,7 @@ func NewWasmApp(
 			erc20types.ModuleName:         erc20.AppModuleBasic{},
 			globalfee.ModuleName:          globalfee.AppModuleBasic{},
 			precisebanktypes.ModuleName:   precisebank.AppModuleBasic{},
+			txfeestypes.ModuleName:        txfees.AppModuleBasic{},
 		})
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
@@ -1005,6 +1020,7 @@ func NewWasmApp(
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
 		precisebanktypes.ModuleName,
+		txfeestypes.ModuleName,
 	)
 
 	app.ModuleManager.SetOrderEndBlockers(
@@ -1030,6 +1046,7 @@ func NewWasmApp(
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
 		precisebanktypes.ModuleName,
+		txfeestypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -1068,6 +1085,7 @@ func NewWasmApp(
 		erc20types.ModuleName,
 		precisebanktypes.ModuleName,
 		crisistypes.ModuleName,
+		txfeestypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
@@ -1201,6 +1219,7 @@ func (app *WasmApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtype
 			FeeMarketKeeper:       app.FeeMarketKeeper,
 			WasmConfig:            &wasmConfig,
 			WasmKeeper:            &app.WasmKeeper,
+			TxFeesKeeper:          app.TxFeesKeeper,
 			ContractKeeper:        app.ContractKeeper,
 			TXCounterStoreService: runtime.NewKVStoreService(txCounterStoreKey),
 			CircuitKeeper:         &app.CircuitKeeper,
