@@ -24,11 +24,7 @@ func (s *KeeperTestSuite) TestQueryOraiDexTokenExchangeRate() {
 
 	queryRate, err := s.feeKeeper.QueryOraiDexTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
 	s.Require().NoError(err)
-
-	rate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
-	s.Require().True(found)
-	s.Require().NotNil(rate)
-	s.Require().Equal(queryRate, rate)
+	s.Require().NotNil(queryRate)
 }
 
 func (s *KeeperTestSuite) SetupPriceContract() sdk.AccAddress {

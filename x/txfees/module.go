@@ -142,8 +142,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the txfees module.
 func (am AppModule) BeginBlock(ctx context.Context) error {
-	sdkContext := sdk.UnwrapSDKContext(ctx)
-	return am.keeper.BeginBlock(sdkContext)
+	return nil
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the txfees module. It

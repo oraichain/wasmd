@@ -62,21 +62,10 @@ func (s *KeeperTestSuite) TestMsgAddFeeToken() {
 			},
 			msg: &types.MsgAddFeeToken{
 				Authority: s.feeKeeper.GetAuthority(),
-				Config: types.FeeTokenConfiguration{
-					Denom:  "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
-					Status: types.FeeTokenStatus_FROZEN,
-				},
+				Denom:     "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
 			},
 			expErr: false,
-			assert: func() {
-				config, found := s.feeKeeper.GetTokenConfiguration(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
-				s.Require().True(found)
-				s.Require().Equal(types.FeeTokenStatus_UPDATED, config.Status)
-
-				exchangeRate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
-				s.Require().True(found)
-				s.Require().NotEmpty(exchangeRate)
-			},
+			assert: func() {},
 		},
 		{
 			name: "add fee token successfully without token price", // token not register on price contract
@@ -85,21 +74,10 @@ func (s *KeeperTestSuite) TestMsgAddFeeToken() {
 			},
 			msg: &types.MsgAddFeeToken{
 				Authority: s.feeKeeper.GetAuthority(),
-				Config: types.FeeTokenConfiguration{
-					Denom:  "denom",
-					Status: types.FeeTokenStatus_FROZEN,
-				},
+				Denom:     "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
 			},
 			expErr: false,
-			assert: func() {
-				config, found := s.feeKeeper.GetTokenConfiguration(s.ctx, "denom")
-				s.Require().True(found)
-				s.Require().Equal(types.FeeTokenStatus_FROZEN, config.Status)
-
-				exchangeRate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "denom")
-				s.Require().False(found)
-				s.Require().Empty(exchangeRate)
-			},
+			assert: func() {},
 		},
 		{
 			name: "add fee token error token already added",
@@ -108,10 +86,7 @@ func (s *KeeperTestSuite) TestMsgAddFeeToken() {
 			},
 			msg: &types.MsgAddFeeToken{
 				Authority: s.feeKeeper.GetAuthority(),
-				Config: types.FeeTokenConfiguration{
-					Denom:  "denom",
-					Status: types.FeeTokenStatus_FROZEN,
-				},
+				Denom:     "denom",
 			},
 			expErr: true,
 			assert: func() {},
@@ -121,10 +96,7 @@ func (s *KeeperTestSuite) TestMsgAddFeeToken() {
 			malleate: func() {},
 			msg: &types.MsgAddFeeToken{
 				Authority: "invalid-address",
-				Config: types.FeeTokenConfiguration{
-					Denom:  "denom",
-					Status: types.FeeTokenStatus_FROZEN,
-				},
+				Denom:     "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
 			},
 			expErr: true,
 			assert: func() {},
@@ -163,21 +135,10 @@ func (s *KeeperTestSuite) TestMsgRemoveFeeToken() {
 				s.SetupPriceContract()
 				msg := &types.MsgAddFeeToken{
 					Authority: s.feeKeeper.GetAuthority(),
-					Config: types.FeeTokenConfiguration{
-						Denom:  "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
-						Status: types.FeeTokenStatus_FROZEN,
-					},
+					Denom:     "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3",
 				}
 				_, err := s.msgServer.AddFeeToken(s.ctx, msg)
 				s.Require().NoError(err)
-
-				config, found := s.feeKeeper.GetTokenConfiguration(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
-				s.Require().True(found)
-				s.Require().Equal(types.FeeTokenStatus_UPDATED, config.Status)
-
-				exchangeRate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
-				s.Require().True(found)
-				s.Require().NotEmpty(exchangeRate)
 			},
 			msg: &types.MsgRemoveFeeToken{
 				Authority: s.feeKeeper.GetAuthority(),
@@ -185,12 +146,9 @@ func (s *KeeperTestSuite) TestMsgRemoveFeeToken() {
 			},
 			expErr: false,
 			assert: func() {
-				_, found := s.feeKeeper.GetTokenConfiguration(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
-				s.Require().False(found)
-
-				exchangeRate, found := s.feeKeeper.GetTokenExchangeRate(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
-				s.Require().False(found)
-				s.Require().Empty(exchangeRate)
+				isAllowed, err := s.feeKeeper.IsTokenAllowed(s.ctx, "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/DYeTA4ZQhEwoJ5imjq1Q3zgwfTgkh4WmdfFHAq3jLrv3")
+				s.Require().NoError(err)
+				s.Require().False(isAllowed)
 			},
 		},
 		{

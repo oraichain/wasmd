@@ -9,13 +9,6 @@ import (
 // state.
 func (k Keeper) InitGenesis(ctx sdk.Context, genState types.GenesisState) {
 	k.SetParams(ctx, genState.Params)
-
-	for _, epoch := range genState.Epochs {
-		err := k.AddEpochInfo(ctx, epoch)
-		if err != nil {
-			panic(err)
-		}
-	}
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
@@ -23,6 +16,5 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	return &types.GenesisState{
 		Params: params,
-		Epochs: k.AllEpochInfos(ctx),
 	}
 }
