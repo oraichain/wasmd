@@ -32,7 +32,7 @@ type TxEventSink struct {
 }
 
 const (
-	TxSearchLimit = uint32(100000)
+	TxSearchLimit = uint32(5000)
 )
 
 var _ indexerType.ModuleEventSinkIndexer = (*TxEventSink)(nil)
