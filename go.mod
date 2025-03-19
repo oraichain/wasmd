@@ -74,7 +74,6 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/rs/cors v1.11.1
-	github.com/test-go/testify v1.1.4
 	github.com/twmb/franz-go v1.18.0
 	github.com/twmb/franz-go/pkg/kadm v1.14.0
 	golang.org/x/sync v0.10.0
@@ -298,9 +297,10 @@ replace (
 	// See: https://github.com/cosmos/cosmos-sdk/issues/13134
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
 
-	github.com/ethereum/go-ethereum => github.com/oraichain/go-ethereum v0.0.0-20240919025041-184f816b9d65
-
-	github.com/evmos/ethermint => github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20250227073221-242283aa6f1b
+	// github.com/ethereum/go-ethereum => github.com/oraichain/go-ethereum v0.0.0-20240919025041-184f816b9d65
+	github.com/ethereum/go-ethereum => ./../go-ethereum-test
+	//github.com/evmos/ethermint => github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20250227073221-242283aa6f1b
+	github.com/evmos/ethermint => ./../ethermint-cosmos-0.50-testing
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/10409
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.8.1

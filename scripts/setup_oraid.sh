@@ -29,6 +29,15 @@ oraid genesis gentx $USER "250000000orai" --chain-id="$CHAIN_ID" -y $ARGS >$HIDE
 
 oraid genesis collect-gentxs --home $NODE_HOME >$HIDE_LOGS
 
+update_genesis() {
+    cat $NODE_HOME/config/genesis.json | jq "$1" >$NODE_HOME/config/tmp_genesis.json && mv $NODE_HOME/config/tmp_genesis.json $NODE_HOME/config/genesis.json
+}
+
 jq '.initial_height="1"' $NODE_HOME/config/genesis.json > tmp.$$.json && mv tmp.$$.json $NODE_HOME/config/genesis.json
 
+update_genesis '.app_state["tokenfactory"]["params"]["denom_creation_fee"][0]["denom"]="orai"'
+update_genesis '.app_state["tokenfactory"]["params"]["denom_creation_fee"][0]["amount"]="1"'
+
 oraid start $START_ARGS
+
+#oraid start --json-rpc.address=0.0.0.0:8545 --json-rpc.ws-address=0.0.0.0:8546 --json-rpc.api=eth,web3,net,txpool,debug --json-rpc.enable --home /Users/gnad/work/cosmos/wasmd/.oraid
