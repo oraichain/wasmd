@@ -3,10 +3,10 @@
 # sh $PWD/scripts/multinode-local-testnet.sh
 # cw-clock-example.wasm source code: https://github.com/oraichain/cw-plus.git
 
-set -ux
+set -eu
 
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/cw-clock-example.wasm"}
-ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync"
+ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 1000orai -b sync"
 VALIDATOR1_ARGS=${VALIDATOR1_ARGS:-"--from validator1 --home $HOME/.oraid/validator1"}
 VALIDATOR2_ARGS=${VALIDATOR2_ARGS:-"--from validator2 --home $HOME/.oraid/validator2"}
 QUERY_MSG=${QUERY_MSG:-'{"get_config":{}}'}
@@ -25,7 +25,7 @@ sleep 5
 # need to use temp.json since there's a weird error: jq: parse error: Invalid string: control characters from U+0000 through U+001F must be escaped at line 1, column 72291
 # probably because of weird characters from the raw code bytes
 oraid query tx $store_txhash --output json > temp.json
-code_id=$(cat temp.json | jq -r '.events[4].attributes[] | select(.key | contains("code_id")).value')
+code_id=$(cat temp.json | jq -r '.events[] | select(.type == "store_code") | .attributes[] | select(.key == "code_id") | .value')
 rm temp.json
 oraid tx wasm instantiate $code_id '{}' --label 'cw clock contract' $VALIDATOR1_ARGS --admin $(oraid keys show validator1 --keyring-backend test --home $HOME/.oraid/validator1 -a) $ARGS > $HIDE_LOGS
 # need to sleep 1s for tx already in block
@@ -48,7 +48,7 @@ store_ret=$(oraid tx gov submit-proposal $CLOCK_PROPOSAL_FILE $VALIDATOR1_ARGS $
 store_txhash=$(echo $store_ret | jq -r '.txhash')
 # sleep 2s before vote to wait for tx confirm
 sleep 2
-proposal_id=$(oraid query tx $store_txhash --output json | jq -r '.events[4].attributes[] | select(.key | contains("proposal_id")).value')
+proposal_id=$(oraid query tx $store_txhash --output json | jq -r '.events[] | select(.type == "submit_proposal") | .attributes[] | select(.key == "proposal_id")| .value')
 
 oraid tx gov vote $proposal_id yes $VALIDATOR1_ARGS $ARGS > $HIDE_LOGS && oraid tx gov vote $proposal_id yes $VALIDATOR2_ARGS $ARGS > $HIDE_LOGS
 

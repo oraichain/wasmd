@@ -39,7 +39,7 @@ sh $PWD/scripts/multinode-local-testnet.sh
 sleep 5
 
 # create new upgrade proposal
-UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-35}
+UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-40}
 
 VERSION=$NEW_VERSION HEIGHT=$UPGRADE_HEIGHT bash $PWD/scripts/proposal-script.sh
 
@@ -158,6 +158,9 @@ NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.
 # we don't need this test anymore since we are using precisebank. We actually need a test for precisebank
 # # v0.50.6 tests
 # NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.6/test-cw20-erc20-not-mint-aorai.sh
+
+# v0.50.9 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-txfees.sh
 
 echo "E2E Upgrade Tests Passed!!"
 bash scripts/clean-multinode-local-testnet.sh

@@ -26,7 +26,7 @@ var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: storetypes.StoreUpgrades{
-		Added:   []string{precisebanktypes.StoreKey, txfeestypes.ModuleName},
+		Added:   []string{precisebanktypes.StoreKey, txfeestypes.StoreKey},
 		Deleted: []string{},
 	},
 }

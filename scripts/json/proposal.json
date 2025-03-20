@@ -6,7 +6,7 @@
       "plan": {
         "name": "v0.50.9",
         "time": "0001-01-01T00:00:00Z",
-        "height": "35",
+        "height": "40",
         "info": "upgrade info",
         "upgraded_client_state": null
       }
@@ -14,7 +14,7 @@
   ],
   "metadata": "",
   "deposit": "10000000orai",
-  "title": "Upgrade Oraichain to v0.50.7",
-  "summary": "Please refer to the CHANGELOG: https://github.com/oraichain/wasmd/blob/release/v0.50.x/CHANGELOG_ORAI.md#v0507 for more details about the upgrade",
+  "title": "Upgrade Oraichain to v0.50.9",
+  "summary": "Please refer to the CHANGELOG: https://github.com/oraichain/wasmd/blob/release/v0.50.x/CHANGELOG_ORAI.md#v0509 for more details about the upgrade",
   "expedited": false
 }
