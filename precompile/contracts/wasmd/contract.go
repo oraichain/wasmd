@@ -39,7 +39,7 @@ func (p PrecompileExecutor) instantiateCosmWasm(
 	value *big.Int,
 ) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -98,7 +98,7 @@ func (p PrecompileExecutor) instantiateCosmWasm(
 
 	ret, rerr = method.Outputs.Pack(addr.String(), data)
 
-	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed)
+	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed-initialGas)
 
 	return
 }
@@ -113,7 +113,7 @@ func (p PrecompileExecutor) executeCosmWasm(
 	value *big.Int,
 ) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -156,8 +156,8 @@ func (p PrecompileExecutor) executeCosmWasm(
 		return
 	}
 
-	// ctx.Logger().Error(fmt.Sprintf("Execute wasm msg: %s", string(msg)))
 	exeRes, err := p.wasmdKeeper.Execute(ctx, contractAddr, senderAddr, msg, deposit)
+
 	if err != nil {
 		rerr = err
 		return
@@ -167,11 +167,7 @@ func (p PrecompileExecutor) executeCosmWasm(
 
 	ret, rerr = method.Outputs.Pack(exeRes)
 
-	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed)
-
-	if rerr != nil {
-		ctx.Logger().Error(fmt.Sprintf("Execute wasm msg rerr: %s", rerr.Error()))
-	}
+	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed-initialGas)
 
 	return
 
@@ -187,7 +183,7 @@ func (p PrecompileExecutor) queryCosmWasm(
 	value *big.Int,
 ) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -236,7 +232,7 @@ func (p PrecompileExecutor) queryCosmWasm(
 
 	ret, rerr = method.Outputs.Pack(queryRes)
 
-	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed)
+	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed-initialGas)
 
 	return
 

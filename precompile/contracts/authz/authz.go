@@ -87,7 +87,7 @@ func (p PrecompileExecutor) setGrant(
 	readOnly bool,
 	value *big.Int,
 ) (ret []byte, remainingGas uint64, rerr error) {
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -158,7 +158,7 @@ func (p PrecompileExecutor) setGrant(
 	}
 
 	ret, rerr = method.Outputs.Pack(true)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -171,7 +171,7 @@ func (p PrecompileExecutor) execGrant(
 	readOnly bool,
 	value *big.Int,
 ) (ret []byte, remainingGas uint64, rerr error) {
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -242,7 +242,7 @@ func (p PrecompileExecutor) execGrant(
 	}
 
 	ret, rerr = method.Outputs.Pack(true)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -256,7 +256,7 @@ func (p PrecompileExecutor) grant(
 	readOnly bool,
 	value *big.Int,
 ) (ret []byte, remainingGas uint64, rerr error) {
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -313,7 +313,7 @@ func (p PrecompileExecutor) grant(
 	if err != nil {
 		if strings.Contains(err.Error(), NoGrantError) {
 			ret, rerr = method.Outputs.Pack(big.NewInt(0))
-			remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+			remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 
 			return
 		}

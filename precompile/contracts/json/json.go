@@ -73,7 +73,7 @@ func (p PrecompileExecutor) extractAsBytes(accessibleState contract.AccessibleSt
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -125,7 +125,7 @@ func (p PrecompileExecutor) extractAsBytes(accessibleState contract.AccessibleSt
 	}
 
 	ret, rerr = method.Outputs.Pack([]byte(result))
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -137,7 +137,7 @@ func (p PrecompileExecutor) extractAsBytesList(accessibleState contract.Accessib
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -195,7 +195,7 @@ func (p PrecompileExecutor) extractAsBytesList(accessibleState contract.Accessib
 	}
 
 	ret, rerr = method.Outputs.Pack(decodedBytes)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -207,7 +207,7 @@ func (p PrecompileExecutor) ExtractAsUint256(accessibleState contract.Accessible
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -235,7 +235,7 @@ func (p PrecompileExecutor) ExtractAsUint256(accessibleState contract.Accessible
 
 	uint_.FillBytes(byteArr)
 
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 
 	return byteArr, remainingGas, nil
 }

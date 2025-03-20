@@ -86,7 +86,7 @@ func (p PrecompileExecutor) getCosmosAddr(accessibleState contract.AccessibleSta
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -122,7 +122,7 @@ func (p PrecompileExecutor) getCosmosAddr(accessibleState contract.AccessibleSta
 	cosmosAddress := p.evmKeeper.GetCosmosAddressMapping(ctx, evmAddress)
 
 	ret, rerr = method.Outputs.Pack(cosmosAddress.String())
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -134,7 +134,7 @@ func (p PrecompileExecutor) getEvmAddr(accessibleState contract.AccessibleState,
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -179,7 +179,7 @@ func (p PrecompileExecutor) getEvmAddr(accessibleState contract.AccessibleState,
 	}
 
 	ret, rerr = method.Outputs.Pack(evmAddress)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -191,7 +191,7 @@ func (p PrecompileExecutor) associate(accessibleState contract.AccessibleState,
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -273,7 +273,7 @@ func (p PrecompileExecutor) associate(accessibleState contract.AccessibleState,
 	}
 
 	ret, rerr = method.Outputs.Pack(cosmosAddress.String(), evmAddress)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -285,7 +285,7 @@ func (p PrecompileExecutor) associatePublicKey(accessibleState contract.Accessib
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -338,7 +338,7 @@ func (p PrecompileExecutor) associatePublicKey(accessibleState contract.Accessib
 	}
 
 	ret, rerr = method.Outputs.Pack(cosmosAddress.String(), evmAddress)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
