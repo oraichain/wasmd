@@ -173,7 +173,6 @@ import (
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 	protov2 "google.golang.org/protobuf/proto"
 
-	appconfig "github.com/CosmWasm/wasmd/cmd/config"
 	enccodec "github.com/evmos/ethermint/encoding/codec"
 	"github.com/evmos/ethermint/x/erc20"
 	erc20keeper "github.com/evmos/ethermint/x/erc20/keeper"
@@ -188,6 +187,10 @@ import (
 	globalfeetypes "github.com/CosmosContracts/juno/v18/x/globalfee/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
+
+	"github.com/CosmWasm/wasmd/x/precisebank"
+	precisebankkeeper "github.com/CosmWasm/wasmd/x/precisebank/keeper"
+	precisebanktypes "github.com/CosmWasm/wasmd/x/precisebank/types"
 )
 
 const appName = "WasmApp"
@@ -244,6 +247,8 @@ var maccPerms = map[string][]string{
 	tokenfactorytypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 	evmtypes.ModuleName:          {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 	erc20types.ModuleName:        {authtypes.Minter, authtypes.Burner},
+	precisebanktypes.ModuleName:  {authtypes.Minter, authtypes.Burner}, // used for reserve account to back fractional amounts
+
 }
 
 var (
@@ -308,6 +313,8 @@ type WasmApp struct {
 	FeeMarketKeeper feemarketkeeper.Keeper
 	GlobalFeeKeeper globalfeekeeper.Keeper
 	TxFeesKeeper    txfeeskeeper.Keeper
+
+	PrecisebankKeeper precisebankkeeper.Keeper
 
 	// Middleware wrapper
 	Ics20WasmHooks   *ibchooks.WasmHooks
@@ -434,7 +441,7 @@ func NewWasmApp(
 		capabilitytypes.StoreKey, ibcexported.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		wasmtypes.StoreKey, icahosttypes.StoreKey,
 		icacontrollertypes.StoreKey, clocktypes.StoreKey, globalfeetypes.StoreKey, ibchookstypes.StoreKey, packetforwardtypes.StoreKey, tokenfactorytypes.StoreKey,
-		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, txfeestypes.StoreKey,
+		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, precisebanktypes.StoreKey, txfeestypes.StoreKey,
 	)
 
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
@@ -639,12 +646,18 @@ func NewWasmApp(
 		appCodec, Authority, runtime.NewKVStoreService(keys[feemarkettypes.StoreKey]), tkeys[feemarkettypes.TransientKey], feeMarketSs,
 	)
 
+	app.PrecisebankKeeper = precisebankkeeper.NewKeeper(
+		app.appCodec,
+		keys[precisebanktypes.StoreKey],
+		app.BankKeeper,
+		app.AccountKeeper,
+	)
+
 	evmSs := app.GetSubspace(evmtypes.ModuleName)
 	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
-	evmBankKeeper := evmkeeper.NewEvmBankKeeperWithDenoms(app.BankKeeper, app.AccountKeeper, appconfig.EvmDenom, appconfig.CosmosDenom)
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec, runtime.NewKVStoreService(keys[evmtypes.StoreKey]), tkeys[evmtypes.TransientKey], Authority,
-		app.AccountKeeper, evmBankKeeper, app.BankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
+		app.AccountKeeper, app.PrecisebankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
 		nil, geth.NewEVM, tracer, evmSs,
 	)
 
@@ -937,6 +950,7 @@ func NewWasmApp(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, evmSs),
 		feemarket.NewAppModule(app.FeeMarketKeeper, feeMarketSs),
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
+		precisebank.NewAppModule(app.PrecisebankKeeper, app.BankKeeper, app.AccountKeeper),
 		txfees.NewAppModule(app.TxFeesKeeper),
 	)
 
@@ -962,6 +976,7 @@ func NewWasmApp(
 			feemarkettypes.ModuleName:     feemarket.AppModuleBasic{},
 			erc20types.ModuleName:         erc20.AppModuleBasic{},
 			globalfee.ModuleName:          globalfee.AppModuleBasic{},
+			precisebanktypes.ModuleName:   precisebank.AppModuleBasic{},
 			txfeestypes.ModuleName:        txfees.AppModuleBasic{},
 		})
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
@@ -1002,6 +1017,7 @@ func NewWasmApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
+		precisebanktypes.ModuleName,
 		txfeestypes.ModuleName,
 	)
 
@@ -1027,6 +1043,7 @@ func NewWasmApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
+		precisebanktypes.ModuleName,
 		txfeestypes.ModuleName,
 	)
 
@@ -1043,7 +1060,7 @@ func NewWasmApp(
 		// simd modules
 		authtypes.ModuleName, banktypes.ModuleName,
 		distrtypes.ModuleName, stakingtypes.ModuleName, slashingtypes.ModuleName, govtypes.ModuleName,
-		minttypes.ModuleName, crisistypes.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
+		minttypes.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
 		feegrant.ModuleName,
 		// nft.ModuleName,
 		group.ModuleName,
@@ -1064,7 +1081,9 @@ func NewWasmApp(
 		feemarkettypes.ModuleName,
 		evmtypes.ModuleName,
 		erc20types.ModuleName,
+		precisebanktypes.ModuleName,
 		txfeestypes.ModuleName,
+		crisistypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
 	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)

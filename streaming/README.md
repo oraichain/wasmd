@@ -20,7 +20,7 @@ This section provides a basic guideline to enable Oraichain Indexer with fast tx
 
 ## Build the latest binary
 
-Run: `make build` to build the latest binary, which will allow the streaming indexer to work well.
+Run: `make install` to build the latest binary, which will allow the streaming indexer to work well.
 
 ## Real-time streaming with RedPanda
 
@@ -106,5 +106,5 @@ When there's an update, please rebuild the streaming and the chain binary:
 go build -o $PWD/streaming/streaming $PWD/streaming/streaming.go
 
 # re-build chain binary
-make build
+make install
 ```

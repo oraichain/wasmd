@@ -4,10 +4,10 @@ set -eu
 
 # setup the network using the old binary
 
-OLD_VERSION=${OLD_VERSION:-"v0.50.7"}
+OLD_VERSION=${OLD_VERSION:-"v0.50.8"}
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/oraiswap-token.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
-NEW_VERSION=${NEW_VERSION:-"v0.50.8"}
+NEW_VERSION=${NEW_VERSION:-"v0.50.9"}
 VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
 MIGRATE_MSG=${MIGRATE_MSG:-'{}'}
 EXECUTE_MSG=${EXECUTE_MSG:-'{"ping":{}}'}
@@ -29,7 +29,7 @@ fi
 cd ../orai-old
 git fetch
 git checkout $OLD_VERSION
-go mod tidy && GOTOOLCHAIN=$GO_VERSION make build
+go mod tidy && GOTOOLCHAIN=$GO_VERSION make install
 
 cd $current_dir
 
@@ -59,7 +59,7 @@ pkill oraid
 
 # install new binary for the upgrade
 echo "install new binary"
-GOTOOLCHAIN=$GO_VERSION make build
+GOTOOLCHAIN=$GO_VERSION make install
 
 # Back to current folder
 cd $current_dir
@@ -155,8 +155,9 @@ USER=validator1 USER2=validator2 sh $PWD/scripts/tests-0.50.3/test-gasless.sh
 # v0.50.4 tests
 NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.4/test-tokenfactory-force-transfer.sh
 
-# v0.50.6 tests
-NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.6/test-cw20-erc20-not-mint-aorai.sh
+# we don't need this test anymore since we are using precisebank. We actually need a test for precisebank
+# # v0.50.6 tests
+# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.6/test-cw20-erc20-not-mint-aorai.sh
 
 echo "E2E Upgrade Tests Passed!!"
 bash scripts/clean-multinode-local-testnet.sh

@@ -54,7 +54,7 @@ func PrivateKeyToAddresses(privKey cryptotypes.PrivKey) (sdk.AccAddress, common.
 }
 
 func TestSend(t *testing.T) {
-	denom := "ukava"
+	denom := "orai"
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 	mockAddr, mockEVMAddr := MockAddressPair()
@@ -98,7 +98,7 @@ func TestSend(t *testing.T) {
 }
 
 func TestBurn(t *testing.T) {
-	denom := "ukava"
+	denom := "orai"
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
@@ -143,7 +143,7 @@ func TestBurn(t *testing.T) {
 }
 
 func TestBurnFrom(t *testing.T) {
-	denom := "ukava"
+	denom := "orai"
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
@@ -232,7 +232,7 @@ func TestBurnFrom(t *testing.T) {
 }
 
 func TestBalance(t *testing.T) {
-	denom := "ukava"
+	denom := "orai"
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 	mockAddr, mockEVMAddr := MockAddressPair()
@@ -271,7 +271,7 @@ func TestBalance(t *testing.T) {
 }
 
 func TestSupply(t *testing.T) {
-	denom := "ukava"
+	denom := "orai"
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
