@@ -10,8 +10,8 @@ EXECUTE_MSG=${EXECUTE_MSG:-'{"ping":{}}'}
 NODE_HOME=${NODE_HOME:-"$HOME/.oraid"}
 VALIDATOR1_HOME=${VALIDATOR1_HOME:-"$NODE_HOME/$USER"}
 VALIDATOR2_HOME="$NODE_HOME/$USER2"
-VALIDATOR1_ARG="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $VALIDATOR1_HOME"
-VALIDATOR2_ARG="--from $USER2 --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $VALIDATOR2_HOME"
+VALIDATOR1_ARG="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 10000orai -b sync --home $VALIDATOR1_HOME"
+VALIDATOR2_ARG="--from $USER2 --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 10000orai -b sync --home $VALIDATOR2_HOME"
 HIDE_LOGS="/dev/null"
 PROPOSAL_TEMPLATE_PATH="$PWD/scripts/json/set-gasless-proposal.json"
 
@@ -19,7 +19,7 @@ PROPOSAL_TEMPLATE_PATH="$PWD/scripts/json/set-gasless-proposal.json"
 store_code_txhash=$(oraid tx wasm store $WASM_PATH $VALIDATOR1_ARG --output json | jq -r '.txhash')
 # sleep 2s for tx already in block
 sleep 2
-code_id=$(oraid query tx $store_code_txhash --output json | jq -r '.events[4].attributes[] | select(.key | contains("code_id")).value')
+code_id=$(oraid query tx $store_code_txhash --output json | jq -r '.events[] | select(.type == "store_code") | .attributes[] | select(.key == "code_id") | .value')
 
 VALIDATOR1_ADDRESS=$(oraid keys show $USER --keyring-backend test --home $VALIDATOR1_HOME -a)
 oraid tx wasm instantiate $code_id '{}' --label 'testing' --admin $VALIDATOR1_ADDRESS $VALIDATOR1_ARG >$HIDE_LOGS
@@ -39,7 +39,7 @@ AUTHORITY_ADRESS=$(oraid query auth module-account gov --output json | jq '.acco
 SET_GASLESS_ARGS="--title "set_gasless" --summary "set_gasless" --deposit 10000000orai --authority $AUTHORITY_ADRESS $VALIDATOR1_ARG"
 set_gasless_txhash=$(oraid tx wasm submit-proposal set-gasless $contract_address $SET_GASLESS_ARGS --output json | jq -r '.txhash')
 sleep 2
-proposal_id=$(oraid query tx $set_gasless_txhash --output json | jq -r '.events[4].attributes[] | select(.key | contains("proposal_id")).value')
+proposal_id=$(oraid query tx $set_gasless_txhash --output json | jq -r '.events[] | select(.type == "proposal_deposit") | .attributes[] | select(.key == "proposal_id") | .value')
 oraid tx gov vote $proposal_id yes $VALIDATOR1_ARG >$HIDE_LOGS
 if [ "$USER2" != '' ]; then
     oraid tx gov vote $proposal_id yes $VALIDATOR2_ARG >$HIDE_LOGS
@@ -76,7 +76,7 @@ fi
 UNSET_GASLESS_ARGS="--title "unset_gasless" --summary "unset_gasless" --deposit 10000000orai --authority $AUTHORITY_ADRESS $VALIDATOR1_ARG"
 unset_gasless_txhash=$(oraid tx wasm submit-proposal unset-gasless $contract_address $UNSET_GASLESS_ARGS --output json | jq -r '.txhash')
 sleep 2
-proposal_id=$(oraid query tx $unset_gasless_txhash --output json | jq -r '.events[4].attributes[] | select(.key | contains("proposal_id")).value')
+proposal_id=$(oraid query tx $unset_gasless_txhash --output json | jq -r '.events[] | select(.type == "proposal_deposit") | .attributes[] | select(.key == "proposal_id") | .value')
 oraid tx gov vote $proposal_id yes $VALIDATOR1_ARG >$HIDE_LOGS
 if [ "$USER2" != '' ]; then
     oraid tx gov vote $proposal_id yes $VALIDATOR2_ARG >$HIDE_LOGS
