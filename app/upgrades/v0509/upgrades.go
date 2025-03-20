@@ -11,7 +11,6 @@ import (
 	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
@@ -39,12 +38,6 @@ func CreateUpgradeHandler(
 	cdc codec.BinaryCodec,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-		// set params
-		ak.TxFeesKeeper.SetParams(sdkCtx, txfeestypes.DefaultParams())
-		ak.TxFeesKeeper.AddAllowedToken(sdkCtx, USDAI)
-
 		return mm.RunMigrations(ctx, configurator, fromVM)
 	}
 }

@@ -3,11 +3,11 @@
 # sh $PWD/scripts/multinode-local-testnet.sh
 # oraiswap-token.wasm source code: https://github.com/oraichain/oraiswap.git
 
-set -eu
+set -ux
 
 # hard-coded test private key. DO NOT USE!!
 current_dir=$PWD
-ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync"
+ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 10000orai -b sync"
 VALIDATOR1_ARGS=${VALIDATOR1_ARGS:-"--from validator1 --home $HOME/.oraid/validator1"}
 
 HIDE_LOGS="/dev/null"

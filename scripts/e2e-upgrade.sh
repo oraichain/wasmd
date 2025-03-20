@@ -29,7 +29,7 @@ fi
 cd ../orai-old
 git fetch
 git checkout $OLD_VERSION
-go mod tidy && GOTOOLCHAIN=$GO_VERSION make install
+go mod tidy && GOTOOLCHAIN=$GO_VERSION make build
 
 cd $current_dir
 
@@ -59,7 +59,7 @@ pkill oraid
 
 # install new binary for the upgrade
 echo "install new binary"
-GOTOOLCHAIN=$GO_VERSION make install
+GOTOOLCHAIN=$GO_VERSION make build
 
 # Back to current folder
 cd $current_dir
@@ -67,7 +67,7 @@ cd $current_dir
 # re-run all validators. All should run
 screen -S validator1 -d -m oraid start --home=$HOME/.oraid/validator1
 screen -S validator2 -d -m oraid start --home=$HOME/.oraid/validator2
-screen -S validator3 -d -m oraid start --home=$HOME/.oraid/validator3
+screen -S validator2 -d -m oraid start --home=$HOME/.oraid/validator3
 
 # sleep a bit for the network to start
 echo "Sleep to wait for the network to start..."
@@ -161,6 +161,7 @@ NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.4/test-toke
 
 # v0.50.9 tests
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-txfees.sh
+sh $PWD/scripts/tests-0.50.9/test-payable-with-bank-send.sh
 
 echo "E2E Upgrade Tests Passed!!"
 bash scripts/clean-multinode-local-testnet.sh
