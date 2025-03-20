@@ -89,7 +89,7 @@ echo "install new binary"
 if ! [ -d "$PWD/../orai-050" ]; then
     git clone https://github.com/oraichain/wasmd.git $PWD/../orai-050
 fi
-CUR_DIR=$PWD && cd $PWD/../orai-050 && git checkout $NEW_VERSION && go mod tidy && GOTOOLCHAIN=$GO_VERSION make build && cd $CUR_DIR
+CUR_DIR=$PWD && cd $PWD/../orai-050 && git checkout $NEW_VERSION && go mod tidy && GOTOOLCHAIN=$GO_VERSION make install && cd $CUR_DIR
 
 # re-run the nodes
 bash $CONFIG_DIR/chains/start-single.sh
@@ -130,7 +130,7 @@ pkill $BINARY
 
 # install new binary for the upgrade
 echo "install new binary"
-CUR_DIR=$PWD && cd $PWD/../orai-050 && git checkout $NEW_VERSION && go mod tidy && GOTOOLCHAIN=$GO_VERSION make build && cd $CUR_DIR
+CUR_DIR=$PWD && cd $PWD/../orai-050 && git checkout $NEW_VERSION && go mod tidy && GOTOOLCHAIN=$GO_VERSION make install && cd $CUR_DIR
 
 # re-run the nodes
 bash $CONFIG_DIR/chains/start-single.sh
@@ -179,7 +179,7 @@ done
 pkill $BINARY
 
 # install new binary for the upgrade
-make build
+make install
 
 # re-run the nodes
 bash $CONFIG_DIR/chains/start-single.sh

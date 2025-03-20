@@ -5,12 +5,13 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
-	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
+	precisebanktypes "github.com/CosmWasm/wasmd/x/precisebank/types"
+	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
@@ -25,7 +26,7 @@ var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: storetypes.StoreUpgrades{
-		Added:   []string{txfeestypes.ModuleName},
+		Added:   []string{precisebanktypes.StoreKey, txfeestypes.ModuleName},
 		Deleted: []string{},
 	},
 }

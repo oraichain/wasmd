@@ -35,7 +35,7 @@ By default the following mnemonics are used:
 Build a local docker image with current changes
 
 ```bash
-make build
+make install
 ```
 
 Start the testing environment:

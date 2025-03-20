@@ -72,7 +72,8 @@ type AnteTestSuite struct {
 	tfk txfeeskeeper.Keeper
 	wk  wasmkeeper.Keeper
 
-	TestAccount TestAccount
+	TestAccounts []TestAccount
+	TestAccount  TestAccount
 }
 
 type TestEncodingConfig struct {
@@ -118,9 +119,9 @@ func (s *AnteTestSuite) SetupTest() {
 	s.clientCtx = client.Context{}.
 		WithTxConfig(s.encCfg.TxConfig).
 		WithClient(clitestutil.NewMockCometRPC(abci.ResponseQuery{}))
-	testAccount := s.CreateTestAccounts(1)
-	s.TestAccount = testAccount[0]
-
+	testAccounts := s.CreateTestAccounts(2)
+	s.TestAccounts = testAccounts
+	s.TestAccount = testAccounts[0]
 	anteHandler := sdk.ChainAnteDecorators(
 		txfeesante.NewMempoolFeeDecorator([]string{}, s.tfk),
 		txfeesante.NewDeductFeeDecorator(s.ak, s.bk, s.fgk, s.tfk),

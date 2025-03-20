@@ -43,7 +43,7 @@ Normally, for Linux-based machines, you already have Make installed by default.
 
 * **Build the binary**
 
-`make build`
+`make install`
 
 * **Verify the binary version**
 

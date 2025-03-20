@@ -111,7 +111,7 @@ pkill $BINARY
 
 # install new binary for the upgrade
 echo "install new binary"
-GOTOOLCHAIN=$GO_VERSION make build
+GOTOOLCHAIN=$GO_VERSION make install
 
 # re-run the nodes
 bash $CONFIG_DIR/start-single.sh
@@ -144,7 +144,7 @@ pkill $BINARY
 
 # install new binary for the upgrade
 echo "install new binary"
-GOTOOLCHAIN=$GO_VERSION make build
+GOTOOLCHAIN=$GO_VERSION make install
 
 # re-run the nodes
 bash $CONFIG_DIR/start-single.sh

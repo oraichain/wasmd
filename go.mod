@@ -234,6 +234,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/status-im/keycard-go v0.2.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
@@ -286,7 +287,7 @@ replace (
 	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20250207043129-6ccdb4a201d3
 
 	// go list -m -json github.com/oraichain/cometbft@ee1321d28d8ce7633e9a229b7175f6571629f917 | jq '.|"\(.Path) \(.Version)"' -r
-	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20250303071824-587b5f7c17ce
+	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20250317093009-ee60f8767839
 	// indexer and timestamp added
 	github.com/cosmos/ibc-go/modules/capability => github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705
 
@@ -297,10 +298,10 @@ replace (
 	// See: https://github.com/cosmos/cosmos-sdk/issues/13134
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
 
-	// github.com/ethereum/go-ethereum => github.com/oraichain/go-ethereum v0.0.0-20240919025041-184f816b9d65
-	github.com/ethereum/go-ethereum => ./../go-ethereum-test
-	// github.com/evmos/ethermint => github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20250227073221-242283aa6f1b
-	github.com/evmos/ethermint => ./../ethermint-cosmos-0.50-testing
+	github.com/ethereum/go-ethereum => github.com/oraichain/go-ethereum v0.0.0-20250315003641-c426e3d92f1e
+
+	github.com/evmos/ethermint => github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20250320030536-1af0e1d4b927
+
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/10409
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.8.1

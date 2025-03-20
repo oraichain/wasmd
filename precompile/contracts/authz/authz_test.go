@@ -54,7 +54,7 @@ func PrivateKeyToAddresses(privKey cryptotypes.PrivKey) (sdk.AccAddress, common.
 }
 
 func TestSetGrant(t *testing.T) {
-	denom := "ukava"
+	denom := "orai"
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
@@ -124,7 +124,7 @@ func TestSetGrant(t *testing.T) {
 }
 
 func TestQueryGrant(t *testing.T) {
-	denom := "ukava"
+	denom := "orai"
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
@@ -195,7 +195,7 @@ func TestQueryGrant(t *testing.T) {
 }
 
 func TestExecGrant(t *testing.T) {
-	denom := "ukava"
+	denom := "orai"
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))

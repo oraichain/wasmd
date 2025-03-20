@@ -14,7 +14,7 @@ VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
 re='^[0-9]+([.][0-9]+)?$'
 
 # rebuild the latest code before testing
-make build
+make install
 
 # setup local network
 bash scripts/multinode-local-testnet.sh
@@ -27,6 +27,7 @@ echo "Waiting for the REST & JSONRPC servers to be up ..."
   done
 } 2>/dev/null
 
+sleep 1
 inflation=$(curl --no-progress-meter http://localhost:1317/cosmos/mint/v1beta1/inflation | jq '.inflation | tonumber')
 if ! [[ $inflation =~ $re ]] ; then
    echo "Error: Cannot query inflation => Potentially missing Go GRPC backport" >&2;
@@ -38,6 +39,9 @@ if ! [[ $evm_denom =~ "aorai" ]] ; then
    echo "Error: EVM denom is not correct. The current chain version is not the latest!" >&2;
    echo "Tests Failed"; exit 1
 fi
+
+# v0.50.9 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 bash $PWD/scripts/tests-0.50.9/test-payable-with-bank-send.sh
 
 bash scripts/test_clock_counter_contract.sh
 
@@ -52,6 +56,21 @@ NODE_HOME=$VALIDATOR_HOME bash scripts/tests-0.42.3/test-commit-timeout.sh
 NODE_HOME=$VALIDATOR_HOME bash scripts/tests-0.42.4/test-cw-stargate-staking-query.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.4/test-cw20-erc20.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.4/test-globalfee.sh
+
+# v0.50.1 tests
+bash $PWD/scripts/tests-0.50.1/test-mint-params.sh
+bash $PWD/scripts/tests-0.50.1/test-gov-params.sh
+
+# v0.50.2 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-set-metadata-tokenfactory.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-param-change-proposal-tokenfactory.sh
+
+# v0.50.3 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.3/test-tokenfactory-metadata-binding.sh
+USER=validator1 USER2=validator2 sh $PWD/scripts/tests-0.50.3/test-gasless.sh
+
+# v0.50.4 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.4/test-tokenfactory-force-transfer.sh
 
 bash scripts/clean-multinode-local-testnet.sh
 echo "Tests Passed!!"

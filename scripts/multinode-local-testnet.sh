@@ -31,6 +31,9 @@ oraid keys add validator1 $ARGS --home $VALIDATOR1_HOME >$HIDE_LOGS
 oraid keys add validator2 $ARGS --home $VALIDATOR2_HOME >$HIDE_LOGS
 oraid keys add validator3 $ARGS --home $VALIDATOR3_HOME >$HIDE_LOGS
 
+# add key for evm testing
+oraid keys add $USER-eth $ARGS --home $VALIDATOR1_HOME --eth 2>&1 | tee account-eth.txt
+
 update_genesis() {
     cat $VALIDATOR1_HOME/config/genesis.json | jq "$1" >$VALIDATOR1_HOME/config/tmp_genesis.json && mv $VALIDATOR1_HOME/config/tmp_genesis.json $VALIDATOR1_HOME/config/genesis.json
 }
@@ -40,6 +43,8 @@ update_genesis '.app_state["staking"]["params"]["bond_denom"]="orai"'
 
 # create validator node 1
 oraid genesis add-genesis-account $(oraid keys show validator1 -a $ARGS --home $VALIDATOR1_HOME) 1000000000000orai,1000000000000stake --home $VALIDATOR1_HOME >$HIDE_LOGS
+
+oraid genesis add-genesis-account $USER-eth 1000000000000orai $ARGS --home $VALIDATOR1_HOME >$HIDE_LOGS
 oraid genesis gentx validator1 500000000orai $ARGS --home $VALIDATOR1_HOME --chain-id $CHAIN_ID >$HIDE_LOGS
 oraid genesis collect-gentxs --home $VALIDATOR1_HOME >$HIDE_LOGS
 oraid genesis validate --home $VALIDATOR1_HOME >$HIDE_LOGS
