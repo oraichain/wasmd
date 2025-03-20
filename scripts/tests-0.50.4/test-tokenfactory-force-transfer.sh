@@ -5,7 +5,8 @@ set -ux
 CHAIN_ID=${CHAIN_ID:-testing}
 USER=${USER:-"validator1"}
 NODE_HOME=${NODE_HOME:-"$PWD/.oraid"}
-ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $NODE_HOME"
+ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 10000orai -b sync --home $NODE_HOME"
+CREATE_ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 1orai -b sync --home $NODE_HOME"
 HIDE_LOGS="/dev/null"
 
 # prepare a new contract for gasless
@@ -16,14 +17,14 @@ if ! [[ $fee_params =~ "orai" ]]; then
 fi
 
 # try creating a new denom
-denom_name="usd"
-oraid tx tokenfactory create-denom $denom_name $ARGS >$HIDE_LOGS
+denom_name="usdorai"
+oraid tx tokenfactory create-denom $denom_name $CREATE_ARGS >$HIDE_LOGS
 
 # try querying list denoms afterwards
 # need to sleep 1s
 sleep 1
 user_address=$(oraid keys show $USER --home $NODE_HOME --keyring-backend test -a)
-first_denom=$(oraid query tokenfactory denoms-from-creator $user_address --output json | jq '.denoms[0]' | tr -d '"')
+first_denom=$(oraid query tokenfactory denoms-from-creator $user_address --output json | jq '.denoms[1]' | tr -d '"')
 echo "first denom: $first_denom"
 
 if ! [[ $first_denom =~ "factory/$user_address/$denom_name" ]]; then

@@ -10,7 +10,7 @@ PRIVATE_KEY_ETH=${PRIVATE_KEY_ETH:-"021646C7F742C743E60CC460C56242738A3951667E71
 PRIVATE_KEY_EVM_ADDRESS=${PRIVATE_KEY_EVM_ADDRESS:-"0xB0ac9d216b303a32907632731a93356228CAEE87"}
 current_dir=$PWD
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/oraiswap-token.wasm"}
-ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync"
+ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 10000orai -b sync"
 VALIDATOR1_ARGS=${VALIDATOR1_ARGS:-"--from validator1 --home $HOME/.oraid/validator1"}
 
 HIDE_LOGS="/dev/null"
@@ -19,7 +19,7 @@ store_ret=$(oraid tx wasm store $WASM_PATH $VALIDATOR1_ARGS $ARGS --output json)
 store_txhash=$(echo $store_ret | jq -r '.txhash')
 # need to sleep 1s for tx already in block
 sleep 2
-code_id=$(oraid query tx $store_txhash --output json | jq -r '.events[4].attributes[] | select(.key | contains("code_id")).value')
+code_id=$(oraid query tx $store_txhash --output json | jq -r '.events[] | select(.type == "store_code") | .attributes[] | select(.key == "code_id") | .value')
 
 # 2 addresses that map with the hard-coded private key above
 INSTANTIATE_MSG='{"name":"OraichainToken","symbol":"ORAI","decimals":6,"initial_balances":[{"amount":"1000000000","address":"orai1kzkf6gttxqar9yrkxfe34ye4vg5v4m588ew7c9"},{"amount":"1000000000","address":"orai1hgscrqcd2kmju4t5akujeugwrfev7uxv66lnuu"}]}'

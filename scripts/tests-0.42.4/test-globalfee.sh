@@ -36,14 +36,16 @@ add_globalfee 0.0002
 sleep 5
 validate_globalfee 0.000200000000000000
 
-globalfee_error_message=$(oraid tx bank send validator1 orai1kzkf6gttxqar9yrkxfe34ye4vg5v4m588ew7c9 1orai $VALIDATOR1_ARGS --keyring-backend test --chain-id testing --gas 200000 -y --output json | jq '.raw_log')
+globalfee_error_message=$(oraid tx bank send validator1 orai1kzkf6gttxqar9yrkxfe34ye4vg5v4m588ew7c9 1orai $VALIDATOR1_ARGS --keyring-backend test --chain-id testing --gas 200000 --fees 1orai -y --output json | jq '.raw_log')
 
 # Check if the string contains "40orai" = 0.000200000000000000 (gas price) * 200000 (gas)
 if ! [[ "$globalfee_error_message" == *"40orai"* ]]; then
     echo "Minimum global fee is not correct. Test global fee failed!"
+    exit 1
 fi
 
 # reset globalfee to 0 for future tests
+sleep 5
 add_globalfee 0
 
 echo "Global Fee test passed"

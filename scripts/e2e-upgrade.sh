@@ -29,7 +29,7 @@ fi
 cd ../orai-old
 git fetch
 git checkout $OLD_VERSION
-go mod tidy && GOTOOLCHAIN=$GO_VERSION make install
+go mod tidy && GOTOOLCHAIN=$GO_VERSION make build
 
 cd $current_dir
 
@@ -39,7 +39,7 @@ sh $PWD/scripts/multinode-local-testnet.sh
 sleep 5
 
 # create new upgrade proposal
-UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-35}
+UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-40}
 
 VERSION=$NEW_VERSION HEIGHT=$UPGRADE_HEIGHT bash $PWD/scripts/proposal-script.sh
 
@@ -59,7 +59,7 @@ pkill oraid
 
 # install new binary for the upgrade
 echo "install new binary"
-GOTOOLCHAIN=$GO_VERSION make install
+GOTOOLCHAIN=$GO_VERSION make build
 
 # Back to current folder
 cd $current_dir
@@ -67,7 +67,7 @@ cd $current_dir
 # re-run all validators. All should run
 screen -S validator1 -d -m oraid start --home=$HOME/.oraid/validator1
 screen -S validator2 -d -m oraid start --home=$HOME/.oraid/validator2
-screen -S validator3 -d -m oraid start --home=$HOME/.oraid/validator3
+screen -S validator2 -d -m oraid start --home=$HOME/.oraid/validator3
 
 # sleep a bit for the network to start
 echo "Sleep to wait for the network to start..."
@@ -153,11 +153,15 @@ NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.
 USER=validator1 USER2=validator2 sh $PWD/scripts/tests-0.50.3/test-gasless.sh
 
 # v0.50.4 tests
-NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.4/test-tokenfactory-force-transfer.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.4/test-tokenfactory-force-transfer.sh
 
 # we don't need this test anymore since we are using precisebank. We actually need a test for precisebank
 # # v0.50.6 tests
 # NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.6/test-cw20-erc20-not-mint-aorai.sh
+
+# v0.50.9 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-txfees.sh
+sh $PWD/scripts/tests-0.50.9/test-payable-with-bank-send.sh
 
 echo "E2E Upgrade Tests Passed!!"
 bash scripts/clean-multinode-local-testnet.sh

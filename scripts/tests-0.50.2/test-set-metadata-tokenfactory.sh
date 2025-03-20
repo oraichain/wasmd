@@ -1,11 +1,12 @@
 #!/bin/bash
 
-set -ux
+set -eu
 
 CHAIN_ID=${CHAIN_ID:-testing}
 USER=${USER:-"validator1"}
 NODE_HOME=${NODE_HOME:-"$PWD/.oraid"}
-ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $NODE_HOME"
+ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 10000orai -b sync --home $NODE_HOME"
+CREATE_ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 100000000orai -b sync --home $NODE_HOME"
 HIDE_LOGS="/dev/null"
 
 # prepare a new contract for gasless
@@ -17,7 +18,7 @@ fi
 
 # try creating a new denom
 denom_name="usd"
-oraid tx tokenfactory create-denom $denom_name $ARGS >$HIDE_LOGS
+oraid tx tokenfactory create-denom $denom_name $CREATE_ARGS >$HIDE_LOGS
 
 # try querying list denoms afterwards
 # need to sleep 1s

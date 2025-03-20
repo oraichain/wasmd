@@ -17,22 +17,22 @@ if [[ $blocks_per_yer -ne 39420000 ]]; then
    exit 1
 fi
 
-if [[ $(awk "BEGIN {print $goal_bonded}") -ne 670000000000000000 ]]; then
+if awk "BEGIN { exit !($goal_bonded != 0.67) }"; then
    echo "Mint params Upgrade Failed" >&2
    exit 1
 fi
 
-if [[ $inflation_max -ne 85000000000000000 ]]; then
+if awk "BEGIN { exit !($inflation_max != 0.085000000000000000) }"; then
    echo "Mint params Upgrade Failed" >&2
    exit 1
 fi
 
-if [[ $inflation_min -ne 85000000000000000 ]]; then
+if awk "BEGIN { exit !($inflation_min != 0.085000000000000000) }"; then
    echo "Mint params Upgrade Failed" >&2
    exit 1
 fi
 
-if [[ $(awk "BEGIN {print $inflation_rate_change}") -ne 130000000000000000 ]]; then
+if awk "BEGIN { exit !($inflation_rate_change != 0.13) }"; then
    echo "Mint params Upgrade Failed" >&2
    exit 1
 fi

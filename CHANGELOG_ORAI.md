@@ -1,17 +1,34 @@
 # CHANGELOG
 
-## v0.50.8
+## v0.50.9
 
 <!--
     Add a summary for the release here.
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
-Upgrade Oraichain mainnet to v0.50.8 to fix gasless contract bug out of gas when execute gasless contract.
+
+Upgrade Oraichain mainnet to v0.50.9 to upgrade cosmos-sdk dependency, add dynamic fees, precise-bank module, implement evm mapping using pubkey only, precompile module to support full ERC20 flow and fix payable solidity, evm gas simulate bugs.
 
 ### BUG FIXES
 
-- Fix gasless contract out of gas ([\#80](https://github.com/oraichain/wasmd/pull/80))
+- fix double consume gas when execute precompile contract
+  ([\#114](https://github.com/oraichain/wasmd/pull/114))
+- fix payable bug for solidity
+  ([\#111](https://github.com/oraichain/wasmd/pull/111))
+
+### IMPROVEMENTS
+
+- implement precise bank to support aorai fees
+  ([\#105](https://github.com/oraichain/wasmd/pull/105))
+- implement precompile to interact with evm contract
+  ([\#79](https://github.com/oraichain/wasmd/pull/79))
+- support dynamics fees for chain
+  ([\#85](https://github.com/oraichain/wasmd/pull/85))
+- support mapping evm cosmos address using pubkey only
+  ([\#113](https://github.com/oraichain/wasmd/pull/113))
+- update cosmos-sdk dependency
+  ([\#110](https://github.com/oraichain/wasmd/pull/110))
 
 ## v0.50.7
 
