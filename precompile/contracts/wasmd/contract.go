@@ -156,8 +156,8 @@ func (p PrecompileExecutor) executeCosmWasm(
 		return
 	}
 
+	ctx.Logger().Error(fmt.Sprintf("Execute wasm msg: %s", string(msg)))
 	exeRes, err := p.wasmdKeeper.Execute(ctx, contractAddr, senderAddr, msg, deposit)
-
 	if err != nil {
 		rerr = err
 		return
@@ -168,6 +168,10 @@ func (p PrecompileExecutor) executeCosmWasm(
 	ret, rerr = method.Outputs.Pack(exeRes)
 
 	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed)
+
+	if rerr != nil {
+		ctx.Logger().Error(fmt.Sprintf("Execute wasm msg rerr: %s", rerr.Error()))
+	}
 
 	return
 

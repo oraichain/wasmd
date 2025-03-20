@@ -299,7 +299,7 @@ replace (
 
 	// github.com/ethereum/go-ethereum => github.com/oraichain/go-ethereum v0.0.0-20240919025041-184f816b9d65
 	github.com/ethereum/go-ethereum => ./../go-ethereum-test
-	//github.com/evmos/ethermint => github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20250227073221-242283aa6f1b
+	// github.com/evmos/ethermint => github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20250227073221-242283aa6f1b
 	github.com/evmos/ethermint => ./../ethermint-cosmos-0.50-testing
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/10409

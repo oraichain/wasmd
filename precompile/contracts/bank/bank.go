@@ -176,7 +176,6 @@ func (p PrecompileExecutor) send(accessibleState contract.AccessibleState,
 
 	senderCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
 	receiverCosmosAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, receiverEvmAddr)
-
 	if err := p.bankKeeper.SendCoins(ctx, senderCosmosAddr, receiverCosmosAddr, sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewIntFromBigInt(amount)))); err != nil {
 		rerr = err
 		return
