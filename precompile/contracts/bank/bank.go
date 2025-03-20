@@ -124,7 +124,7 @@ func (p PrecompileExecutor) send(accessibleState contract.AccessibleState,
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -182,7 +182,7 @@ func (p PrecompileExecutor) send(accessibleState contract.AccessibleState,
 	}
 
 	ret, rerr = method.Outputs.Pack(true)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -195,7 +195,7 @@ func (p PrecompileExecutor) burn(
 	readOnly bool,
 	value *big.Int,
 ) (ret []byte, remainingGas uint64, rerr error) {
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -313,7 +313,7 @@ func (p PrecompileExecutor) burn(
 	}
 
 	ret, rerr = method.Outputs.Pack(true)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -325,7 +325,7 @@ func (p PrecompileExecutor) balance(accessibleState contract.AccessibleState,
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -369,7 +369,7 @@ func (p PrecompileExecutor) balance(accessibleState contract.AccessibleState,
 	balance := p.bankKeeper.GetBalance(ctx, cosmosAddr, denom)
 
 	ret, rerr = method.Outputs.Pack(balance.Amount.BigInt())
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -381,7 +381,7 @@ func (p PrecompileExecutor) allBalances(accessibleState contract.AccessibleState
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -428,7 +428,7 @@ func (p PrecompileExecutor) allBalances(accessibleState contract.AccessibleState
 	}
 
 	ret, rerr = method.Outputs.Pack(coinBalances)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -440,7 +440,7 @@ func (p PrecompileExecutor) name(accessibleState contract.AccessibleState,
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -463,7 +463,7 @@ func (p PrecompileExecutor) name(accessibleState contract.AccessibleState,
 	}
 
 	ret, rerr = method.Outputs.Pack(metadata.Name)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -475,7 +475,7 @@ func (p PrecompileExecutor) symbol(accessibleState contract.AccessibleState,
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -498,7 +498,7 @@ func (p PrecompileExecutor) symbol(accessibleState contract.AccessibleState,
 	}
 
 	ret, rerr = method.Outputs.Pack(metadata.Symbol)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 
@@ -510,7 +510,7 @@ func (p PrecompileExecutor) decimals(accessibleState contract.AccessibleState,
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, _, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -539,7 +539,7 @@ func (p PrecompileExecutor) supply(accessibleState contract.AccessibleState,
 	readOnly bool,
 	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
 
-	ctx, rerr := pcommon.GetPrecompileCtx(accessibleState)
+	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
 	if rerr != nil {
 		return
 	}
@@ -574,7 +574,7 @@ func (p PrecompileExecutor) supply(accessibleState contract.AccessibleState,
 	denom := args[0].(string)
 	coin := p.bankKeeper.GetSupply(ctx, denom)
 	ret, rerr = method.Outputs.Pack(coin.Amount.BigInt())
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed())
+	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
 	return
 }
 

@@ -300,7 +300,8 @@ replace (
 
 	github.com/ethereum/go-ethereum => github.com/oraichain/go-ethereum v0.0.0-20250315003641-c426e3d92f1e
 
-	github.com/evmos/ethermint => github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20250320030536-1af0e1d4b927
+	github.com/evmos/ethermint => github.com/oraichain/ethermint-cosmos-0.50 v0.0.0-20250320073200-4c44284fecd4
+
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// See: https://github.com/cosmos/cosmos-sdk/issues/10409
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.8.1

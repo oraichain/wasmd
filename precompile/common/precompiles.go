@@ -27,10 +27,13 @@ func ValidateNonPayable(value *big.Int) error {
 	return nil
 }
 
-func GetPrecompileCtx(accessibleState contract.AccessibleState) (sdk.Context, error) {
-	ctxer, ok := accessibleState.GetStateDB().(*statedb.StateDB)
+func GetPrecompileCtx(accessibleState contract.AccessibleState) (sdk.Context, uint64, error) {
+	stateDB, ok := accessibleState.GetStateDB().(*statedb.StateDB)
 	if !ok {
-		return sdk.UnwrapSDKContext(context.Background()), errors.New("cannot get context from EVM")
+		return sdk.UnwrapSDKContext(context.Background()), 0, errors.New("cannot get context from EVM")
 	}
-	return ctxer.Ctx(), nil
+
+	ctx := stateDB.Ctx()
+	initialGas := ctx.GasMeter().GasConsumed()
+	return ctx, initialGas, nil
 }
