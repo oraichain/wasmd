@@ -6,7 +6,7 @@ CHAIN_ID=${CHAIN_ID:-testing}
 USER=${USER:-tupt}
 NODE_HOME=${NODE_HOME:-"$PWD/.oraid"}
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/tokenfactory.wasm"}
-ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $NODE_HOME"
+ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 10000orai -b sync --home $NODE_HOME"
 user_address=$(oraid keys show $USER --keyring-backend test --home $NODE_HOME -a)
 HIDE_LOGS="/dev/null"
 
@@ -14,7 +14,7 @@ HIDE_LOGS="/dev/null"
 store_txhash=$(oraid tx wasm store $WASM_PATH $ARGS --output json | jq -r '.txhash')
 # need to sleep 1s
 sleep 2
-code_id=$(oraid query tx $store_txhash --output json | jq -r '.events[4].attributes[] | select(.key | contains("code_id")).value')
+code_id=$(oraid query tx $store_txhash --output json | jq -r '.events[] | select(.type == "store_code") | .attributes[] | select(.key == "code_id") | .value')
 oraid tx wasm instantiate $code_id '{}' --label 'tokenfactory cw bindings testing' --admin $user_address $ARGS >$HIDE_LOGS
 sleep 2
 contract_address=$(oraid query wasm list-contract-by-code $code_id --output json | jq -r '.contracts[0]')

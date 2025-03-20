@@ -5,7 +5,7 @@ set -eu
 CHAIN_ID=${CHAIN_ID:-testing}
 USER=${USER:-tupt}
 NODE_HOME=${NODE_HOME:-"$PWD/.oraid"}
-ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 -b sync --home $NODE_HOME"
+ARGS="--from $USER --chain-id $CHAIN_ID -y --keyring-backend test --gas auto --gas-adjustment 1.5 --fees 10000orai -b sync --home $NODE_HOME"
 HIDE_LOGS="/dev/null"
 
 user_address=$(oraid keys show $USER --home $NODE_HOME --keyring-backend test -a)
