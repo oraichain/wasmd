@@ -156,7 +156,7 @@ func (p PrecompileExecutor) executeCosmWasm(
 		return
 	}
 
-	ctx.Logger().Error(fmt.Sprintf("Execute wasm msg: %s", string(msg)))
+	// ctx.Logger().Error(fmt.Sprintf("Execute wasm msg: %s", string(msg)))
 	exeRes, err := p.wasmdKeeper.Execute(ctx, contractAddr, senderAddr, msg, deposit)
 	if err != nil {
 		rerr = err
