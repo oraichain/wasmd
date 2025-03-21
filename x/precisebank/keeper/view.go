@@ -47,12 +47,21 @@ func (k Keeper) GetBalance(
 // SpendableCoins returns the total balances of spendable coins for an account
 // by address. If the account has no spendable coins, an empty Coins slice is
 // returned.
-
 func (k Keeper) SpendableCoins(
 	ctx context.Context,
 	addr sdk.AccAddress,
 ) sdk.Coins {
-	return sdk.Coins{}
+	// first we get all spendable coins from x/bank
+	spendableCoins := k.bk.SpendableCoins(ctx, addr)
+
+	// then we check if address has fractional balance
+	fractionalBalance := k.GetFractionalBalance(ctx, addr)
+	// if fractional balance is greater than 0, we add it to the spendable coins
+	if fractionalBalance.IsPositive() {
+		spendableCoins = spendableCoins.Sort().Add(sdk.NewCoin(types.ExtendedCoinDenom, fractionalBalance))
+	}
+
+	return spendableCoins
 }
 
 func (k Keeper) SpendableCoin(
