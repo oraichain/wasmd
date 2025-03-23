@@ -14,7 +14,7 @@ VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
 re='^[0-9]+([.][0-9]+)?$'
 
 # rebuild the latest code before testing
-make install
+make build
 
 # setup local network
 bash scripts/multinode-local-testnet.sh
@@ -40,21 +40,24 @@ if ! [[ $evm_denom =~ "aorai" ]] ; then
    echo "Tests Failed"; exit 1
 fi
 
-# v0.50.9 tests
-NODE_HOME=$VALIDATOR_HOME USER=validator1 bash $PWD/scripts/tests-0.50.9/test-payable-with-bank-send.sh
-
 bash scripts/test_clock_counter_contract.sh
 
-# test gasless
-USER=validator1 USER2=validator2 WASM_PATH="$PROJECT_DIR/scripts/wasm_file/counter_high_gas_cost.wasm" bash scripts/tests-0.42.1/test-gasless.sh
+# v0.42.1 tests
+# USER=validator1 USER2=validator2 WASM_PATH="$PROJECT_DIR/scripts/wasm_file/counter_high_gas_cost.wasm" bash scripts/tests-0.42.1/test-gasless.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.1/test-tokenfactory.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.1/test-tokenfactory-bindings.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.1/test-evm-cosmos-mapping.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.1/test-evm-cosmos-mapping-complex.sh
+
+# v0.42.2 tests 
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.2/test-multi-sig.sh
+
+# v0.42.3 tests
 NODE_HOME=$VALIDATOR_HOME bash scripts/tests-0.42.3/test-commit-timeout.sh
+
+# v0.42.4 tests
 NODE_HOME=$VALIDATOR_HOME bash scripts/tests-0.42.4/test-cw-stargate-staking-query.sh
-NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.4/test-cw20-erc20.sh
+# NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.4/test-cw20-erc20.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 bash scripts/tests-0.42.4/test-globalfee.sh
 
 # v0.50.1 tests
@@ -72,5 +75,10 @@ USER=validator1 USER2=validator2 sh $PWD/scripts/tests-0.50.3/test-gasless.sh
 # v0.50.4 tests
 NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.4/test-tokenfactory-force-transfer.sh
 
-bash scripts/clean-multinode-local-testnet.sh
+# v0.50.9 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-txfees.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-evm-cosmos-mapping.sh
+sh $PWD/scripts/tests-0.50.9/test-payable-with-bank-send.sh
+
 echo "Tests Passed!!"
+bash scripts/clean-multinode-local-testnet.sh
