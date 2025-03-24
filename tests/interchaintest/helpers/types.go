@@ -38,7 +38,9 @@ type QueryWasmGasLessContracts struct {
 }
 
 type QueryTxfeesTokenExchangeRate struct {
-	Rate string `json:"rate`
+	BaseDenom  string `json:"base_denom"`
+	QuoteDenom string `json:"quote_denom"`
+	Rate       string `json:"rate"`
 }
 
 type PageResponse struct {
