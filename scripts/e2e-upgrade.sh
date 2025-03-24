@@ -161,6 +161,7 @@ NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.4/test-toke
 
 # v0.50.9 tests
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-txfees.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-evm-cosmos-mapping.sh
 sh $PWD/scripts/tests-0.50.9/test-payable-with-bank-send.sh
 
 echo "E2E Upgrade Tests Passed!!"

@@ -39,6 +39,3 @@ update_genesis '.app_state["tokenfactory"]["params"]["denom_creation_fee"][0]["d
 update_genesis '.app_state["tokenfactory"]["params"]["denom_creation_fee"][0]["amount"]="1"'
 
 oraid start $START_ARGS
-
-#oraid start --json-rpc.address=0.0.0.0:8545 --json-rpc.ws-address=0.0.0.0:8546 --json-rpc.api=eth,web3,net,txpool,debug --json-rpc.enable --home /Users/gnad/work/cosmos/wasmd/.oraid
-
