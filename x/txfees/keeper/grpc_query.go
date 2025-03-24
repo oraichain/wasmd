@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	errors "cosmossdk.io/errors"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,4 +31,33 @@ func (k Keeper) AllowedTokens(ctx context.Context, _ *types.QueryAllowedTokensRe
 	})
 
 	return &types.QueryAllowedTokensResponse{Tokens: tokens}, nil
+}
+
+func (k Keeper) TokenExchangeRate(ctx context.Context, req *types.QueryTokenExchangeRateRequest) (*types.QueryTokenExchangeRateResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	allowed, err := k.IsTokenAllowed(sdkCtx, req.Denom)
+	if err != nil {
+		return nil, err
+	}
+
+	if !allowed {
+		return nil, errors.Wrapf(types.ErrTokenAllowed, "token %s is not allowed", req.Denom)
+	}
+
+	baseDenom, err := k.GetBaseTokenDenom(sdkCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	rate, err := k.QueryOraiDexTokenExchangeRate(sdkCtx, req.Denom)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryTokenExchangeRateResponse{
+		BaseDenom:  baseDenom,
+		QuoteDenom: req.Denom,
+		Rate:       rate,
+	}, nil
 }
