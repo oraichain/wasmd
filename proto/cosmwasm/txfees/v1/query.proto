@@ -23,7 +23,7 @@ service Query {
   }
 
   rpc TokenExchangeRate(QueryTokenExchangeRateRequest) returns (QueryTokenExchangeRateResponse) {
-    option (google.api.http).get = "/cosmwasm/txfees/v1/token_exchange_rate/{denom}";
+    option (google.api.http).get = "/cosmwasm/txfees/v1/token_exchange_rate/by_denom";
   }
 
 }
