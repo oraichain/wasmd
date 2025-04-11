@@ -160,11 +160,10 @@ import (
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 
 	simappparams "cosmossdk.io/simapp/params"
+	evmante "github.com/cosmos/evm/ante/evm"
 	evmv1 "github.com/cosmos/evm/api/cosmos/evm/vm/v1"
-	evmante "github.com/cosmos/evm/app/ante"
 	"github.com/cosmos/evm/ethereum/eip712"
 	etherminttypes "github.com/cosmos/evm/types"
-	"github.com/cosmos/evm/x/evm/vm/geth"
 	"github.com/cosmos/evm/x/feemarket"
 	feemarketkeeper "github.com/cosmos/evm/x/feemarket/keeper"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
@@ -658,7 +657,7 @@ func NewWasmApp(
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec, runtime.NewKVStoreService(keys[evmtypes.StoreKey]), tkeys[evmtypes.TransientKey], Authority,
 		app.AccountKeeper, app.PrecisebankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
-		nil, geth.NewEVM, tracer, evmSs,
+		&app.Erc20Keeper, tracer, evmSs,
 	)
 
 	app.Erc20Keeper = erc20keeper.NewKeeper(

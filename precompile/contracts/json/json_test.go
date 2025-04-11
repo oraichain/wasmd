@@ -7,7 +7,7 @@ import (
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/precompile/contracts/json"
 	"github.com/CosmWasm/wasmd/precompile/registry"
-	"github.com/cosmos/evm/x/evm/statedb"
+	"github.com/cosmos/evm/x/vm/statedb"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/stretchr/testify/require"

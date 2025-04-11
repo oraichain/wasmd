@@ -13,7 +13,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/cosmos/cosmos-sdk/x/authz"
-	"github.com/cosmos/evm/x/evm/statedb"
+	"github.com/cosmos/evm/x/vm/statedb"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/contract"
