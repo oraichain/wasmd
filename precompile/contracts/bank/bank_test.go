@@ -9,11 +9,11 @@ import (
 	"github.com/CosmWasm/wasmd/precompile/contracts/bank"
 	"github.com/CosmWasm/wasmd/precompile/registry"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/evm/x/evm/statedb"
 	"github.com/cosmos/go-bip39"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/x/evm/statedb"
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
@@ -21,7 +21,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	evmtypes "github.com/cosmos/evm/x/evm/types"
 )
 
 func MockAddressPair() (sdk.AccAddress, common.Address) {

@@ -12,11 +12,11 @@ import (
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	evmtypes "github.com/cosmos/evm/x/evm/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/precompile/contract"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 
 // Singleton StatefulPrecompiledContract.

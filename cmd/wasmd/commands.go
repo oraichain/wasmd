@@ -33,8 +33,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	"github.com/evmos/ethermint/client/debug"
-	ethermintserver "github.com/evmos/ethermint/server"
+	"github.com/cosmos/evm/client/debug"
+	ethermintserver "github.com/cosmos/evm/server"
 
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/x/wasm"

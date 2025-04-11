@@ -33,11 +33,11 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	globalfeeante "github.com/CosmosContracts/juno/v18/x/globalfee/ante"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	evmante "github.com/evmos/ethermint/app/ante"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
+	evmante "github.com/cosmos/evm/app/ante"
+	"github.com/cosmos/evm/crypto/ethsecp256k1"
+	evmkeeper "github.com/cosmos/evm/x/evm/keeper"
+	evmtypes "github.com/cosmos/evm/x/evm/types"
+	feemarketkeeper "github.com/cosmos/evm/x/feemarket/keeper"
 )
 
 const maxBypassMinFeeMsgGasUsage = 1_000_000

@@ -23,8 +23,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/cosmos/cosmos-sdk/x/genutil/types"
+	serverconfig "github.com/cosmos/evm/server/config"
 	"github.com/cosmos/go-bip39"
-	serverconfig "github.com/evmos/ethermint/server/config"
 	"github.com/spf13/cobra"
 )
 

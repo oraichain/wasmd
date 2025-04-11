@@ -15,8 +15,8 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	mint "github.com/cosmos/cosmos-sdk/x/mint/types"
 	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
-	evm "github.com/evmos/ethermint/x/evm/types"
-	feemarket "github.com/evmos/ethermint/x/feemarket/types"
+	feemarket "github.com/cosmos/evm/x/feemarket/types"
+	evm "github.com/cosmos/evm/x/vm/types"
 )
 
 // GenesisState of the blockchain is represented here as a map of raw json

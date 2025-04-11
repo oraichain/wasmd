@@ -4,7 +4,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	evmtypes "github.com/cosmos/evm/x/evm/types"
 
 	"github.com/CosmWasm/wasmd/x/precisebank/types"
 )
