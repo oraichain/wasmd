@@ -101,7 +101,6 @@ import (
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -124,8 +123,7 @@ import (
 	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee"
 	ibcfeekeeper "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/keeper"
 	ibcfeetypes "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types"
-	"github.com/cosmos/ibc-go/v8/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
+	ibctransfer "github.com/cosmos/ibc-go/v8/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -187,6 +185,10 @@ import (
 	"github.com/CosmWasm/wasmd/x/precisebank"
 	precisebankkeeper "github.com/CosmWasm/wasmd/x/precisebank/keeper"
 	precisebanktypes "github.com/CosmWasm/wasmd/x/precisebank/types"
+
+	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
+	"github.com/cosmos/evm/x/ibc/transfer"
+	transferkeeper "github.com/cosmos/evm/x/ibc/transfer/keeper"
 )
 
 const appName = "WasmApp"
@@ -288,7 +290,7 @@ type WasmApp struct {
 	IBCFeeKeeper        ibcfeekeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
-	TransferKeeper      ibctransferkeeper.Keeper
+	TransferKeeper      transferkeeper.Keeper
 	WasmKeeper          wasmkeeper.Keeper
 
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -654,7 +656,7 @@ func NewWasmApp(
 	app.Erc20Keeper = erc20keeper.NewKeeper(
 		runtime.NewKVStoreService(keys[erc20types.StoreKey]), appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
-		app.AuthzKeeper,
+		app.AuthzKeeper, &app.TransferKeeper,
 	)
 
 	// Register the proposal types
@@ -662,9 +664,7 @@ func NewWasmApp(
 	// by granting the governance module the right to execute the message.
 	// See: https://docs.cosmos.network/main/modules/gov#proposal-messages
 	govRouter := govv1beta1.NewRouter()
-	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
-		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
+	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler)
 	govConfig := govtypes.DefaultConfig()
 	/*
 		Example of setting gov params:
@@ -743,7 +743,7 @@ func NewWasmApp(
 	)
 
 	// Create Transfer Keepers
-	app.TransferKeeper = ibctransferkeeper.NewKeeper(
+	app.TransferKeeper = transferkeeper.NewKeeper(
 		appCodec,
 		keys[ibctransfertypes.StoreKey],
 		app.GetSubspace(ibctransfertypes.ModuleName),
@@ -753,6 +753,7 @@ func NewWasmApp(
 		app.AccountKeeper,
 		app.BankKeeper,
 		scopedTransferKeeper,
+		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
 		AuthorityAddr,
 	)
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
@@ -968,6 +969,7 @@ func NewWasmApp(
 			globalfee.ModuleName:          globalfee.AppModuleBasic{},
 			precisebanktypes.ModuleName:   precisebank.AppModuleBasic{},
 			txfeestypes.ModuleName:        txfees.AppModuleBasic{},
+			ibctransfertypes.ModuleName:   transfer.AppModuleBasic{AppModuleBasic: &ibctransfer.AppModuleBasic{}},
 		})
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
@@ -1188,14 +1190,14 @@ func NewWasmApp(
 }
 
 func (app *WasmApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtypes.WasmConfig, txCounterStoreKey *storetypes.KVStoreKey) {
-	anteHandler, err := NewAnteHandler(
+	anteHandler := NewAnteHandler(
 		HandlerOptions{
 			HandlerOptions: ante.HandlerOptions{
 				SignModeHandler:        txConfig.SignModeHandler(),
 				FeegrantKeeper:         app.FeeGrantKeeper,
 				SigGasConsumer:         DefaultSigGasConsumer,
 				ExtensionOptionChecker: etherminttypes.HasDynamicFeeExtensionOption,
-				TxFeeChecker:           evmante.NewDynamicFeeChecker(app.EvmKeeper),
+				TxFeeChecker:           evmante.NewDynamicFeeChecker(app.FeeMarketKeeper),
 			},
 			AccountKeeper:         app.AccountKeeper,
 			AuthzKeeper:           &app.AuthzKeeper,
