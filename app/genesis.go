@@ -15,8 +15,8 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	mint "github.com/cosmos/cosmos-sdk/x/mint/types"
 	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
-	feemarket "github.com/cosmos/evm/x/feemarket/types"
-	evm "github.com/cosmos/evm/x/vm/types"
+	evm "github.com/evmos/ethermint/x/evm/types"
+	feemarket "github.com/evmos/ethermint/x/feemarket/types"
 )
 
 // GenesisState of the blockchain is represented here as a map of raw json
@@ -75,7 +75,7 @@ func NewDefaultGenesisState(cdc codec.Codec, moduleBasics module.BasicManager) G
 	genesisSate[evm.ModuleName] = cdc.MustMarshalJSON(evmGenesis)
 
 	// custom fee market genesis state
-	feeMarketGenesis.Params.BaseFee = sdkmath.LegacyNewDec(1)
+	feeMarketGenesis.Params.BaseFee = sdkmath.NewInt(1)
 	feeMarketGenesis.Params.BaseFeeChangeDenominator = 2
 	feeMarketGenesis.Params.NoBaseFee = true
 	genesisSate[feemarket.ModuleName] = cdc.MustMarshalJSON(feeMarketGenesis)

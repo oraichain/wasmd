@@ -44,12 +44,6 @@ func (k Keeper) GetBalance(
 	return sdk.NewCoin(types.ExtendedCoinDenom, fullAmount)
 }
 
-// FIXME: We just return GetAllBalances from bankkeeper
-// Do we need to convert to decimal 18?
-func (k Keeper) GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
-	return k.bk.GetAllBalances(ctx, addr)
-}
-
 // SpendableCoins returns the total balances of spendable coins for an account
 // by address. If the account has no spendable coins, an empty Coins slice is
 // returned.
