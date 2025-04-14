@@ -66,58 +66,6 @@ func NewAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	}
 }
 
-// // NewAnteHandler returns an AnteHandler that checks and increments sequence
-// // numbers, checks signatures & account numbers, and deducts fees from the first
-// // signer.
-// func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
-
-// 	var sigGasConsumer = options.SigGasConsumer
-// 	if sigGasConsumer == nil {
-// 		sigGasConsumer = ante.DefaultSigVerificationGasConsumer
-// 	}
-
-// 	decorators := []sdk.AnteDecorator{
-// 		evmante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
-// 		ante.NewSetUpContextDecorator(),   // outermost AnteDecorator. SetUpContext must be called first
-// 		wasmkeeper.NewLimitSimulationGasDecorator(options.WasmConfig.SimulationGasLimit), // after setup context to enforce limits early
-// 		wasmkeeper.NewCountTXDecorator(options.TXCounterStoreService),
-// 		wasmkeeper.NewGasRegisterDecorator(options.WasmKeeper.GetGasRegister()),
-// 		circuitante.NewCircuitBreakerDecorator(options.CircuitKeeper),
-// 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
-// 		ante.NewValidateBasicDecorator(),
-// 		ante.NewTxTimeoutHeightDecorator(),
-// 		ante.NewValidateMemoDecorator(options.AccountKeeper),
-// 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-// 		// nil so that it only checks with the min gas price of the chain, not the custom fee checker. For cosmos messages, the default tx fee checker is enough
-// 		globalfeeante.NewFeeDecorator(options.BypassMinFeeMsgTypes, options.GlobalFeeKeeper, options.StakingKeeper, maxBypassMinFeeMsgGasUsage),
-// 		// ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, nil),
-// 		txfeesante.NewMempoolFeeDecorator(options.BypassMinFeeMsgTypes, options.TxFeesKeeper),
-// 		txfeesante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeesKeeper),
-// 		// we use evmante.NewSetPubKeyDecorator so that for eth_secp256k1 accs, we can validate the signer using the evm-cosmos mapping logic
-// 		evmante.NewSetPubKeyDecorator(options.AccountKeeper, options.EvmKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
-// 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
-// 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
-// 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
-// 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
-// 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
-// 	}
-
-// 	return sdk.ChainAnteDecorators(decorators...)
-// }
-
-// func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
-// 	return sdk.ChainAnteDecorators(
-// 		evmante.NewEthSetUpContextDecorator(options.EvmKeeper), // outermost AnteDecorator. SetUpContext must be called first
-// 		evmante.NewEthMempoolFeeDecorator(options.EvmKeeper),   // Check eth effective gas price against minimal-gas-prices
-// 		evmante.NewEthValidateBasicDecorator(options.EvmKeeper),
-// 		evmante.NewEthSigVerificationDecorator(options.EvmKeeper),
-// 		evmante.NewEthAccountVerificationDecorator(options.AccountKeeper, options.EvmKeeper),
-// 		evmante.NewEthGasConsumeDecorator(options.EvmKeeper, options.MaxTxGasWanted),
-// 		evmante.NewCanTransferDecorator(options.EvmKeeper),
-// 		evmante.NewEthIncrementSenderSequenceDecorator(options.AccountKeeper, options.EvmKeeper), // innermost AnteDecorator.
-// 	)
-// }
-
 const (
 	secp256k1VerifyCost uint64 = 21000
 )
