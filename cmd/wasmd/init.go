@@ -23,8 +23,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/cosmos/cosmos-sdk/x/genutil/types"
+	cosmosevmserverconfig "github.com/cosmos/evm/server/config"
 	"github.com/cosmos/go-bip39"
-	serverconfig "github.com/evmos/ethermint/server/config"
 	"github.com/spf13/cobra"
 )
 
@@ -66,6 +66,32 @@ func displayInfo(info printInfo) error {
 	_, err = fmt.Fprintf(os.Stderr, "%s\n", out)
 
 	return err
+}
+
+// InitAppConfig helps to override default appConfig template and configs.
+// return "", nil if no custom configuration is required for the application.
+func InitAppConfig(denom string) (string, *cosmosevmserverconfig.Config) {
+	// Optionally allow the chain developer to overwrite the SDK's default
+	// server config.
+	srvCfg := cosmosevmserverconfig.DefaultConfig()
+	// The SDK's default minimum gas price is set to "" (empty value) inside
+	// app.toml. If left empty by validators, the node will halt on startup.
+	// However, the chain developer can set a default app.toml value for their
+	// validators here.
+	//
+	// In summary:
+	// - if you leave srvCfg.MinGasPrices = "", all validators MUST tweak their
+	//   own app.toml config,
+	// - if you set srvCfg.MinGasPrices non-empty, validators CAN tweak their
+	//   own app.toml to override, or use this default value.
+	//
+	// In this example application, we set the min gas prices to 0.
+	srvCfg.MinGasPrices = "0" + denom
+
+	customAppTemplate := srvconfig.DefaultConfigTemplate +
+		cosmosevmserverconfig.DefaultEVMConfigTemplate
+
+	return customAppTemplate, srvCfg
 }
 
 // initCmd returns a command that initializes all files needed for Tendermint
@@ -175,7 +201,7 @@ func initCmd(mbm module.BasicManager, customAppState app.GenesisState, defaultNo
 			cfg.WriteConfigFile(filepath.Join(config.RootDir, "config", "config.toml"), config)
 
 			// config for app.toml file with EVM config
-			appConfigTemplate, defaultAppConfig := serverconfig.AppConfig("orai")
+			appConfigTemplate, defaultAppConfig := InitAppConfig("orai")
 			defaultAppConfig.API.Enable = true
 			srvconfig.SetConfigTemplate(appConfigTemplate)
 			srvconfig.WriteConfigFile(filepath.Join(config.RootDir, "config/app.toml"), defaultAppConfig)

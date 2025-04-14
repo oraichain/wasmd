@@ -11,9 +11,9 @@ import (
 	"github.com/CosmWasm/wasmd/precompile/contracts/addr"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/evm/x/vm/statedb"
 	"github.com/cosmos/go-bip39"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/evmos/ethermint/x/evm/statedb"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/ethereum/go-ethereum/core/vm"
