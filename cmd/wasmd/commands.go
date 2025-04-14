@@ -34,7 +34,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/cosmos/evm/client/debug"
-	ethermintserver "github.com/cosmos/evm/server"
+	"github.com/cosmos/evm/cmd/config"
+	cosmosevmserver "github.com/cosmos/evm/server"
 
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -120,8 +121,19 @@ func initRootCmd(
 
 	wasmcli.ExtendUnsafeResetAllCmd(rootCmd)
 
+	startOpts := cosmosevmserver.StartOptions{
+		AppCreator:      newApp,
+		DefaultNodeHome: app.DefaultNodeHome,
+		DBOpener:        config.OpenDB,
+		PostSetup:       indexerserver.StartIndexerService,
+	}
 	// ethermintserver adds additional flags to start the JSON-RPC server for evm support
-	ethermintserver.AddCommands(rootCmd, app.DefaultNodeHome, newApp, appExport, addModuleInitFlags, ethermintserver.StartCmdOptions{PostSetup: indexerserver.StartIndexerService})
+	cosmosevmserver.AddCommands(
+		rootCmd,
+		startOpts,
+		appExport,
+		addModuleInitFlags,
+	)
 
 	// add keybase, auxiliary RPC, query, genesis, and tx child commands
 	rootCmd.AddCommand(
