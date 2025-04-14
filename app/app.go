@@ -1190,41 +1190,40 @@ func NewWasmApp(
 }
 
 func (app *WasmApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtypes.WasmConfig, txCounterStoreKey *storetypes.KVStoreKey) {
-	anteHandler := NewAnteHandler(
-		HandlerOptions{
-			HandlerOptions: ante.HandlerOptions{
-				SignModeHandler:        txConfig.SignModeHandler(),
-				FeegrantKeeper:         app.FeeGrantKeeper,
-				SigGasConsumer:         DefaultSigGasConsumer,
-				ExtensionOptionChecker: etherminttypes.HasDynamicFeeExtensionOption,
-				TxFeeChecker:           evmante.NewDynamicFeeChecker(app.FeeMarketKeeper),
-			},
-			AccountKeeper:         app.AccountKeeper,
-			AuthzKeeper:           &app.AuthzKeeper,
-			BankKeeper:            &app.BankKeeper,
-			IBCKeeper:             app.IBCKeeper,
-			EvmKeeper:             app.EvmKeeper,
-			StakingKeeper:         *app.StakingKeeper,
-			GlobalFeeKeeper:       app.GlobalFeeKeeper,
-			FeeMarketKeeper:       app.FeeMarketKeeper,
-			WasmConfig:            &wasmConfig,
-			WasmKeeper:            &app.WasmKeeper,
-			TxFeesKeeper:          app.TxFeesKeeper,
-			ContractKeeper:        app.ContractKeeper,
-			TXCounterStoreService: runtime.NewKVStoreService(txCounterStoreKey),
-			CircuitKeeper:         &app.CircuitKeeper,
-			DisabledAuthzMsgs: []string{
-				sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
-				sdk.MsgTypeURL(&vestingtypes.MsgCreateVestingAccount{}),
-				sdk.MsgTypeURL(&vestingtypes.MsgCreatePermanentLockedAccount{}),
-				sdk.MsgTypeURL(&vestingtypes.MsgCreatePeriodicVestingAccount{}),
-			},
+	options := HandlerOptions{
+		HandlerOptions: ante.HandlerOptions{
+			SignModeHandler:        txConfig.SignModeHandler(),
+			FeegrantKeeper:         app.FeeGrantKeeper,
+			SigGasConsumer:         DefaultSigGasConsumer,
+			ExtensionOptionChecker: etherminttypes.HasDynamicFeeExtensionOption,
+			TxFeeChecker:           evmante.NewDynamicFeeChecker(app.FeeMarketKeeper),
 		},
-	)
-	if err != nil {
-		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
+		AccountKeeper:         app.AccountKeeper,
+		AuthzKeeper:           &app.AuthzKeeper,
+		BankKeeper:            &app.BankKeeper,
+		IBCKeeper:             app.IBCKeeper,
+		EvmKeeper:             app.EvmKeeper,
+		StakingKeeper:         *app.StakingKeeper,
+		GlobalFeeKeeper:       app.GlobalFeeKeeper,
+		FeeMarketKeeper:       app.FeeMarketKeeper,
+		WasmConfig:            &wasmConfig,
+		WasmKeeper:            &app.WasmKeeper,
+		TxFeesKeeper:          app.TxFeesKeeper,
+		ContractKeeper:        app.ContractKeeper,
+		TXCounterStoreService: runtime.NewKVStoreService(txCounterStoreKey),
+		CircuitKeeper:         &app.CircuitKeeper,
+		DisabledAuthzMsgs: []string{
+			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
+			sdk.MsgTypeURL(&vestingtypes.MsgCreateVestingAccount{}),
+			sdk.MsgTypeURL(&vestingtypes.MsgCreatePermanentLockedAccount{}),
+			sdk.MsgTypeURL(&vestingtypes.MsgCreatePeriodicVestingAccount{}),
+		},
 	}
 
+	if err := options.Validate(); err != nil {
+		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
+	}
+	anteHandler := NewAnteHandler(options)
 	// Set the AnteHandler for the app
 	app.SetAnteHandler(anteHandler)
 
