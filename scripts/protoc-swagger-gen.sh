@@ -10,7 +10,7 @@ mkdir -p ./tmp-swagger-gen
 cd proto
 COSMOS_SDK_DIR=${COSMOS_SDK_DIR:-$(go list -f "{{ .Dir }}" -m github.com/cosmos/cosmos-sdk)}
 IBC_DIR=${IBC_DIR:-$(go list -f "{{ .Dir }}" -m github.com/cosmos/ibc-go/v8)}
-ETHERMINT_DIR=${ETHERMINT_DIR:-$(go list -f "{{ .Dir }}" -m github.com/evmos/ethermint)}
+ETHERMINT_DIR=${ETHERMINT_DIR:-$(go list -f "{{ .Dir }}" -m github.com/cosmos/evm)}
 proto_dirs=$(find ./cosmwasm $COSMOS_SDK_DIR/proto/cosmos $IBC_DIR/proto/ibc $IBC_DIR/proto/capability $ETHERMINT_DIR/proto/ethermint -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 for dir in $proto_dirs; do
   # generate swagger files (filter query files)

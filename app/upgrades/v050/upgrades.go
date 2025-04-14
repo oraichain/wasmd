@@ -19,11 +19,11 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	erc20types "github.com/cosmos/evm/x/erc20/types"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
-	erc20types "github.com/evmos/ethermint/x/erc20/types"
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	"github.com/cosmos/cosmos-sdk/x/group"
