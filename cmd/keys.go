@@ -10,9 +10,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	ethclient "github.com/cosmos/evm/client"
-	clientkeys "github.com/cosmos/evm/client/keys"
-	"github.com/cosmos/evm/crypto/hd"
+	ethclient "github.com/evmos/ethermint/client"
+	clientkeys "github.com/evmos/ethermint/client/keys"
+	"github.com/evmos/ethermint/crypto/hd"
 )
 
 var ethFlag = "eth"

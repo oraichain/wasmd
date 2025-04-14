@@ -7,8 +7,8 @@ import (
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/evm/x/vm/statedb"
 	"github.com/ethereum/go-ethereum/precompile/contract"
+	"github.com/evmos/ethermint/x/evm/statedb"
 )
 
 func ValidateArgsLength(args []interface{}, length int) error {

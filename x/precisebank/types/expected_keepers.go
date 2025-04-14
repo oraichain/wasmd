@@ -20,7 +20,6 @@ type BankKeeper interface {
 	GetSupply(ctx context.Context, denom string) sdk.Coin
 	SpendableCoin(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	SpendableCoins(ctx context.Context, addr sdk.AccAddress) sdk.Coins
-	GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins
 
 	BlockedAddr(addr sdk.AccAddress) bool
 
