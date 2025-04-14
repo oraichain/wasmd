@@ -75,7 +75,7 @@ func NewDefaultGenesisState(cdc codec.Codec, moduleBasics module.BasicManager) G
 	genesisSate[evm.ModuleName] = cdc.MustMarshalJSON(evmGenesis)
 
 	// custom fee market genesis state
-	feeMarketGenesis.Params.BaseFee = sdkmath.NewInt(1)
+	feeMarketGenesis.Params.BaseFee = sdkmath.LegacyNewDec(1)
 	feeMarketGenesis.Params.BaseFeeChangeDenominator = 2
 	feeMarketGenesis.Params.NoBaseFee = true
 	genesisSate[feemarket.ModuleName] = cdc.MustMarshalJSON(feeMarketGenesis)
