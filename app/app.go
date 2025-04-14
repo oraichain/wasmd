@@ -159,9 +159,7 @@ import (
 	tokenfactorykeeper "github.com/CosmWasm/wasmd/x/tokenfactory/keeper"
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 
-	simappparams "cosmossdk.io/simapp/params"
 	evmante "github.com/cosmos/evm/ante/evm"
-	evmv1 "github.com/cosmos/evm/api/cosmos/evm/vm/v1"
 	"github.com/cosmos/evm/ethereum/eip712"
 	etherminttypes "github.com/cosmos/evm/types"
 	"github.com/cosmos/evm/x/feemarket"
@@ -170,7 +168,6 @@ import (
 	evm "github.com/cosmos/evm/x/vm"
 	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
-	protov2 "google.golang.org/protobuf/proto"
 
 	enccodec "github.com/cosmos/evm/encoding/codec"
 	"github.com/cosmos/evm/x/erc20"
@@ -359,7 +356,8 @@ func NewWasmApp(
 	}
 
 	// evm/MsgEthereumTx
-	signingOptions.DefineCustomGetSigners(protov2.MessageName(&evmv1.MsgEthereumTx{}), evmtypes.GetSignersFromMsgEthereumTxV2)
+	signingOptions.DefineCustomGetSigners(evmtypes.MsgEthereumTxCustomGetSigner.MsgType, evmtypes.MsgEthereumTxCustomGetSigner.Fn)
+	signingOptions.DefineCustomGetSigners(erc20types.MsgConvertERC20CustomGetSigner.MsgType, erc20types.MsgConvertERC20CustomGetSigner.Fn)
 
 	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles:     proto.HybridResolver,
@@ -372,14 +370,7 @@ func NewWasmApp(
 	legacyAmino := codec.NewLegacyAmino()
 	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
 
-	encodingConfig := simappparams.EncodingConfig{
-		InterfaceRegistry: interfaceRegistry,
-		Codec:             appCodec,
-		TxConfig:          txConfig,
-		Amino:             legacyAmino,
-	}
-
-	eip712.SetEncodingConfig(encodingConfig)
+	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry)
 
 	// Below we could construct and set an application specific mempool and
 	// ABCI 1.0 PrepareProposal and ProcessProposal handlers. These defaults are
