@@ -4,6 +4,7 @@ import (
 	"embed"
 	_ "embed"
 	"fmt"
+	"math/big"
 
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	cmn "github.com/cosmos/evm/precompiles/common"
@@ -51,19 +52,33 @@ const (
 	BurnMethod        = "burn"
 )
 
+type CoinBalance struct {
+	Amount *big.Int
+	Denom  string
+}
+
 type Precompile struct {
 	cmn.Precompile
-	bankKeeper pcommon.BankKeeper
+	evmKeeper     pcommon.EVMKeeper
+	bankKeeper    pcommon.BankKeeper
+	accountKeeper pcommon.AccountKeeper
+	authzKeeper   pcommon.AuthzKeeper
 }
 
 func NewPrecompile(
+	evmKeeper pcommon.EVMKeeper,
 	bankKeeper pcommon.BankKeeper,
+	accountKeeper pcommon.AccountKeeper,
+	authzKeeper pcommon.AuthzKeeper,
 ) (*Precompile, error) {
 	p := &Precompile{
 		Precompile: cmn.Precompile{
 			ABI: ABI,
 		},
-		bankKeeper: bankKeeper,
+		evmKeeper:     evmKeeper,
+		bankKeeper:    bankKeeper,
+		accountKeeper: accountKeeper,
+		authzKeeper:   authzKeeper,
 	}
 
 	// SetAddress defines the address of the bank precompile contract.
@@ -77,7 +92,7 @@ func (p Precompile) Address() common.Address {
 }
 
 // RequiredGas calculates the precompiled contract's base gas rate.
-func (p Precompile) RequireGas(input []byte) uint64 {
+func (p Precompile) RequiredGas(input []byte) uint64 {
 	// NOTE: This check avoid panicking when trying to decode the method ID
 	if len(input) < 4 {
 		return 0
