@@ -52,7 +52,7 @@ func (p Precompile) queryCosmWasm(
 	contractAddr sdk.AccAddress,
 	req []byte,
 ) ([]byte, error) {
-	queryRes, err := p.WasmKeeper.QuerySmart(ctx, contractAddr, req)
+	queryRes, err := p.WasmViewKeeper.QuerySmart(ctx, contractAddr, req)
 	if err != nil {
 		return nil, err
 	}

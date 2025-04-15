@@ -905,6 +905,8 @@ func NewWasmApp(
 			app.TransferKeeper,
 			app.IBCKeeper.ChannelKeeper,
 			app.EvmKeeper,
+			app.ContractKeeper,
+			app.WasmKeeper,
 			app.GovKeeper,
 			app.SlashingKeeper,
 			app.EvidenceKeeper,

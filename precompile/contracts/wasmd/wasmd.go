@@ -40,17 +40,19 @@ const (
 // Precompile defines the precompiled contract for wasmd.
 type Precompile struct {
 	cmn.Precompile
-	EVMKeeper  pcommon.EVMKeeper
-	WasmKeeper pcommon.WasmdKeeper
+	EVMKeeper      pcommon.EVMKeeper
+	WasmKeeper     pcommon.WasmdKeeper
+	WasmViewKeeper pcommon.WasmdViewKeeper
 }
 
-func NewPrecompile(wasmKeeper pcommon.WasmdKeeper, evmKeeper pcommon.EVMKeeper) (*Precompile, error) {
+func NewPrecompile(wasmKeeper pcommon.WasmdKeeper, wasmViewKeeper pcommon.WasmdViewKeeper, evmKeeper pcommon.EVMKeeper) (*Precompile, error) {
 	p := &Precompile{
 		Precompile: cmn.Precompile{
 			ABI: ABI,
 		},
-		EVMKeeper:  evmKeeper,
-		WasmKeeper: wasmKeeper,
+		EVMKeeper:      evmKeeper,
+		WasmKeeper:     wasmKeeper,
+		WasmViewKeeper: wasmViewKeeper,
 	}
 
 	// SetAddress defines the address of the bank compile contract.

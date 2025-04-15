@@ -5,6 +5,8 @@ import (
 	"maps"
 
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
+	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	wasmprecompile "github.com/CosmWasm/wasmd/precompile/contracts/wasmd"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
@@ -42,6 +44,8 @@ func NewAvailableStaticPrecompiles(
 	transferKeeper transferkeeper.Keeper,
 	channelKeeper channelkeeper.Keeper,
 	evmKeeper *evmkeeper.Keeper,
+	wasmKeeper pcommon.WasmdKeeper,
+	wasmViewKeeper pcommon.WasmdViewKeeper,
 	govKeeper govkeeper.Keeper,
 	slashingKeeper slashingkeeper.Keeper,
 	evidenceKeeper evidencekeeper.Keeper,
@@ -101,6 +105,12 @@ func NewAvailableStaticPrecompiles(
 	evidencePrecompile, err := evidenceprecompile.NewPrecompile(evidenceKeeper, authzKeeper)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate evidence precompile: %w", err))
+	}
+
+	// Oraichain custom precompile contract
+	wasmdPrecompile, err := wasmprecompile.NewPrecompile(wasmKeeper, wasmViewKeeper, evmKeeper)
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate wasmd precompile: %w", err))
 	}
 
 	// Stateless precompiles
