@@ -6,6 +6,7 @@ import (
 
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	bankprecompile "github.com/CosmWasm/wasmd/precompile/contracts/bank"
 	wasmprecompile "github.com/CosmWasm/wasmd/precompile/contracts/wasmd"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -13,7 +14,6 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	bankprecompile "github.com/cosmos/evm/precompiles/bank"
 	"github.com/cosmos/evm/precompiles/bech32"
 	distprecompile "github.com/cosmos/evm/precompiles/distribution"
 	evidenceprecompile "github.com/cosmos/evm/precompiles/evidence"
@@ -87,7 +87,7 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate ICS20 precompile: %w", err))
 	}
 
-	bankPrecompile, err := bankprecompile.NewPrecompile(bankKeeper, erc20Keeper)
+	bankPrecompile, err := bankprecompile.NewPrecompile(evmKeeper, bankKeeper, authzKeeper)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate bank precompile: %w", err))
 	}
@@ -129,6 +129,7 @@ func NewAvailableStaticPrecompiles(
 	// oraichain custom precompile contract
 	// Statefull precompiles
 	precompiles[wasmdPrecompile.Address()] = wasmdPrecompile
+	precompiles[bankPrecompile.Address()] = bankPrecompile
 
 	return precompiles
 }
