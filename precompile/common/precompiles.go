@@ -11,6 +11,14 @@ import (
 	"github.com/ethereum/go-ethereum/precompile/contract"
 )
 
+/*
+address constant WASMD_PRECOMPILE_ADDRESS = 0x9000000000000000000000000000000000000001;
+address constant JSON_PRECOMPILE_ADDRESS = 0x9000000000000000000000000000000000000002;
+address constant ADDR_PRECOMPILE_ADDRESS = 0x9000000000000000000000000000000000000003;
+address constant BANK_PRECOMPILE_ADDRESS = 0x9000000000000000000000000000000000000004;
+address constant AUTHZ_PRECOMPILE_ADDRESS = 0x9000000000000000000000000000000000000005;
+*/
+
 func ValidateArgsLength(args []interface{}, length int) error {
 	if len(args) != length {
 		return fmt.Errorf("expected %d arguments but got %d", length, len(args))

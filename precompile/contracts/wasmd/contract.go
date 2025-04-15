@@ -1,288 +1,61 @@
 package wasmd
 
 import (
-	"bytes"
 	_ "embed"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"math/big"
 
-	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/precompile/contract"
 )
 
-// Singleton StatefulPrecompiledContract.
-var (
-	// RawABI contains the raw ABI of wasmd contract.
-	//go:embed abi.json
-	RawABI string
-
-	ABI = contract.MustParseABI(RawABI)
-)
-
-type PrecompileExecutor struct {
-	wasmdKeeper     pcommon.WasmdKeeper
-	wasmdViewKeeper pcommon.WasmdViewKeeper
-	evmKeeper       pcommon.EVMKeeper
-}
-
-func (p PrecompileExecutor) instantiateCosmWasm(
-	accessibleState contract.AccessibleState,
+func (p Precompile) instantiateCosmWasm(
+	ctx sdk.Context,
+	method *abi.Method,
 	caller common.Address,
-	callingContract common.Address,
-	packedInput []byte,
-	suppliedGas uint64,
-	readOnly bool,
-	value *big.Int,
-) (ret []byte, remainingGas uint64, rerr error) {
+	codeID uint64,
+	adminAddr sdk.AccAddress,
+	msg []byte,
+	label string,
+	deposit sdk.Coins,
+) ([]byte, error) {
+	creator := p.EVMKeeper.GetCosmosAddressMapping(ctx, caller)
 
-	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
-	if rerr != nil {
-		return
-	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			ret = nil
-			remainingGas = 0
-			rerr = fmt.Errorf("%s", err)
-			ctx.Logger().Error("Error instantiating cosmwasm using precompile: ", rerr.Error())
-			return
-		}
-	}()
-	if readOnly {
-		rerr = errors.New("cannot call instantiate from staticcall")
-		return
-	}
-
-	if !bytes.Equal(caller.Bytes(), callingContract.Bytes()) {
-		rerr = errors.New("cannot delegatecall instantiate")
-		return
-	}
-
-	method := ABI.Methods["instantiate"]
-
-	res, err := method.Inputs.Unpack(packedInput)
+	addr, data, err := p.WasmKeeper.Instantiate(ctx, codeID, creator, adminAddr, msg, label, deposit)
 	if err != nil {
-		rerr = err
-		return
+		return nil, err
 	}
 
-	codeID := res[0].(uint64)
-	admin := res[1].(string)
-	msg := res[2].([]byte)
-	label := res[3].(string)
-	funds := res[4].([]byte)
-
-	// unmarshal funds
-	deposit := UnmarshalCosmWasmDeposit(funds)
-
-	creator := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
-
-	adminAddr, err := sdk.AccAddressFromBech32(admin)
-	if err != nil {
-		rerr = err
-		return
-	}
-
-	addr, data, err := p.wasmdKeeper.Instantiate(ctx, codeID, creator, adminAddr, msg, label, deposit)
-	if err != nil {
-		rerr = err
-		return
-	}
-
-	cosmosGasUsed := ctx.GasMeter().GasConsumed()
-
-	ret, rerr = method.Outputs.Pack(addr.String(), data)
-
-	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed-initialGas)
-
-	return
+	return method.Outputs.Pack(addr.String(), data)
 }
 
-func (p PrecompileExecutor) executeCosmWasm(
-	accessibleState contract.AccessibleState,
+func (p Precompile) executeCosmWasm(
+	ctx sdk.Context,
+	method *abi.Method,
 	caller common.Address,
-	callingContract common.Address,
-	packedInput []byte,
-	suppliedGas uint64,
-	readOnly bool,
-	value *big.Int,
-) (ret []byte, remainingGas uint64, rerr error) {
+	contractAddr sdk.AccAddress,
+	msg []byte,
+	deposit sdk.Coins,
+) ([]byte, error) {
+	senderAddr := p.EVMKeeper.GetCosmosAddressMapping(ctx, caller)
 
-	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
-	if rerr != nil {
-		return
-	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			ret = nil
-			remainingGas = 0
-			rerr = fmt.Errorf("%s", err)
-			ctx.Logger().Error("Error executing cosmwasm using precompile: ", rerr.Error())
-			return
-		}
-	}()
-	if readOnly {
-		rerr = errors.New("cannot call execute from staticcall")
-		return
-	}
-
-	method := ABI.Methods["execute"]
-
-	res, err := method.Inputs.Unpack(packedInput)
+	exeRes, err := p.WasmKeeper.Execute(ctx, contractAddr, senderAddr, msg, deposit)
 	if err != nil {
-		rerr = err
-		return
+		return nil, err
 	}
 
-	contractAddress := res[0].(string)
-	msg := res[1].([]byte)
-	funds := res[2].([]byte)
-
-	// unmarshal funds
-	deposit := UnmarshalCosmWasmDeposit(funds)
-
-	senderAddr := p.evmKeeper.GetCosmosAddressMapping(ctx, caller)
-
-	// addresses will be sent in Cosmos format
-	contractAddr, err := sdk.AccAddressFromBech32(contractAddress)
-	if err != nil {
-		rerr = err
-		return
-	}
-
-	exeRes, err := p.wasmdKeeper.Execute(ctx, contractAddr, senderAddr, msg, deposit)
-
-	if err != nil {
-		rerr = err
-		return
-	}
-
-	cosmosGasUsed := ctx.GasMeter().GasConsumed()
-
-	ret, rerr = method.Outputs.Pack(exeRes)
-
-	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed-initialGas)
-
-	return
-
+	return method.Outputs.Pack(exeRes)
 }
 
-func (p PrecompileExecutor) queryCosmWasm(
-	accessibleState contract.AccessibleState,
-	caller common.Address,
-	addr common.Address,
-	packedInput []byte,
-	suppliedGas uint64,
-	readOnly bool,
-	value *big.Int,
-) (ret []byte, remainingGas uint64, rerr error) {
-
-	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
-	if rerr != nil {
-		return
-	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			ret = nil
-			remainingGas = 0
-			rerr = fmt.Errorf("%s", err)
-			fmt.Println("rerr: ", rerr)
-			ctx.Logger().Error("Error querying cosmwasm using precompile: ", rerr.Error())
-			return
-		}
-	}()
-
-	if value != nil && value.Sign() != 0 {
-		rerr = errors.New("sending funds to a non-payable function")
-		return
-	}
-
-	method := ABI.Methods["query"]
-
-	res, err := method.Inputs.Unpack(packedInput)
+func (p Precompile) queryCosmWasm(
+	ctx sdk.Context,
+	method *abi.Method,
+	contractAddr sdk.AccAddress,
+	req []byte,
+) ([]byte, error) {
+	queryRes, err := p.WasmKeeper.QuerySmart(ctx, contractAddr, req)
 	if err != nil {
-		rerr = err
-		return
+		return nil, err
 	}
 
-	contractAddress := res[0].(string)
-	req := res[1].([]byte)
-
-	// addresses will be sent in Cosmos format
-	contractAddr, err := sdk.AccAddressFromBech32(contractAddress)
-	if err != nil {
-		rerr = err
-		return
-	}
-
-	queryRes, err := p.wasmdViewKeeper.QuerySmart(ctx, contractAddr, req)
-	if err != nil {
-		rerr = err
-		return
-	}
-
-	cosmosGasUsed := ctx.GasMeter().GasConsumed()
-
-	ret, rerr = method.Outputs.Pack(queryRes)
-
-	remainingGas, rerr = contract.DeductGas(suppliedGas, cosmosGasUsed-initialGas)
-
-	return
-
-}
-
-// NewContract returns a new wasmd stateful precompiled contract.
-//
-//	This contract is used for testing purposes only and should not be used on public chains.
-//	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
-//	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
-//	still to be determined.
-func NewContract(wasmdKeeper pcommon.WasmdKeeper, wasmdViewKeeper pcommon.WasmdViewKeeper, evmKeeper pcommon.EVMKeeper) contract.StatefulPrecompiledContract {
-
-	executor := &PrecompileExecutor{
-		wasmdKeeper:     wasmdKeeper,
-		wasmdViewKeeper: wasmdViewKeeper,
-		evmKeeper:       evmKeeper,
-	}
-
-	functions := []*contract.StatefulPrecompileFunction{
-		contract.NewStatefulPrecompileFunction(
-			ABI.Methods["instantiate"].ID,
-			executor.instantiateCosmWasm,
-		),
-		contract.NewStatefulPrecompileFunction(
-			ABI.Methods["execute"].ID,
-			executor.executeCosmWasm,
-		),
-		contract.NewStatefulPrecompileFunction(
-			ABI.Methods["query"].ID,
-			executor.queryCosmWasm,
-		),
-	}
-
-	// Construct the contract with functions.
-	precompile, err := contract.NewStatefulPrecompileContract(functions)
-
-	if err != nil {
-		panic(fmt.Sprintf("failed to instantiate wasmd precompile: %s", err.Error()))
-	}
-
-	return precompile
-}
-
-func UnmarshalCosmWasmDeposit(coins []byte) sdk.Coins {
-	// unmarshal coins
-	var deposit sdk.Coins
-	err := json.Unmarshal(coins, &deposit)
-	if err != nil {
-		return sdk.NewCoins()
-	}
-	return deposit
+	return method.Outputs.Pack(queryRes)
 }

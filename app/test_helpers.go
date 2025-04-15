@@ -45,7 +45,6 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/CosmWasm/wasmd/precompile/registry"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 )
 
@@ -150,7 +149,7 @@ func Setup(t *testing.T, opts ...wasmkeeper.Option) *WasmApp {
 
 	app := SetupWithGenesisValSet(t, valSet, []authtypes.GenesisAccount{acc}, SimAppChainID, opts, balance)
 	// register precompile contracts
-	registry.InitializePrecompiles(app.ContractKeeper, app.WasmKeeper, app.EvmKeeper, app.BankKeeper, app.AccountKeeper, app.AuthzKeeper)
+	// registry.InitializePrecompiles(app.ContractKeeper, app.WasmKeeper, app.EvmKeeper, app.BankKeeper, app.AccountKeeper, app.AuthzKeeper)
 
 	return app
 }
