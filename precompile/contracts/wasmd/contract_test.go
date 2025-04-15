@@ -12,20 +12,18 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/precompile/contracts/wasmd"
-	"github.com/CosmWasm/wasmd/precompile/registry"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/evm/x/vm/core/vm"
 	"github.com/cosmos/evm/x/vm/statedb"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 	"github.com/cosmos/go-bip39"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/precompile/modules"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -99,7 +97,7 @@ func TestUnmarshalCosmWasmDeposit(t *testing.T) {
 // if we attempt to define invalid or duplicate function selectors.
 func TestContractConstructor(t *testing.T) {
 	wasmer := &MockWasmer{}
-	precompile, err := wasmd.NewPrecompile(wasmer, nil)
+	precompile, err := wasmd.NewPrecompile(wasmer, wasmer, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, precompile, "expected precompile contract to be defined")
 }
@@ -124,8 +122,12 @@ func TestExecuteAndQuery(t *testing.T) {
 	codeID, _, err := tApp.ContractKeeper.Create(ctx, mockAddr, code, nil)
 	require.Nil(t, err)
 
-	p, _ := modules.GetPrecompileModuleByAddress(registry.WasmdContractAddress)
-	require.NotNil(t, p.Contract)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(wasmd.WasmdContractAddress))
+	require.True(t, found)
+	require.NoError(t, err)
+
+	contract := p.Map[common.HexToAddress(wasmd.WasmdContractAddress)]
+	require.NotNil(t, contract)
 
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
@@ -136,12 +138,15 @@ func TestExecuteAndQuery(t *testing.T) {
 
 	args, err := instantiateMethod.Inputs.Pack(codeID, mockAddr.String(), []byte("{}"), "test", []byte("foo"))
 	require.Nil(t, err)
-	res, suppliedGas, err := p.Contract.Run(&evm, registry.WasmdContractAddress, registry.WasmdContractAddress,
+	res, suppliedGas, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(mockEVMAddr),
 		append(instantiateMethod.ID, args...),
 		suppliedGas,
-		false,
 		nil,
+		false,
 	)
+
 	require.Nil(t, err)
 	rets, _ := instantiateMethod.Outputs.Unpack(res)
 	cosmwasmAddr := rets[0].(string)
@@ -156,11 +161,13 @@ func TestExecuteAndQuery(t *testing.T) {
 	args, err = executeMethod.Inputs.Pack(cosmwasmAddr, []byte("{\"echo\":{\"message\":\"test msg\"}}"), fundsBz)
 	require.Nil(t, err)
 
-	res, suppliedGas, err = p.Contract.Run(&evm, mockEVMAddr, registry.WasmdContractAddress,
-		append(executeMethod.ID, args...),
+	res, suppliedGas, err = evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(mockEVMAddr),
+		append(instantiateMethod.ID, args...),
 		suppliedGas,
-		false,
 		nil,
+		false,
 	)
 	require.Nil(t, err)
 	rets, _ = executeMethod.Outputs.Unpack(res)
@@ -177,11 +184,13 @@ func TestExecuteAndQuery(t *testing.T) {
 	args, err = queryMethod.Inputs.Pack(cosmwasmAddr, []byte("{\"info\":{}}"))
 	require.Nil(t, err)
 
-	res, suppliedGas, err = p.Contract.Run(&evm, mockEVMAddr, registry.WasmdContractAddress,
-		append(queryMethod.ID, args...),
+	res, suppliedGas, err = evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(mockEVMAddr),
+		append(instantiateMethod.ID, args...),
 		suppliedGas,
-		false,
 		nil,
+		false,
 	)
 	require.Nil(t, err)
 	rets, _ = queryMethod.Outputs.Unpack(res)

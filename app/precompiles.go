@@ -126,5 +126,9 @@ func NewAvailableStaticPrecompiles(
 	precompiles[slashingPrecompile.Address()] = slashingPrecompile
 	precompiles[evidencePrecompile.Address()] = evidencePrecompile
 
+	// oraichain custom precompile contract
+	// Statefull precompiles
+	precompiles[wasmdPrecompile.Address()] = wasmdPrecompile
+
 	return precompiles
 }
