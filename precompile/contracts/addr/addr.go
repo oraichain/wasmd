@@ -25,7 +25,12 @@ var (
 const (
 	AddrContractAddress = "0x9000000000000000000000000000000000000003"
 
-	// TODO: need to define gas for each method
+	// Define the minumum gas required needed for each method
+	// TODO: need to re-define gas required here
+	AssociateMethodRequiredGas        = 5_000_000
+	AssociatePubKeyMethodRequiredGas  = 5_000_000
+	GetCosmosAddressMethodRequiredGas = 30_000
+	GetEvmAddressMethodRequiredGas    = 30_000
 
 	// Execute methods
 	AssociateMethod       = "associate"
@@ -62,7 +67,26 @@ func (p Precompile) Address() common.Address {
 
 // RequiredGas calculates the precompiled contract's base gas rate.
 func (p Precompile) RequiredGas(input []byte) uint64 {
-	// TODO: need to define gas for each method
+	if len(input) < 4 {
+		return 0
+	}
+	methodID := input[:4]
+
+	method, err := p.MethodById(methodID)
+	if err != nil {
+		return 0
+	}
+
+	switch method.Name {
+	case AssociateMethod:
+		return AssociateMethodRequiredGas
+	case AssociatePubKeyMethod:
+		return AssociatePubKeyMethodRequiredGas
+	case GetCosmosAddressMethod:
+		return GetCosmosAddressMethodRequiredGas
+	case GetEvmAddressMethod:
+		return GetEvmAddressMethodRequiredGas
+	}
 
 	return 0
 }
@@ -73,7 +97,7 @@ func (p Precompile) Run(
 	contract *vm.Contract,
 	readOnly bool,
 ) (bz []byte, err error) {
-	ctx, stateDB, snapshot, method, initialGas, _, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+	ctx, stateDB, snapshot, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
 	if err != nil {
 		return nil, err
 	}
@@ -84,13 +108,17 @@ func (p Precompile) Run(
 
 	switch method.Name {
 	case AssociateMethod:
-		// TODO: implement the logic for the associate method
+		bz, err = p.Associate(ctx, contract, method, args)
+		break
 	case AssociatePubKeyMethod:
-		// TODO: implement the logic for the associatePubKey method
+		bz, err = p.AssociatePubKey(ctx, contract, method, args)
+		break
 	case GetCosmosAddressMethod:
-		// TODO: implement the logic for the getCosmosAddr method
+		bz, err = p.GetCosmosAddr(ctx, contract, method, args)
+		break
 	case GetEvmAddressMethod:
-		// TODO: implement the logic for the getEvmAddr method
+		bz, err = p.GetEvmAddr(ctx, contract, method, args)
+		break
 	default:
 		return nil, fmt.Errorf(cmn.ErrUnknownMethod, method.Name)
 	}
@@ -124,45 +152,6 @@ func (Precompile) IsTransaction(method *abi.Method) bool {
 
 	return false
 }
-
-// // NewContract returns a new addr stateful precompiled contract.
-// //
-// //	This contract is used for testing purposes only and should not be used on public chains.
-// //	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
-// //	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
-// //	still to be determined.
-// func NewContract(evmKeeper pcommon.EVMKeeper) contract.StatefulPrecompiledContract {
-
-// 	executor := &PrecompileExecutor{evmKeeper: evmKeeper}
-
-// 	functions := []*contract.StatefulPrecompileFunction{
-// 		contract.NewStatefulPrecompileFunction(
-// 			ABI.Methods[GetCosmosAddressMethod].ID,
-// 			executor.getCosmosAddr,
-// 		),
-// 		contract.NewStatefulPrecompileFunction(
-// 			ABI.Methods[GetEvmAddressMethod].ID,
-// 			executor.getEvmAddr,
-// 		),
-// 		contract.NewStatefulPrecompileFunction(
-// 			ABI.Methods[AssociateMethod].ID,
-// 			executor.associate,
-// 		),
-// 		contract.NewStatefulPrecompileFunction(
-// 			ABI.Methods[AssociatePubKeyMethod].ID,
-// 			executor.associatePublicKey,
-// 		),
-// 	}
-
-// 	// Construct the contract with functions.
-// 	precompile, err := contract.NewStatefulPrecompileContract(functions)
-
-// 	if err != nil {
-// 		panic(fmt.Sprintf("failed to instantiate addr precompile: %s", err.Error()))
-// 	}
-
-// 	return precompile
-// }
 
 // func (p PrecompileExecutor) getCosmosAddr(accessibleState contract.AccessibleState,
 // 	caller common.Address,
