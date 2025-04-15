@@ -1,14 +1,9 @@
 package common
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math/big"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/evm/x/vm/statedb"
-	"github.com/ethereum/go-ethereum/precompile/contract"
 )
 
 /*
@@ -35,13 +30,13 @@ func ValidateNonPayable(value *big.Int) error {
 	return nil
 }
 
-func GetPrecompileCtx(accessibleState contract.AccessibleState) (sdk.Context, uint64, error) {
-	stateDB, ok := accessibleState.GetStateDB().(*statedb.StateDB)
-	if !ok {
-		return sdk.UnwrapSDKContext(context.Background()), 0, errors.New("cannot get context from EVM")
-	}
+// func GetPrecompileCtx(accessibleState contract.AccessibleState) (sdk.Context, uint64, error) {
+// 	stateDB, ok := accessibleState.GetStateDB().(*statedb.StateDB)
+// 	if !ok {
+// 		return sdk.UnwrapSDKContext(context.Background()), 0, errors.New("cannot get context from EVM")
+// 	}
 
-	ctx := stateDB.Ctx()
-	initialGas := ctx.GasMeter().GasConsumed()
-	return ctx, initialGas, nil
-}
+// 	ctx := stateDB.Ctx()
+// 	initialGas := ctx.GasMeter().GasConsumed()
+// 	return ctx, initialGas, nil
+// }

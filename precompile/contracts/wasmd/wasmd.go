@@ -1,12 +1,13 @@
 package wasmd
 
 import (
-	"embed"
+	_ "embed"
 	"fmt"
 
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	cmn "github.com/cosmos/evm/precompiles/common"
 	"github.com/cosmos/evm/x/vm/core/vm"
+	"github.com/ethereum/go-ethereum/precompile/contract"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -14,10 +15,14 @@ import (
 
 var _ vm.PrecompiledContract = &Precompile{}
 
-// Embed abi json file to the executable binary. Needed when importing as dependency.
-//
-//go:embed abi.json
-var f embed.FS
+// Singleton StatefulPrecompiledContract.
+var (
+	// RawABI contains the raw ABI of wasmd contract.
+	//go:embed abi.json
+	RawABI string
+
+	ABI = contract.MustParseABI(RawABI)
+)
 
 const (
 	WasmdContractAddress = "0x9000000000000000000000000000000000000001"
@@ -39,21 +44,10 @@ type Precompile struct {
 	WasmKeeper pcommon.WasmdKeeper
 }
 
-// LoadABI loads the slashing ABI from the embedded abi.json file
-// for the slashing precompile.
-func LoadABI() (abi.ABI, error) {
-	return cmn.LoadABI(f, "abi.json")
-}
-
 func NewPrecompile(wasmKeeper pcommon.WasmdKeeper, evmKeeper pcommon.EVMKeeper) (*Precompile, error) {
-	abi, err := LoadABI()
-	if err != nil {
-		return nil, err
-	}
-
 	p := &Precompile{
 		Precompile: cmn.Precompile{
-			ABI: abi,
+			ABI: ABI,
 		},
 		EVMKeeper:  evmKeeper,
 		WasmKeeper: wasmKeeper,
