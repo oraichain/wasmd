@@ -4,8 +4,14 @@ import (
 	"fmt"
 	"maps"
 
+	"github.com/cosmos/evm/precompiles/bech32"
+	"github.com/cosmos/evm/precompiles/p256"
+	"github.com/cosmos/evm/x/vm/core/vm"
+	"github.com/ethereum/go-ethereum/common"
+
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	addrprecompile "github.com/CosmWasm/wasmd/precompile/contracts/addr"
 	wasmprecompile "github.com/CosmWasm/wasmd/precompile/contracts/wasmd"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -14,20 +20,16 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	bankprecompile "github.com/cosmos/evm/precompiles/bank"
-	"github.com/cosmos/evm/precompiles/bech32"
 	distprecompile "github.com/cosmos/evm/precompiles/distribution"
 	evidenceprecompile "github.com/cosmos/evm/precompiles/evidence"
 	govprecompile "github.com/cosmos/evm/precompiles/gov"
 	ics20precompile "github.com/cosmos/evm/precompiles/ics20"
-	"github.com/cosmos/evm/precompiles/p256"
 	slashingprecompile "github.com/cosmos/evm/precompiles/slashing"
 	stakingprecompile "github.com/cosmos/evm/precompiles/staking"
 	erc20Keeper "github.com/cosmos/evm/x/erc20/keeper"
 	transferkeeper "github.com/cosmos/evm/x/ibc/transfer/keeper"
-	"github.com/cosmos/evm/x/vm/core/vm"
 	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
 	channelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 const bech32PrecompileBaseGas = 6_000
@@ -113,6 +115,11 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate wasmd precompile: %w", err))
 	}
 
+	addrPrecompile, err := addrprecompile.NewPrecompile(evmKeeper)
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate addr precompile: %w", err))
+	}
+
 	// Stateless precompiles
 	precompiles[bech32Precompile.Address()] = bech32Precompile
 	precompiles[p256Precompile.Address()] = p256Precompile
@@ -129,6 +136,7 @@ func NewAvailableStaticPrecompiles(
 	// oraichain custom precompile contract
 	// Statefull precompiles
 	precompiles[wasmdPrecompile.Address()] = wasmdPrecompile
+	precompiles[addrPrecompile.Address()] = addrPrecompile
 
 	return precompiles
 }

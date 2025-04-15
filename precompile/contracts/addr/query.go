@@ -12,9 +12,14 @@ func (p Precompile) GetCosmosAddr(
 	method *abi.Method,
 	args []interface{},
 ) ([]byte, error) {
-	// TODO: implement the logic for the getCosmosAddr method
+	evmAddress, err := ParseGetCosmosAddrArgs(args)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	cosmosAddress := p.EVMKeeper.GetCosmosAddressMapping(ctx, evmAddress)
+
+	return method.Outputs.Pack(cosmosAddress)
 }
 
 func (p Precompile) GetEvmAddr(
@@ -23,7 +28,20 @@ func (p Precompile) GetEvmAddr(
 	method *abi.Method,
 	args []interface{},
 ) ([]byte, error) {
-	// TODO: implement the logic for the getEvmAddr method
+	cosmosAddress, err := ParseGetEvmAddrArgs(args)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	cosmosSdkAddress, err := sdk.AccAddressFromBech32(cosmosAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	evmAddress, err := p.EVMKeeper.GetEvmAddressMapping(ctx, cosmosSdkAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	return method.Outputs.Pack(evmAddress)
 }
