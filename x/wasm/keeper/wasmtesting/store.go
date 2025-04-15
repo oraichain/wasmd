@@ -23,3 +23,8 @@ type mockCMS struct {
 func (m *mockCMS) Write() {
 	*m.committed = true
 }
+
+// TODO: This is new function for evm. Need to check if it impact to other feature?
+func (m *mockCMS) Copy() storetypes.CacheMultiStore {
+	return m.CacheMultiStore()
+}
