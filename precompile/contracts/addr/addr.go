@@ -1,43 +1,129 @@
 package addr
 
-// import (
-// 	_ "embed"
-// 	"encoding/base64"
-// 	"encoding/hex"
-// 	"errors"
-// 	"fmt"
-// 	"math/big"
-// 	"strings"
+import (
+	_ "embed"
+	"fmt"
 
-// 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
-// 	"github.com/btcsuite/btcd/btcec/v2"
-// 	sdk "github.com/cosmos/cosmos-sdk/types"
-// 	evmtypes "github.com/cosmos/evm/x/vm/types"
-// 	"github.com/ethereum/go-ethereum/common"
-// 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-// 	"github.com/ethereum/go-ethereum/crypto"
-// 	"github.com/ethereum/go-ethereum/precompile/contract"
-// )
+	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	cmn "github.com/cosmos/evm/precompiles/common"
 
-// // Singleton StatefulPrecompiledContract.
-// var (
-// 	// RawABI contains the raw ABI of addr contract.
-// 	//go:embed abi.json
-// 	RawABI string
+	"github.com/cosmos/evm/x/vm/core/vm"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/precompile/contract"
+)
 
-// 	ABI = contract.MustParseABI(RawABI)
-// )
+// Singleton StatefulPrecompiledContract.
+var (
+	// RawABI contains the raw ABI of addr contract.
+	//go:embed abi.json
+	RawABI string
 
-// const (
-// 	GetCosmosAddressMethod = "getCosmosAddr"
-// 	GetEvmAddressMethod    = "getEvmAddr"
-// 	AssociateMethod        = "associate"
-// 	AssociatePubKeyMethod  = "associatePubKey"
-// )
+	ABI = contract.MustParseABI(RawABI)
+)
 
-// type PrecompileExecutor struct {
-// 	evmKeeper pcommon.EVMKeeper
-// }
+const (
+	AddrContractAddress = "0x9000000000000000000000000000000000000003"
+
+	// TODO: need to define gas for each method
+
+	// Execute methods
+	AssociateMethod       = "associate"
+	AssociatePubKeyMethod = "associatePubKey"
+
+	// Query methods
+	GetCosmosAddressMethod = "getCosmosAddr"
+	GetEvmAddressMethod    = "getEvmAddr"
+)
+
+// Precompile defines the precompiled contract for addr.
+type Precompile struct {
+	cmn.Precompile
+	EVMKeeper pcommon.EVMKeeper
+}
+
+func NewPrecompile(evmKeeper pcommon.EVMKeeper) (*Precompile, error) {
+	p := &Precompile{
+		Precompile: cmn.Precompile{
+			ABI: ABI,
+		},
+		EVMKeeper: evmKeeper,
+	}
+
+	// SetAddress defines the address of the addr compile contract.
+	p.SetAddress(common.HexToAddress(AddrContractAddress))
+
+	return p, nil
+}
+
+func (p Precompile) Address() common.Address {
+	return p.Precompile.Address()
+}
+
+// RequiredGas calculates the precompiled contract's base gas rate.
+func (p Precompile) RequiredGas(input []byte) uint64 {
+	// TODO: need to define gas for each method
+
+	return 0
+}
+
+// Run executes the precompiled contract addr methods defined in the ABI.
+func (p Precompile) Run(
+	evm *vm.EVM,
+	contract *vm.Contract,
+	readOnly bool,
+) (bz []byte, err error) {
+	ctx, stateDB, snapshot, method, initialGas, _, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+	if err != nil {
+		return nil, err
+	}
+
+	// This handles any out of gas errors that may occur during the execution of a precompile.
+	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
+	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
+
+	switch method.Name {
+	case AssociateMethod:
+		// TODO: implement the logic for the associate method
+	case AssociatePubKeyMethod:
+		// TODO: implement the logic for the associatePubKey method
+	case GetCosmosAddressMethod:
+		// TODO: implement the logic for the getCosmosAddr method
+	case GetEvmAddressMethod:
+		// TODO: implement the logic for the getEvmAddr method
+	default:
+		return nil, fmt.Errorf(cmn.ErrUnknownMethod, method.Name)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	cost := ctx.GasMeter().GasConsumed() - initialGas
+
+	if !contract.UseGas(cost) {
+		return nil, vm.ErrOutOfGas
+	}
+
+	if err := p.AddJournalEntries(stateDB, snapshot); err != nil {
+		return nil, err
+	}
+
+	return bz, nil
+}
+
+// IsTransaction checks if the given method name corresponds to a transaction or query.
+func (Precompile) IsTransaction(method *abi.Method) bool {
+	switch method.Name {
+	case AssociateMethod:
+	case AssociatePubKeyMethod:
+		return true
+	default:
+		return false
+	}
+
+	return false
+}
 
 // // NewContract returns a new addr stateful precompiled contract.
 // //
