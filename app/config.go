@@ -10,9 +10,12 @@ import (
 )
 
 const (
+	// Mainnet
 	OraichainID = "Oraichain"
 	Denom       = "orai"
-	// DisplayDenom = "orai"
+
+	// Interchaintest
+	IctOraichainID = "orai-1"
 )
 
 // EVMOptionsFn defines a function type for setting app options specifically for
@@ -33,6 +36,11 @@ var sealed = false
 // chain id
 var ChainsCoinInfo = map[string]evmtypes.EvmCoinInfo{
 	OraichainID: {
+		Denom: Denom,
+		// DisplayDenom: DisplayDenom,
+		Decimals: evmtypes.SixDecimals,
+	},
+	IctOraichainID: {
 		Denom: Denom,
 		// DisplayDenom: DisplayDenom,
 		Decimals: evmtypes.SixDecimals,
