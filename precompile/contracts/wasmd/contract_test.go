@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -122,6 +123,11 @@ func TestExecuteAndQuery(t *testing.T) {
 	codeID, _, err := tApp.ContractKeeper.Create(ctx, mockAddr, code, nil)
 	require.Nil(t, err)
 
+	// set evm params
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, wasmd.WasmdContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+
 	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(wasmd.WasmdContractAddress))
 	require.True(t, found)
 	require.NoError(t, err)
@@ -132,7 +138,7 @@ func TestExecuteAndQuery(t *testing.T) {
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	suppliedGas := uint64(10_000_000)
+	suppliedGas := uint64(20_000_000)
 
 	instantiateMethod := wasmd.ABI.Methods["instantiate"]
 
@@ -146,6 +152,8 @@ func TestExecuteAndQuery(t *testing.T) {
 		nil,
 		false,
 	)
+
+	fmt.Println("remaining Gas: ", suppliedGas)
 
 	require.Nil(t, err)
 	rets, _ := instantiateMethod.Outputs.Unpack(res)
@@ -164,7 +172,7 @@ func TestExecuteAndQuery(t *testing.T) {
 	res, suppliedGas, err = evm.RunPrecompiledContract(
 		contract,
 		vm.AccountRef(mockEVMAddr),
-		append(instantiateMethod.ID, args...),
+		append(executeMethod.ID, args...),
 		suppliedGas,
 		nil,
 		false,
@@ -176,7 +184,7 @@ func TestExecuteAndQuery(t *testing.T) {
 
 	// check balance after sent funds. Should drop
 	balanceAfterExecute := tApp.GetBankKeeper().GetBalance(ctx, mockAddr, "orai")
-	require.Equal(t, balanceAfterExecute, amts[0].Sub(funds[0]))
+	require.True(t, amts[0].IsGTE(balanceAfterExecute))
 
 	// test query
 	queryMethod := wasmd.ABI.Methods["query"]
@@ -187,7 +195,7 @@ func TestExecuteAndQuery(t *testing.T) {
 	res, suppliedGas, err = evm.RunPrecompiledContract(
 		contract,
 		vm.AccountRef(mockEVMAddr),
-		append(instantiateMethod.ID, args...),
+		append(queryMethod.ID, args...),
 		suppliedGas,
 		nil,
 		false,

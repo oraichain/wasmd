@@ -97,8 +97,8 @@ ParseQueryArgs parses the call arguments for the wasmd query contracts
 	req := res[1].([]byte)
 */
 func ParseQueryArgs(args []interface{}) (sdk.AccAddress, []byte, error) {
-	if len(args) != 3 {
-		return sdk.AccAddress{}, []byte{}, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 3, len(args))
+	if len(args) != 2 {
+		return sdk.AccAddress{}, []byte{}, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 2, len(args))
 	}
 
 	contract, ok := args[0].(string)
