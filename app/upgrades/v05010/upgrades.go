@@ -52,7 +52,7 @@ func UpgradeMintParams(ctx sdk.Context, paramsKeeper *paramskeeper.Keeper, mintK
 	if err != nil {
 		// in case of error, set default params
 		mintParams = minttypes.DefaultParams()
-		mintParams.GoalBonded = math.LegacyMustNewDecFromStr("0.067")
+		mintParams.GoalBonded = math.LegacyMustNewDecFromStr("0.67")
 		mintParams.MintDenom = config.MinimalDenom
 	}
 

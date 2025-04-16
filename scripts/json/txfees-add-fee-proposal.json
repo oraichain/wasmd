@@ -3,7 +3,7 @@
     {
       "@type": "/cosmwasm.txfees.v1.MsgAddFeeToken",
       "authority": "orai10d07y265gmmuvt4z0w9aw880jnsr700jf39xhq",
-      "denom": "factory/orai139mwsucfsemcgre3c24f07ee583dp5kdcgm9mp/usdai"
+      "denom": "factory/orai1a7j73ee58lmy3vh0epqdnspfhtup4jnyfwdzq2/usdai"
     }
   ],
   "metadata": "foobar",
