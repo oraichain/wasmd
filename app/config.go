@@ -15,6 +15,9 @@ const (
 
 	// Interchaintest
 	IctOraichainID = "orai-1"
+
+	// Local testnet
+	localnetChainID = "testing"
 )
 
 // EVMOptionsFn defines a function type for setting app options specifically for
@@ -40,6 +43,11 @@ var ChainsCoinInfo = map[string]evmtypes.EvmCoinInfo{
 		Decimals: evmtypes.SixDecimals,
 	},
 	IctOraichainID: {
+		Denom: Denom,
+		// DisplayDenom: DisplayDenom,
+		Decimals: evmtypes.SixDecimals,
+	},
+	localnetChainID: {
 		Denom: Denom,
 		// DisplayDenom: DisplayDenom,
 		Decimals: evmtypes.SixDecimals,
