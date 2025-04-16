@@ -33,9 +33,8 @@ const (
 	GrantMethod = "grant"
 
 	// Define the minumum gas required needed for each method
-	// TODO: need to re-define gas required here
-	SetGrantMethodRequiredGas  = 5_000_000
-	ExecGrantMethodRequiredGas = 5_000_000
+	SetGrantMethodRequiredGas  = 100_000
+	ExecGrantMethodRequiredGas = 100_000
 	GrantMethodRequiredGas     = 30_000
 )
 

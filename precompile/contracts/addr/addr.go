@@ -27,8 +27,8 @@ const (
 
 	// Define the minumum gas required needed for each method
 	// TODO: need to re-define gas required here
-	AssociateMethodRequiredGas        = 5_000_000
-	AssociatePubKeyMethodRequiredGas  = 5_000_000
+	AssociateMethodRequiredGas        = 100_000
+	AssociatePubKeyMethodRequiredGas  = 100_000
 	GetCosmosAddressMethodRequiredGas = 30_000
 	GetEvmAddressMethodRequiredGas    = 30_000
 
