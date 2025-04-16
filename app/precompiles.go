@@ -129,7 +129,6 @@ func NewAvailableStaticPrecompiles(
 	// oraichain custom precompile contract
 	// Statefull precompiles
 	precompiles[wasmdPrecompile.Address()] = wasmdPrecompile
-	precompiles[bankPrecompile.Address()] = bankPrecompile
 
 	return precompiles
 }

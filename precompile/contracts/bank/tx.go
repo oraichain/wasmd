@@ -15,22 +15,32 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+func parseArgs(args []interface{}) (common.Address, string, *big.Int, error) {
+	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
+		return common.Address{}, "", nil, err
+	}
+
+	receiverEvmAddr := args[0].(common.Address)
+	denom := args[1].(string)
+	if denom == "" {
+		return common.Address{}, "", nil, errors.New("invalid denom")
+	}
+	amount := args[2].(*big.Int)
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		return common.Address{}, "", nil, errors.New("invalid amount")
+	}
+
+	return receiverEvmAddr, denom, amount, nil
+}
+
 func (p Precompile) Send(ctx sdk.Context, contract *vm.Contract, method *abi.Method, args []interface{}) ([]byte, error) {
 	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
 		return nil, err
 	}
 
-	// @TODO: Duplicate -> need to be into new function parse args
-	receiverEvmAddr := args[0].(common.Address)
-	denom := args[1].(string)
-	if denom == "" {
-		return nil, errors.New("invalid denom")
-	}
-	amount := args[2].(*big.Int)
-	if amount.Cmp(big.NewInt(0)) == 0 {
-		// short circuit
-		ret, rerr := method.Outputs.Pack(true)
-		return ret, rerr
+	receiverEvmAddr, denom, amount, err := parseArgs(args)
+	if err != nil {
+		return nil, err
 	}
 
 	caller := contract.CallerAddress
@@ -51,12 +61,11 @@ func (p Precompile) Burn(ctx sdk.Context, contract *vm.Contract, method *abi.Met
 		return nil, err
 	}
 
-	burnFromEvmAddr := args[0].(common.Address)
-	denom := args[1].(string)
-	if denom == "" {
-		return nil, errors.New("invalid denom")
+	burnFromEvmAddr, denom, amount, err := parseArgs(args)
+	if err != nil {
+		return nil, err
 	}
-	amount := args[2].(*big.Int)
+
 	if amount.Cmp(big.NewInt(0)) == 0 {
 		// short circuit
 		ret, rerr := method.Outputs.Pack(true)

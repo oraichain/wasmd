@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/precompile/contracts/bank"
@@ -17,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
-	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
@@ -57,7 +55,7 @@ func PrivateKeyToAddresses(privKey cryptotypes.PrivKey) (sdk.AccAddress, common.
 func TestSend(t *testing.T) {
 	denom := "orai"
 	tApp := app.Setup(t)
-	ctx := tApp.NewContextLegacy(true, tmtypes.Header{Height: 1, ChainID: "wasmd-test", Time: time.Now().UTC()})
+	ctx := tApp.NewContext(true)
 	mockAddr, mockEVMAddr := MockAddressPair()
 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
 	receiveCosmosAddr, mockReceiverEVMAddr := MockAddressPair()
