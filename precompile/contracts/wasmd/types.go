@@ -73,17 +73,17 @@ func ParseExecuteArgs(args []interface{}) (sdk.AccAddress, []byte, sdk.Coins, er
 	}
 	contractAddress, err := sdk.AccAddressFromBech32(contract)
 	if err != nil {
-		return sdk.AccAddress{}, []byte{}, sdk.Coins{}, fmt.Errorf("invalid contract address: %v", args[1])
+		return sdk.AccAddress{}, []byte{}, sdk.Coins{}, fmt.Errorf("invalid contract address: %v", args[0])
 	}
 
 	msg, ok := args[1].([]byte)
 	if !ok {
-		return sdk.AccAddress{}, []byte{}, sdk.Coins{}, fmt.Errorf("invalid msg: %v", args[2])
+		return sdk.AccAddress{}, []byte{}, sdk.Coins{}, fmt.Errorf("invalid msg: %v", args[1])
 	}
 
 	fundsBz, ok := args[2].([]byte)
 	if !ok {
-		return sdk.AccAddress{}, []byte{}, sdk.Coins{}, fmt.Errorf("invalid funds: %v", args[4])
+		return sdk.AccAddress{}, []byte{}, sdk.Coins{}, fmt.Errorf("invalid funds: %v", args[2])
 	}
 	funds := UnmarshalCosmWasmDeposit(fundsBz)
 
@@ -107,12 +107,12 @@ func ParseQueryArgs(args []interface{}) (sdk.AccAddress, []byte, error) {
 	}
 	contractAddress, err := sdk.AccAddressFromBech32(contract)
 	if err != nil {
-		return sdk.AccAddress{}, []byte{}, fmt.Errorf("invalid contract address: %v", args[1])
+		return sdk.AccAddress{}, []byte{}, fmt.Errorf("invalid contract address: %v", args[0])
 	}
 
 	req, ok := args[1].([]byte)
 	if !ok {
-		return sdk.AccAddress{}, []byte{}, fmt.Errorf("invalid request: %v", args[2])
+		return sdk.AccAddress{}, []byte{}, fmt.Errorf("invalid request: %v", args[1])
 	}
 
 	return contractAddress, req, nil
