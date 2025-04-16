@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"strings"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,9 +9,15 @@ import (
 )
 
 const (
+	// Mainnet
 	OraichainID = "Oraichain"
 	Denom       = "orai"
-	// DisplayDenom = "orai"
+
+	// Interchaintest
+	IctOraichainID = "orai-1"
+
+	// Local testnet
+	localnetChainID = "testing"
 )
 
 // EVMOptionsFn defines a function type for setting app options specifically for
@@ -37,6 +42,16 @@ var ChainsCoinInfo = map[string]evmtypes.EvmCoinInfo{
 		// DisplayDenom: DisplayDenom,
 		Decimals: evmtypes.SixDecimals,
 	},
+	IctOraichainID: {
+		Denom: Denom,
+		// DisplayDenom: DisplayDenom,
+		Decimals: evmtypes.SixDecimals,
+	},
+	localnetChainID: {
+		Denom: Denom,
+		// DisplayDenom: DisplayDenom,
+		Decimals: evmtypes.SixDecimals,
+	},
 }
 
 // EvmAppOptions allows to setup the global configuration
@@ -46,11 +61,9 @@ func EvmAppOptions(chainID string) error {
 		return nil
 	}
 
-	id := strings.Split(chainID, "-")[0]
-	fmt.Printf("ChainID: %v\n", chainID)
-	coinInfo, found := ChainsCoinInfo[id]
+	coinInfo, found := ChainsCoinInfo[chainID]
 	if !found {
-		return fmt.Errorf("unknown chain id: %s", id)
+		return fmt.Errorf("unknown chain id: %s", chainID)
 	}
 
 	// set the denom info for the chain

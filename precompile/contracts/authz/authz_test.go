@@ -1,280 +1,332 @@
 package authz_test
 
-// import (
-// 	"encoding/hex"
-// 	"math/big"
-// 	"testing"
+import (
+	"encoding/hex"
+	"math/big"
+	"testing"
 
-// 	"github.com/CosmWasm/wasmd/app"
-// 	"github.com/CosmWasm/wasmd/precompile/contracts/authz"
-// 	"github.com/CosmWasm/wasmd/precompile/registry"
-// 	"github.com/cosmos/cosmos-sdk/crypto/hd"
-// 	"github.com/cosmos/evm/x/vm/statedb"
-// 	"github.com/cosmos/go-bip39"
-// 	"github.com/ethereum/go-ethereum/common"
-// 	"github.com/ethereum/go-ethereum/core/vm"
-// 	"github.com/ethereum/go-ethereum/crypto"
-// 	"github.com/stretchr/testify/require"
+	sdkmath "cosmossdk.io/math"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 
-// 	sdkmath "cosmossdk.io/math"
-// 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-// 	sdk "github.com/cosmos/cosmos-sdk/types"
-// 	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
-// 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-// 	evmtypes "github.com/cosmos/evm/x/vm/types"
-// )
+	"github.com/CosmWasm/wasmd/app"
+	"github.com/CosmWasm/wasmd/precompile/contracts/authz"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/evm/x/vm/core/vm"
+	"github.com/cosmos/evm/x/vm/statedb"
+	"github.com/cosmos/go-bip39"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/require"
+)
 
-// func MockAddressPair() (sdk.AccAddress, common.Address) {
-// 	return PrivateKeyToAddresses(MockPrivateKey())
-// }
+func MockAddressPair() (sdk.AccAddress, common.Address) {
+	return PrivateKeyToAddresses(MockPrivateKey())
+}
 
-// func MockPrivateKey() cryptotypes.PrivKey {
-// 	// Generate a new Sei private key
-// 	entropySeed, _ := bip39.NewEntropy(256)
-// 	mnemonic, _ := bip39.NewMnemonic(entropySeed)
-// 	algo := hd.Secp256k1
-// 	derivedPriv, _ := algo.Derive()(mnemonic, "", "")
-// 	return algo.Generate()(derivedPriv)
-// }
+func MockPrivateKey() cryptotypes.PrivKey {
+	// Generate a new Sei private key
+	entropySeed, _ := bip39.NewEntropy(256)
+	mnemonic, _ := bip39.NewMnemonic(entropySeed)
+	algo := hd.Secp256k1
+	derivedPriv, _ := algo.Derive()(mnemonic, "", "")
+	return algo.Generate()(derivedPriv)
+}
 
-// func PrivateKeyToAddresses(privKey cryptotypes.PrivKey) (sdk.AccAddress, common.Address) {
-// 	// Encode the private key to hex (i.e. what wallets do behind the scene when users reveal private keys)
-// 	testPrivHex := hex.EncodeToString(privKey.Bytes())
+func PrivateKeyToAddresses(privKey cryptotypes.PrivKey) (sdk.AccAddress, common.Address) {
+	// Encode the private key to hex (i.e. what wallets do behind the scene when users reveal private keys)
+	testPrivHex := hex.EncodeToString(privKey.Bytes())
 
-// 	// Sign an Ethereum transaction with the hex private key
-// 	key, _ := crypto.HexToECDSA(testPrivHex)
-// 	msg := crypto.Keccak256([]byte("foo"))
-// 	sig, _ := crypto.Sign(msg, key)
+	// Sign an Ethereum transaction with the hex private key
+	key, _ := crypto.HexToECDSA(testPrivHex)
+	msg := crypto.Keccak256([]byte("foo"))
+	sig, _ := crypto.Sign(msg, key)
 
-// 	// Recover the public keys from the Ethereum signature
-// 	recoveredPub, _ := crypto.Ecrecover(msg, sig)
-// 	pubKey, _ := crypto.UnmarshalPubkey(recoveredPub)
+	// Recover the public keys from the Ethereum signature
+	recoveredPub, _ := crypto.Ecrecover(msg, sig)
+	pubKey, _ := crypto.UnmarshalPubkey(recoveredPub)
 
-// 	return sdk.AccAddress(privKey.PubKey().Address()), crypto.PubkeyToAddress(*pubKey)
-// }
+	return sdk.AccAddress(privKey.PubKey().Address()), crypto.PubkeyToAddress(*pubKey)
+}
 
-// func TestSetGrant(t *testing.T) {
-// 	denom := "orai"
-// 	tApp := app.Setup(t)
-// 	ctx := tApp.NewContext(true)
-// 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
+func TestSetGrant(t *testing.T) {
+	denom := "orai"
+	tApp := app.Setup(t)
+	ctx := tApp.NewContext(true)
+	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
 
-// 	granterAddr, granterEvmAddr := MockAddressPair()
-// 	granteeAddr, granteeEvmAddr := MockAddressPair()
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
+	granterAddr, granterEvmAddr := MockAddressPair()
+	granteeAddr, granteeEvmAddr := MockAddressPair()
+	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
 
-// 	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
-// 	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
-// 	bankKeeper := tApp.GetBankKeeper()
-// 	authzKeeper := tApp.GetAuthzKeeper()
-// 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
-// 	require.NoError(t, err)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
-// 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
+	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
+	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
+	bankKeeper := tApp.GetBankKeeper()
+	authzKeeper := tApp.GetAuthzKeeper()
+	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
+	require.NoError(t, err)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
+	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
 
-// 	evm := vm.EVM{
-// 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
-// 	}
-// 	p := authz.NewContract(tApp.EvmKeeper, authzKeeper)
-// 	method := authz.ABI.Methods[authz.SetGrantMethod]
-// 	suppliedGas := uint64(10_000_000)
+	// set evm params
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, authz.AuthzContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-// 	args, err := method.Inputs.Pack(granteeEvmAddr, denom, grantCoins[0].Amount.BigInt())
-// 	require.Nil(t, err)
-// 	res, _, err := p.Run(&evm, granterEvmAddr, registry.AddrContractAddress,
-// 		append(method.ID, args...),
-// 		suppliedGas,
-// 		false,
-// 		nil,
-// 	)
-// 	require.Nil(t, err)
-// 	output, err := method.Outputs.Unpack(res)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(output))
-// 	require.Equal(t, output[0].(bool), true)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(authz.AuthzContractAddress))
+	require.True(t, found)
+	require.NoError(t, err)
 
-// 	grantMsg := &authztypes.QueryGrantsRequest{
-// 		Granter:    granterAddr.String(),
-// 		Grantee:    granteeAddr.String(),
-// 		MsgTypeUrl: banktypes.SendAuthorization{}.MsgTypeURL(),
-// 		Pagination: nil,
-// 	}
+	contract := p.Map[common.HexToAddress(authz.AuthzContractAddress)]
+	require.NotNil(t, contract)
 
-// 	grant, err := authzKeeper.Grants(ctx, grantMsg)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(grant.Grants))
+	suppliedGas := uint64(20_000_000)
+	setGrantMethod := authz.ABI.Methods[authz.SetGrantMethod]
 
-// 	var sendAuthorization banktypes.SendAuthorization
-// 	var grantCoin sdk.Coin
+	// Create the EVM
+	evm := vm.EVM{
+		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
+	}
 
-// 	for _, g := range grant.Grants {
-// 		sendAuthorization.Unmarshal(g.Authorization.Value)
+	args, err := setGrantMethod.Inputs.Pack(granteeEvmAddr, denom, grantCoins[0].Amount.BigInt())
+	require.Nil(t, err)
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(granterEvmAddr),
+		append(setGrantMethod.ID, args...),
+		suppliedGas,
+		nil,
+		false,
+	)
+	require.Nil(t, err)
+	output, err := setGrantMethod.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(bool), true)
 
-// 		for _, coin := range sendAuthorization.SpendLimit {
-// 			if coin.Denom == denom {
-// 				grantCoin = coin
-// 			}
-// 		}
-// 	}
+	grantMsg := &authztypes.QueryGrantsRequest{
+		Granter:    granterAddr.String(),
+		Grantee:    granteeAddr.String(),
+		MsgTypeUrl: banktypes.SendAuthorization{}.MsgTypeURL(),
+		Pagination: nil,
+	}
 
-// 	require.Equal(t, grantCoin.Denom, denom)
-// 	require.Equal(t, grantCoin.Amount, grantCoins[0].Amount)
-// }
+	// Because evm using cache context, we need to get the cache context
+	cacheCtx, err := evm.StateDB.(*statedb.StateDB).GetCacheContext()
+	require.NoError(t, err)
 
-// func TestQueryGrant(t *testing.T) {
-// 	denom := "orai"
-// 	tApp := app.Setup(t)
-// 	ctx := tApp.NewContext(true)
-// 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
+	grant, err := authzKeeper.Grants(cacheCtx, grantMsg)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(grant.Grants))
 
-// 	granterAddr, granterEvmAddr := MockAddressPair()
-// 	granteeAddr, granteeEvmAddr := MockAddressPair()
-// 	cosmosAddr, evmAddr := MockAddressPair()
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, cosmosAddr, evmAddr)
+	var sendAuthorization banktypes.SendAuthorization
+	var grantCoin sdk.Coin
 
-// 	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
-// 	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
-// 	bankKeeper := tApp.GetBankKeeper()
-// 	authzKeeper := tApp.GetAuthzKeeper()
-// 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
-// 	require.NoError(t, err)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, cosmosAddr, grantCoins)
-// 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
+	for _, g := range grant.Grants {
+		sendAuthorization.Unmarshal(g.Authorization.Value)
 
-// 	// grant
-// 	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
-// 	setGrantMsg, err := authztypes.NewMsgGrant(granterAddr, granteeAddr, authorization, nil)
-// 	require.NoError(t, err)
+		for _, coin := range sendAuthorization.SpendLimit {
+			if coin.Denom == denom {
+				grantCoin = coin
+			}
+		}
+	}
 
-// 	_, err = authzKeeper.Grant(ctx, setGrantMsg)
-// 	require.NoError(t, err)
+	require.Equal(t, grantCoin.Denom, denom)
+	require.Equal(t, grantCoin.Amount, grantCoins[0].Amount)
+}
 
-// 	// query
-// 	evm := vm.EVM{
-// 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
-// 	}
-// 	p := authz.NewContract(tApp.EvmKeeper, authzKeeper)
-// 	method := authz.ABI.Methods[authz.GrantMethod]
-// 	suppliedGas := uint64(10_000_000)
+func TestQueryGrant(t *testing.T) {
+	denom := "orai"
+	tApp := app.Setup(t)
+	ctx := tApp.NewContext(true)
+	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
 
-// 	// have grant
-// 	args, err := method.Inputs.Pack(granterEvmAddr, granteeEvmAddr, denom)
-// 	require.Nil(t, err)
-// 	res, _, err := p.Run(&evm, granteeEvmAddr, registry.AddrContractAddress,
-// 		append(method.ID, args...),
-// 		suppliedGas,
-// 		false,
-// 		nil,
-// 	)
-// 	require.Nil(t, err)
-// 	output, err := method.Outputs.Unpack(res)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(output))
-// 	require.Equal(t, output[0].(*big.Int), big.NewInt(grantCoins[0].Amount.Int64()))
+	granterAddr, granterEvmAddr := MockAddressPair()
+	granteeAddr, granteeEvmAddr := MockAddressPair()
+	cosmosAddr, evmAddr := MockAddressPair()
+	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, cosmosAddr, evmAddr)
 
-// 	// no grant
-// 	args, err = method.Inputs.Pack(granterEvmAddr, evmAddr, denom)
-// 	require.Nil(t, err)
-// 	res, _, err = p.Run(&evm, evmAddr, registry.AddrContractAddress,
-// 		append(method.ID, args...),
-// 		suppliedGas,
-// 		false,
-// 		nil,
-// 	)
-// 	require.Nil(t, err)
-// 	output, err = method.Outputs.Unpack(res)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(output))
-// 	require.Equal(t, output[0].(*big.Int).Int64(), big.NewInt(0).Int64())
-// }
+	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
+	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
+	bankKeeper := tApp.GetBankKeeper()
+	authzKeeper := tApp.GetAuthzKeeper()
+	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
+	require.NoError(t, err)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, cosmosAddr, grantCoins)
+	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
 
-// func TestExecGrant(t *testing.T) {
-// 	denom := "orai"
-// 	tApp := app.Setup(t)
-// 	ctx := tApp.NewContext(true)
-// 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
+	// grant
+	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
+	setGrantMsg, err := authztypes.NewMsgGrant(granterAddr, granteeAddr, authorization, nil)
+	require.NoError(t, err)
 
-// 	granterAddr, granterEvmAddr := MockAddressPair()
-// 	granteeAddr, granteeEvmAddr := MockAddressPair()
-// 	recipientAddr, recipientEvmAddr := MockAddressPair()
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, recipientAddr, recipientEvmAddr)
+	_, err = authzKeeper.Grant(ctx, setGrantMsg)
+	require.NoError(t, err)
 
-// 	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
-// 	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
-// 	transferCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
-// 	bankKeeper := tApp.GetBankKeeper()
-// 	authzKeeper := tApp.GetAuthzKeeper()
-// 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
-// 	require.NoError(t, err)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
-// 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
+	// set evm params
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, authz.AuthzContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-// 	// grant
-// 	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
-// 	setGrantMsg, err := authztypes.NewMsgGrant(granterAddr, granteeAddr, authorization, nil)
-// 	require.NoError(t, err)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(authz.AuthzContractAddress))
+	require.True(t, found)
+	require.NoError(t, err)
 
-// 	_, err = authzKeeper.Grant(ctx, setGrantMsg)
-// 	require.NoError(t, err)
+	contract := p.Map[common.HexToAddress(authz.AuthzContractAddress)]
+	require.NotNil(t, contract)
 
-// 	// exec grant
-// 	evm := vm.EVM{
-// 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
-// 	}
-// 	p := authz.NewContract(tApp.EvmKeeper, authzKeeper)
-// 	method := authz.ABI.Methods[authz.ExecGrantMethod]
-// 	suppliedGas := uint64(10_000_000)
+	suppliedGas := uint64(20_000_000)
+	grantMethod := authz.ABI.Methods[authz.GrantMethod]
 
-// 	args, err := method.Inputs.Pack(granterEvmAddr, recipientEvmAddr, denom, transferCoins[0].Amount.BigInt())
-// 	require.Nil(t, err)
-// 	res, _, err := p.Run(&evm, granteeEvmAddr, registry.AddrContractAddress,
-// 		append(method.ID, args...),
-// 		suppliedGas,
-// 		false,
-// 		nil,
-// 	)
-// 	require.Nil(t, err)
-// 	output, err := method.Outputs.Unpack(res)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(output))
-// 	require.Equal(t, output[0].(bool), true)
+	// Create the EVM
+	evm := vm.EVM{
+		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
+	}
 
-// 	granterBalance := bankKeeper.GetBalance(ctx, granterAddr, denom)
-// 	require.Equal(t, granterBalance, sdk.NewCoin(denom, grantCoins[0].Amount.Sub(transferCoins[0].Amount)))
+	// have grant
+	args, err := grantMethod.Inputs.Pack(granterEvmAddr, granteeEvmAddr, denom)
+	require.Nil(t, err)
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(granteeEvmAddr),
+		append(grantMethod.ID, args...),
+		suppliedGas,
+		nil,
+		false,
+	)
+	require.Nil(t, err)
+	output, err := grantMethod.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(*big.Int), big.NewInt(grantCoins[0].Amount.Int64()))
 
-// 	grantMsg := &authztypes.QueryGrantsRequest{
-// 		Granter:    granterAddr.String(),
-// 		Grantee:    granteeAddr.String(),
-// 		MsgTypeUrl: banktypes.SendAuthorization{}.MsgTypeURL(),
-// 		Pagination: nil,
-// 	}
+	// no grant
+	args, err = grantMethod.Inputs.Pack(granterEvmAddr, evmAddr, denom)
+	require.Nil(t, err)
+	res, _, err = evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(evmAddr),
+		append(grantMethod.ID, args...),
+		suppliedGas,
+		nil,
+		false,
+	)
+	require.Nil(t, err)
+	output, err = grantMethod.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(*big.Int).Int64(), big.NewInt(0).Int64())
+}
 
-// 	grant, err := authzKeeper.Grants(ctx, grantMsg)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(grant.Grants))
+func TestExecGrant(t *testing.T) {
+	denom := "orai"
+	tApp := app.Setup(t)
+	ctx := tApp.NewContext(true)
+	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
 
-// 	var sendAuthorization banktypes.SendAuthorization
-// 	var grantCoin sdk.Coin
+	granterAddr, granterEvmAddr := MockAddressPair()
+	granteeAddr, granteeEvmAddr := MockAddressPair()
+	recipientAddr, recipientEvmAddr := MockAddressPair()
+	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, recipientAddr, recipientEvmAddr)
 
-// 	for _, g := range grant.Grants {
-// 		sendAuthorization.Unmarshal(g.Authorization.Value)
+	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
+	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
+	transferCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
+	bankKeeper := tApp.GetBankKeeper()
+	authzKeeper := tApp.GetAuthzKeeper()
+	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
+	require.NoError(t, err)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
+	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
 
-// 		for _, coin := range sendAuthorization.SpendLimit {
-// 			if coin.Denom == denom {
-// 				grantCoin = coin
-// 			}
-// 		}
-// 	}
+	// grant
+	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
+	setGrantMsg, err := authztypes.NewMsgGrant(granterAddr, granteeAddr, authorization, nil)
+	require.NoError(t, err)
 
-// 	require.Equal(t, grantCoin.Denom, denom)
-// 	require.Equal(t, grantCoin.Amount, grantCoins[0].Amount.Sub(transferCoins[0].Amount))
-// }
+	_, err = authzKeeper.Grant(ctx, setGrantMsg)
+	require.NoError(t, err)
+
+	// set evm params
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, authz.AuthzContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(authz.AuthzContractAddress))
+	require.True(t, found)
+	require.NoError(t, err)
+
+	contract := p.Map[common.HexToAddress(authz.AuthzContractAddress)]
+	require.NotNil(t, contract)
+
+	suppliedGas := uint64(20_000_000)
+	execGrantMethod := authz.ABI.Methods[authz.ExecGrantMethod]
+
+	// Create the EVM
+	evm := vm.EVM{
+		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
+	}
+
+	args, err := execGrantMethod.Inputs.Pack(granterEvmAddr, recipientEvmAddr, denom, transferCoins[0].Amount.BigInt())
+	require.Nil(t, err)
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(granteeEvmAddr),
+		append(execGrantMethod.ID, args...),
+		suppliedGas,
+		nil,
+		false,
+	)
+	require.Nil(t, err)
+	output, err := execGrantMethod.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(bool), true)
+
+	// Because evm using cache context, we need to get the cache context
+	cacheCtx, err := evm.StateDB.(*statedb.StateDB).GetCacheContext()
+	require.NoError(t, err)
+
+	granterBalance := bankKeeper.GetBalance(cacheCtx, granterAddr, denom)
+	require.Equal(t, granterBalance, sdk.NewCoin(denom, grantCoins[0].Amount.Sub(transferCoins[0].Amount)))
+
+	grantMsg := &authztypes.QueryGrantsRequest{
+		Granter:    granterAddr.String(),
+		Grantee:    granteeAddr.String(),
+		MsgTypeUrl: banktypes.SendAuthorization{}.MsgTypeURL(),
+		Pagination: nil,
+	}
+
+	grant, err := authzKeeper.Grants(cacheCtx, grantMsg)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(grant.Grants))
+
+	var sendAuthorization banktypes.SendAuthorization
+	var grantCoin sdk.Coin
+
+	for _, g := range grant.Grants {
+		sendAuthorization.Unmarshal(g.Authorization.Value)
+
+		for _, coin := range sendAuthorization.SpendLimit {
+			if coin.Denom == denom {
+				grantCoin = coin
+			}
+		}
+	}
+
+	require.Equal(t, grantCoin.Denom, denom)
+	require.Equal(t, grantCoin.Amount, grantCoins[0].Amount.Sub(transferCoins[0].Amount))
+}
