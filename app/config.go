@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"strings"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -54,11 +53,9 @@ func EvmAppOptions(chainID string) error {
 		return nil
 	}
 
-	id := strings.Split(chainID, "-")[0]
-	fmt.Printf("ChainID: %v\n", chainID)
-	coinInfo, found := ChainsCoinInfo[id]
+	coinInfo, found := ChainsCoinInfo[chainID]
 	if !found {
-		return fmt.Errorf("unknown chain id: %s - chain: %s", id, chainID)
+		return fmt.Errorf("unknown chain id: %s", chainID)
 	}
 
 	// set the denom info for the chain
