@@ -1,7 +1,6 @@
 package bank
 
 import (
-	"embed"
 	_ "embed"
 	"fmt"
 	"math/big"
@@ -13,11 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/contract"
 )
-
-// Embed abi json file to the executable binary. Needed when importing as dependency.
-//
-//go:embed abi.json
-var f embed.FS
 
 var _ vm.PrecompiledContract = &Precompile{}
 
@@ -33,14 +27,14 @@ var (
 const (
 	BankPrecompileAddress = "0x9000000000000000000000000000000000000004"
 
-	GasSend        = 3_000_000
+	GasSend        = 100_000
 	GasBalance     = 2_851
 	GasAllBalances = 2_851
 	GasName        = 3_421
 	GasSymbol      = 3_464
 	GasDecimals    = 427
 	GasSupply      = 2_477
-	GasBurn        = 3_000_000
+	GasBurn        = 100_000
 
 	SendMethod        = "send"
 	BalanceMethod     = "balance"
@@ -179,18 +173,6 @@ func (p Precompile) IsTransaction(method *abi.Method) bool {
 		return true
 	case BurnMethod:
 		return true
-	case BalanceMethod:
-		return false
-	case AllBalancesMethod:
-		return false
-	case NameMethod:
-		return false
-	case SymbolMethod:
-		return false
-	case DecimalsMethod:
-		return false
-	case SupplyMethod:
-		return false
 	default:
 		return false
 	}

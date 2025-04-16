@@ -34,10 +34,6 @@ func parseArgs(args []interface{}) (common.Address, string, *big.Int, error) {
 }
 
 func (p Precompile) Send(ctx sdk.Context, contract *vm.Contract, method *abi.Method, args []interface{}) ([]byte, error) {
-	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
-		return nil, err
-	}
-
 	receiverEvmAddr, denom, amount, err := parseArgs(args)
 	if err != nil {
 		return nil, err
@@ -57,10 +53,6 @@ func (p Precompile) Send(ctx sdk.Context, contract *vm.Contract, method *abi.Met
 }
 
 func (p Precompile) Burn(ctx sdk.Context, contract *vm.Contract, method *abi.Method, args []interface{}) ([]byte, error) {
-	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
-		return nil, err
-	}
-
 	burnFromEvmAddr, denom, amount, err := parseArgs(args)
 	if err != nil {
 		return nil, err
