@@ -14,6 +14,14 @@ address constant BANK_PRECOMPILE_ADDRESS = 0x90000000000000000000000000000000000
 address constant AUTHZ_PRECOMPILE_ADDRESS = 0x9000000000000000000000000000000000000005;
 */
 
+const (
+	WasmdContractAddress = "0x9000000000000000000000000000000000000001"
+	JsonContractAddress  = "0x9000000000000000000000000000000000000002"
+	AddrContractAddress  = "0x9000000000000000000000000000000000000003"
+	BankContractAddress  = "0x9000000000000000000000000000000000000004"
+	AuthzContractAddress = "0x9000000000000000000000000000000000000005"
+)
+
 func ValidateArgsLength(args []interface{}, length int) error {
 	if len(args) != length {
 		return fmt.Errorf("expected %d arguments but got %d", length, len(args))

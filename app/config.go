@@ -58,7 +58,7 @@ func EvmAppOptions(chainID string) error {
 	fmt.Printf("ChainID: %v\n", chainID)
 	coinInfo, found := ChainsCoinInfo[id]
 	if !found {
-		return fmt.Errorf("unknown chain id: %s", id)
+		return fmt.Errorf("unknown chain id: %s - chain: %s", id, chainID)
 	}
 
 	// set the denom info for the chain

@@ -25,8 +25,6 @@ var (
 )
 
 const (
-	WasmdContractAddress = "0x9000000000000000000000000000000000000001"
-
 	// Define the minumum gas required needed to execute
 	InstantiateWasmContractRequiredGas = 5_000_000
 	ExecuteWasmContractRequiredGas     = 3_000_000
@@ -56,7 +54,7 @@ func NewPrecompile(wasmKeeper pcommon.WasmdKeeper, wasmViewKeeper pcommon.WasmdV
 	}
 
 	// SetAddress defines the address of the bank compile contract.
-	p.SetAddress(common.HexToAddress(WasmdContractAddress))
+	p.SetAddress(common.HexToAddress(pcommon.WasmdContractAddress))
 
 	return p, nil
 }
