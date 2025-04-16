@@ -39,6 +39,9 @@ import (
 // constant value so all nodes run with the same limit.
 const contractMemoryLimit = 32
 
+// gasLessContractSetupGas
+const gasLessContractSetupGas = 100000
+
 // Option is an extension point to instantiate keeper with non default values
 type Option interface {
 	apply(*Keeper)
@@ -394,8 +397,10 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	// refund gas if we execute gasless contract
 	if isGasLess {
 		sdkCtx.GasMeter().RefundGas(sdkCtx.GasMeter().GasConsumed(), "refund gasless contract")
+		sdkCtx.GasMeter().ConsumeGas(gasLessContractSetupGas, "setup gasless contract gas")
+		sdkCtx = sdkCtx.WithGasMeter(storetypes.NewInfiniteGasMeter())
 	}
-	contractInfo, codeInfo, prefixStore, err := k.contractInstance(ctx, contractAddress)
+	contractInfo, codeInfo, prefixStore, err := k.contractInstance(sdkCtx, contractAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -413,10 +418,6 @@ func (k Keeper) execute(ctx context.Context, contractAddress, caller sdk.AccAddr
 	env := types.NewEnv(sdkCtx, contractAddress)
 	info := types.NewInfo(caller, coins)
 
-	// prepare querier
-	if isGasLess {
-		sdkCtx = sdkCtx.WithGasMeter(storetypes.NewInfiniteGasMeter())
-	}
 	querier := k.newQueryHandler(sdkCtx, contractAddress)
 	gasLeft := k.runtimeGasForContract(sdkCtx)
 	res, gasUsed, execErr := k.wasmVM.Execute(codeInfo.CodeHash, env, info, msg, prefixStore, cosmwasmAPI, querier, k.gasMeter(sdkCtx), gasLeft, costJSONDeserialization)
