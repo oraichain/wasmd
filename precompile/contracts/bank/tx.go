@@ -20,6 +20,7 @@ func (p Precompile) Send(ctx sdk.Context, contract *vm.Contract, method *abi.Met
 		return nil, err
 	}
 
+	// @TODO: Duplicate -> need to be into new function parse args
 	receiverEvmAddr := args[0].(common.Address)
 	denom := args[1].(string)
 	if denom == "" {

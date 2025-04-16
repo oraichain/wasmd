@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/precompile/contracts/bank"
@@ -16,8 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
+	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 )
@@ -51,183 +54,229 @@ func PrivateKeyToAddresses(privKey cryptotypes.PrivKey) (sdk.AccAddress, common.
 	return sdk.AccAddress(privKey.PubKey().Address()), crypto.PubkeyToAddress(*pubKey)
 }
 
-// func TestSend(t *testing.T) {
-// 	denom := "orai"
-// 	tApp := app.Setup(t)
-// 	ctx := tApp.NewContext(true)
-// 	mockAddr, mockEVMAddr := MockAddressPair()
-// 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
-// 	receiveCosmosAddr, mockReceiverEVMAddr := MockAddressPair()
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, mockAddr, mockEVMAddr)
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, receiveCosmosAddr, mockReceiverEVMAddr)
-// 	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
-// 	sentCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
-// 	bankKeeper := tApp.GetBankKeeper()
-// 	accountKeeper := tApp.GetAccountKeeper()
-// 	authzKeeper := tApp.GetAuthzKeeper()
-// 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
-// 	require.NoError(t, err)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, mockAddr, sentCoins)
-// 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
+func TestSend(t *testing.T) {
+	denom := "orai"
+	tApp := app.Setup(t)
+	ctx := tApp.NewContextLegacy(true, tmtypes.Header{Height: 1, ChainID: "wasmd-test", Time: time.Now().UTC()})
+	mockAddr, mockEVMAddr := MockAddressPair()
+	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
+	receiveCosmosAddr, mockReceiverEVMAddr := MockAddressPair()
+	tApp.EvmKeeper.SetAddressMapping(ctx, mockAddr, mockEVMAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, receiveCosmosAddr, mockReceiverEVMAddr)
+	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
+	sentCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
+	bankKeeper := tApp.GetBankKeeper()
+	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
+	require.NoError(t, err)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, mockAddr, sentCoins)
+	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
 
-// 	evm := vm.EVM{
-// 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
-// 	}
-// 	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper, authzKeeper)
-// 	method := bank.ABI.Methods[bank.SendMethod]
-// 	suppliedGas := uint64(10_000_000)
+	// Set EVM parameters to register the bank precompile address
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, bank.BankPrecompileAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(bank.BankPrecompileAddress))
 
-// 	args, err := method.Inputs.Pack(mockReceiverEVMAddr, denom, sentCoins[0].Amount.BigInt())
-// 	require.Nil(t, err)
-// 	res, _, err := p.Run(&evm, mockEVMAddr, registry.AddrContractAddress,
-// 		append(method.ID, args...),
-// 		suppliedGas,
-// 		false,
-// 		nil,
-// 	)
-// 	require.Nil(t, err)
-// 	output, err := method.Outputs.Unpack(res)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(output))
-// 	require.Equal(t, output[0].(bool), true)
+	require.True(t, found)
+	require.NoError(t, err)
 
-// 	balance := bankKeeper.GetBalance(ctx, receiveCosmosAddr, denom)
-// 	require.Equal(t, balance.Amount, sdkmath.NewInt(10))
-// }
+	contract := p.Map[common.HexToAddress(bank.BankPrecompileAddress)]
+	require.NotNil(t, contract)
 
-// func TestBurn(t *testing.T) {
-// 	denom := "orai"
-// 	tApp := app.Setup(t)
-// 	ctx := tApp.NewContext(true)
-// 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
+	evm := vm.EVM{
+		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
+	}
+	method := bank.ABI.Methods[bank.SendMethod]
+	suppliedGas := uint64(10_000_000)
 
-// 	burnCosmosAddr, burnEvmAddr := MockAddressPair()
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, burnCosmosAddr, burnEvmAddr)
+	args, err := method.Inputs.Pack(mockReceiverEVMAddr, denom, sentCoins[0].Amount.BigInt())
+	require.Nil(t, err)
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(mockEVMAddr),
+		append(method.ID, args...),
+		suppliedGas,
+		nil,
+		false,
+	)
+	require.Nil(t, err)
+	output, err := method.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(bool), true)
 
-// 	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10000)))
-// 	sentCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
-// 	burnCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
-// 	bankKeeper := tApp.GetBankKeeper()
-// 	accountKeeper := tApp.GetAccountKeeper()
-// 	authzKeeper := tApp.GetAuthzKeeper()
-// 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
-// 	require.NoError(t, err)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, burnCosmosAddr, sentCoins)
-// 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
+	// commit the stateDB to get the updated context
+	stateDB := evm.StateDB.(*statedb.StateDB)
+	stateDB.Commit()
 
-// 	evm := vm.EVM{
-// 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
-// 	}
-// 	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper, authzKeeper)
-// 	method := bank.ABI.Methods[bank.BurnMethod]
-// 	suppliedGas := uint64(10_000_000)
+	balance := bankKeeper.GetBalance(ctx, receiveCosmosAddr, denom)
+	require.Equal(t, balance.Amount, sdkmath.NewInt(10))
+}
 
-// 	args, err := method.Inputs.Pack(burnEvmAddr, denom, burnCoins[0].Amount.BigInt())
-// 	require.Nil(t, err)
-// 	res, _, err := p.Run(&evm, burnEvmAddr, registry.AddrContractAddress,
-// 		append(method.ID, args...),
-// 		suppliedGas,
-// 		false,
-// 		nil,
-// 	)
-// 	require.Nil(t, err)
-// 	output, err := method.Outputs.Unpack(res)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(output))
-// 	require.Equal(t, output[0].(bool), true)
+func TestBurn(t *testing.T) {
+	denom := "orai"
+	tApp := app.Setup(t)
+	ctx := tApp.NewContext(true)
+	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
 
-// 	balance := bankKeeper.GetBalance(ctx, burnCosmosAddr, denom)
-// 	require.Equal(t, balance.Amount, sentCoins[0].Amount.Sub(burnCoins[0].Amount))
-// }
+	burnCosmosAddr, burnEvmAddr := MockAddressPair()
+	tApp.EvmKeeper.SetAddressMapping(ctx, burnCosmosAddr, burnEvmAddr)
 
-// func TestBurnFrom(t *testing.T) {
-// 	denom := "orai"
-// 	tApp := app.Setup(t)
-// 	ctx := tApp.NewContext(true)
-// 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
+	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10000)))
+	sentCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
+	burnCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
+	bankKeeper := tApp.GetBankKeeper()
+	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
+	require.NoError(t, err)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, burnCosmosAddr, sentCoins)
+	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
 
-// 	granterAddr, granterEvmAddr := MockAddressPair()
-// 	granteeAddr, granteeEvmAddr := MockAddressPair()
-// 	cosmosAddr, evmAddr := MockAddressPair()
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
-// 	tApp.EvmKeeper.SetAddressMapping(ctx, cosmosAddr, evmAddr)
+	// Set EVM parameters to register the bank precompile address
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, bank.BankPrecompileAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(bank.BankPrecompileAddress))
 
-// 	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
-// 	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
-// 	burnCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
-// 	bankKeeper := tApp.GetBankKeeper()
-// 	authzKeeper := tApp.GetAuthzKeeper()
-// 	accountKeeper := tApp.GetAccountKeeper()
-// 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
-// 	require.NoError(t, err)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
-// 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, cosmosAddr, grantCoins)
-// 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
+	require.True(t, found)
+	require.NoError(t, err)
 
-// 	// grant
-// 	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
-// 	setGrantMsg, err := authztypes.NewMsgGrant(granterAddr, granteeAddr, authorization, nil)
-// 	require.NoError(t, err)
+	contract := p.Map[common.HexToAddress(bank.BankPrecompileAddress)]
+	require.NotNil(t, contract)
 
-// 	_, err = authzKeeper.Grant(ctx, setGrantMsg)
-// 	require.NoError(t, err)
+	evm := vm.EVM{
+		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
+	}
+	method := bank.ABI.Methods[bank.BurnMethod]
+	suppliedGas := uint64(10_000_000)
 
-// 	// burn from
-// 	evm := vm.EVM{
-// 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
-// 	}
-// 	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper, authzKeeper)
-// 	method := bank.ABI.Methods[bank.BurnMethod]
-// 	suppliedGas := uint64(10_000_000)
+	args, err := method.Inputs.Pack(burnEvmAddr, denom, burnCoins[0].Amount.BigInt())
+	require.Nil(t, err)
 
-// 	args, err := method.Inputs.Pack(granterEvmAddr, denom, burnCoins[0].Amount.BigInt())
-// 	require.Nil(t, err)
-// 	res, _, err := p.Run(&evm, granteeEvmAddr, registry.AddrContractAddress,
-// 		append(method.ID, args...),
-// 		suppliedGas,
-// 		false,
-// 		nil,
-// 	)
-// 	require.Nil(t, err)
-// 	output, err := method.Outputs.Unpack(res)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(output))
-// 	require.Equal(t, output[0].(bool), true)
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(burnEvmAddr),
+		append(method.ID, args...),
+		suppliedGas,
+		nil,
+		false,
+	)
+	require.Nil(t, err)
+	output, err := method.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(bool), true)
 
-// 	// query balance of granter after burn
-// 	balance := bankKeeper.GetBalance(ctx, granterAddr, denom)
-// 	require.Equal(t, balance.Amount, grantCoins[0].Amount.Sub(burnCoins[0].Amount))
+	// commit the stateDB to get the updated context
+	stateDB := evm.StateDB.(*statedb.StateDB)
+	stateDB.Commit()
 
-// 	// query grant of grantee
-// 	grantMsg := &authztypes.QueryGrantsRequest{
-// 		Granter:    granterAddr.String(),
-// 		Grantee:    granteeAddr.String(),
-// 		MsgTypeUrl: banktypes.SendAuthorization{}.MsgTypeURL(),
-// 		Pagination: nil,
-// 	}
+	balance := bankKeeper.GetBalance(ctx, burnCosmosAddr, denom)
+	require.Equal(t, balance.Amount, sentCoins[0].Amount.Sub(burnCoins[0].Amount))
+}
 
-// 	grant, err := authzKeeper.Grants(ctx, grantMsg)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(grant.Grants))
+func TestBurnFrom(t *testing.T) {
+	denom := "orai"
+	tApp := app.Setup(t)
+	ctx := tApp.NewContext(true)
+	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
 
-// 	var sendAuthorization banktypes.SendAuthorization
-// 	var grantCoin sdk.Coin
+	granterAddr, granterEvmAddr := MockAddressPair()
+	granteeAddr, granteeEvmAddr := MockAddressPair()
+	cosmosAddr, evmAddr := MockAddressPair()
+	tApp.EvmKeeper.SetAddressMapping(ctx, granterAddr, granterEvmAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, granteeAddr, granteeEvmAddr)
+	tApp.EvmKeeper.SetAddressMapping(ctx, cosmosAddr, evmAddr)
 
-// 	for _, g := range grant.Grants {
-// 		sendAuthorization.Unmarshal(g.Authorization.Value)
+	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
+	grantCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100)))
+	burnCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(10)))
+	bankKeeper := tApp.GetBankKeeper()
+	authzKeeper := tApp.GetAuthzKeeper()
+	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
+	require.NoError(t, err)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granterAddr, grantCoins)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
+	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, cosmosAddr, grantCoins)
+	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
 
-// 		for _, coin := range sendAuthorization.SpendLimit {
-// 			if coin.Denom == denom {
-// 				grantCoin = coin
-// 			}
-// 		}
-// 	}
+	// grant
+	authorization := banktypes.NewSendAuthorization(grantCoins, []sdk.AccAddress{})
+	setGrantMsg, err := authz.NewMsgGrant(granterAddr, granteeAddr, authorization, nil)
+	require.NoError(t, err)
 
-// 	require.Equal(t, grantCoin.Denom, denom)
-// 	require.Equal(t, grantCoin.Amount, grantCoins[0].Amount.Sub(burnCoins[0].Amount))
-// }
+	_, err = authzKeeper.Grant(ctx, setGrantMsg)
+	require.NoError(t, err)
+
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, bank.BankPrecompileAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(bank.BankPrecompileAddress))
+
+	require.True(t, found)
+	require.NoError(t, err)
+
+	contract := p.Map[common.HexToAddress(bank.BankPrecompileAddress)]
+	require.NotNil(t, contract)
+
+	// burn from
+	evm := vm.EVM{
+		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
+	}
+	method := bank.ABI.Methods[bank.BurnMethod]
+	suppliedGas := uint64(10_000_000)
+
+	args, err := method.Inputs.Pack(granterEvmAddr, denom, burnCoins[0].Amount.BigInt())
+	require.Nil(t, err)
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(granteeEvmAddr),
+		append(method.ID, args...),
+		suppliedGas,
+		nil,
+		false,
+	)
+	require.Nil(t, err)
+	output, err := method.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(bool), true)
+
+	// commit the stateDB to get the updated context
+	stateDB := evm.StateDB.(*statedb.StateDB)
+	stateDB.Commit()
+
+	// query balance of granter after burn
+	balance := bankKeeper.GetBalance(ctx, granterAddr, denom)
+	require.Equal(t, balance.Amount, grantCoins[0].Amount.Sub(burnCoins[0].Amount))
+
+	// query grant of grantee
+	grantMsg := &authz.QueryGrantsRequest{
+		Granter:    granterAddr.String(),
+		Grantee:    granteeAddr.String(),
+		MsgTypeUrl: banktypes.SendAuthorization{}.MsgTypeURL(),
+		Pagination: nil,
+	}
+
+	grant, err := authzKeeper.Grants(ctx, grantMsg)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(grant.Grants))
+
+	var sendAuthorization banktypes.SendAuthorization
+	var grantCoin sdk.Coin
+
+	for _, g := range grant.Grants {
+		sendAuthorization.Unmarshal(g.Authorization.Value)
+
+		for _, coin := range sendAuthorization.SpendLimit {
+			if coin.Denom == denom {
+				grantCoin = coin
+			}
+		}
+	}
+
+	require.Equal(t, grantCoin.Denom, denom)
+	require.Equal(t, grantCoin.Amount, grantCoins[0].Amount.Sub(burnCoins[0].Amount))
+}
 
 func TestBalance(t *testing.T) {
 	denom := "orai"
@@ -279,37 +328,49 @@ func TestBalance(t *testing.T) {
 	require.Equal(t, output[0].(*big.Int), big.NewInt(sentCoins[0].Amount.Int64()))
 }
 
-// func TestSupply(t *testing.T) {
-// 	denom := "orai"
-// 	tApp := app.Setup(t)
-// 	ctx := tApp.NewContext(true)
-// 	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
-// 	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
-// 	bankKeeper := tApp.GetBankKeeper()
-// 	accountKeeper := tApp.GetAccountKeeper()
-// 	authzKeeper := tApp.GetAuthzKeeper()
-// 	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
-// 	require.NoError(t, err)
-// 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
+func TestSupply(t *testing.T) {
+	denom := "orai"
+	tApp := app.Setup(t)
+	ctx := tApp.NewContext(true)
+	mockAddr, mockEVMAddr := MockAddressPair()
+	tApp.EvmKeeper.SetAddressMapping(ctx, mockAddr, mockEVMAddr)
+	sdk.RegisterDenom(denom, sdkmath.LegacyNewDec(6))
+	mintCoins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(100000)))
+	bankKeeper := tApp.GetBankKeeper()
+	err := bankKeeper.MintCoins(ctx, evmtypes.ModuleName, mintCoins)
+	require.NoError(t, err)
+	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
 
-// 	evm := vm.EVM{
-// 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
-// 	}
-// 	p := bank.NewContract(tApp.EvmKeeper, bankKeeper, accountKeeper, authzKeeper)
-// 	method := bank.ABI.Methods[bank.SupplyMethod]
-// 	suppliedGas := uint64(10_000_000)
+	// Set EVM parameters to register the bank precompile address
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, bank.BankPrecompileAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(bank.BankPrecompileAddress))
 
-// 	args, err := method.Inputs.Pack(denom)
-// 	require.Nil(t, err)
-// 	res, _, err := p.Run(&evm, registry.AddrContractAddress, registry.AddrContractAddress,
-// 		append(method.ID, args...),
-// 		suppliedGas,
-// 		false,
-// 		nil,
-// 	)
-// 	require.Nil(t, err)
-// 	output, err := method.Outputs.Unpack(res)
-// 	require.Nil(t, err)
-// 	require.Equal(t, 1, len(output))
-// 	require.Equal(t, output[0].(*big.Int), big.NewInt(mintCoins[0].Amount.Int64()))
-// }
+	require.True(t, found)
+	require.NoError(t, err)
+
+	contract := p.Map[common.HexToAddress(bank.BankPrecompileAddress)]
+
+	evm := vm.EVM{
+		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
+	}
+	method := bank.ABI.Methods[bank.SupplyMethod]
+	suppliedGas := uint64(10_000_000)
+
+	args, err := method.Inputs.Pack(denom)
+	require.Nil(t, err)
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(mockEVMAddr),
+		append(method.ID, args...),
+		suppliedGas,
+		nil,
+		false,
+	)
+	require.Nil(t, err)
+	output, err := method.Outputs.Unpack(res)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(output))
+	require.Equal(t, output[0].(*big.Int), big.NewInt(mintCoins[0].Amount.Int64()))
+}
