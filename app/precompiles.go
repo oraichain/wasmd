@@ -12,6 +12,7 @@ import (
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	addrprecompile "github.com/CosmWasm/wasmd/precompile/contracts/addr"
+	authzprecompile "github.com/CosmWasm/wasmd/precompile/contracts/authz"
 	wasmprecompile "github.com/CosmWasm/wasmd/precompile/contracts/wasmd"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -120,6 +121,11 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate addr precompile: %w", err))
 	}
 
+	authzPrecompile, err := authzprecompile.NewPrecompile(evmKeeper, authzKeeper)
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate authz precompile: %w", err))
+	}
+
 	// Stateless precompiles
 	precompiles[bech32Precompile.Address()] = bech32Precompile
 	precompiles[p256Precompile.Address()] = p256Precompile
@@ -137,6 +143,7 @@ func NewAvailableStaticPrecompiles(
 	// Statefull precompiles
 	precompiles[wasmdPrecompile.Address()] = wasmdPrecompile
 	precompiles[addrPrecompile.Address()] = addrPrecompile
+	precompiles[authzPrecompile.Address()] = authzPrecompile
 
 	return precompiles
 }

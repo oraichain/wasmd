@@ -100,7 +100,7 @@ func (p Precompile) Run(
 	contract *vm.Contract,
 	readOnly bool,
 ) (bz []byte, err error) {
-	ctx, stateDB, snapshot, method, initialGas, _, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+	ctx, stateDB, snapshot, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
 	if err != nil {
 		return nil, err
 	}
@@ -111,16 +111,13 @@ func (p Precompile) Run(
 
 	switch method.Name {
 	case SetGrantMethod:
-		// TODO: implement set grant
-		// bz, err = p.SetGrant(ctx, contract, method, args)
+		bz, err = p.SetGrant(ctx, contract, method, args)
 		break
 	case ExecGrantMethod:
-		// TODO: implement exec grant
-		// bz, err = p.AssociatePubKey(ctx, contract, method, args)
+		bz, err = p.ExecGrant(ctx, contract, method, args)
 		break
 	case GrantMethod:
-		// TODO: implement grant
-		// bz, err = p.Grant(ctx, contract, method, args)
+		bz, err = p.GetAuthorization(ctx, contract, method, args)
 		break
 	default:
 		return nil, fmt.Errorf(cmn.ErrUnknownMethod, method.Name)
