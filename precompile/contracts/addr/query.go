@@ -1,9 +1,10 @@
 package addr
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/evm/x/vm/core/vm"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func (p Precompile) GetCosmosAddr(
@@ -19,7 +20,7 @@ func (p Precompile) GetCosmosAddr(
 
 	cosmosAddress := p.EVMKeeper.GetCosmosAddressMapping(ctx, evmAddress)
 
-	return method.Outputs.Pack(cosmosAddress)
+	return method.Outputs.Pack(cosmosAddress.String())
 }
 
 func (p Precompile) GetEvmAddr(

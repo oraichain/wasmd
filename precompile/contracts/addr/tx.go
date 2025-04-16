@@ -108,6 +108,8 @@ func (p Precompile) associateAddresses(
 	if err != nil {
 		return nil, nil, err
 	}
+
 	err = p.EVMKeeper.SetMappingEvmAddressInner(ctx, cosmosAddress.String(), base64.StdEncoding.EncodeToString(pubkey))
+	
 	return cosmosAddress, evmAddress, err
 }
