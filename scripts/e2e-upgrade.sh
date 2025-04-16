@@ -141,7 +141,7 @@ NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.4/test-cw-stargate-staking-
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-globalfee.sh
 
 # v0.50.1 tests
-bash $PWD/scripts/tests-0.50.1/test-mint-params.sh
+# bash $PWD/scripts/tests-0.50.1/test-mint-params.sh
 bash $PWD/scripts/tests-0.50.1/test-gov-params.sh
 
 # v0.50.2 tests
@@ -163,6 +163,9 @@ NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.4/test-toke
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-txfees.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-evm-cosmos-mapping.sh
 sh $PWD/scripts/tests-0.50.9/test-payable-with-bank-send.sh
+
+# v0.50.10 tests  
+bash $PWD/scripts/tests-0.50.10/test-mint-params.sh
 
 echo "E2E Upgrade Tests Passed!!"
 bash scripts/clean-multinode-local-testnet.sh
