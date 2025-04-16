@@ -4,10 +4,10 @@ set -eu
 
 # setup the network using the old binary
 
-OLD_VERSION=${OLD_VERSION:-"v0.50.8"}
+OLD_VERSION=${OLD_VERSION:-"v0.50.9"}
 WASM_PATH=${WASM_PATH:-"$PWD/scripts/wasm_file/oraiswap-token.wasm"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
-NEW_VERSION=${NEW_VERSION:-"v0.50.9"}
+NEW_VERSION=${NEW_VERSION:-"v0.50.10"}
 VALIDATOR_HOME=${VALIDATOR_HOME:-"$HOME/.oraid/validator1"}
 MIGRATE_MSG=${MIGRATE_MSG:-'{}'}
 EXECUTE_MSG=${EXECUTE_MSG:-'{"ping":{}}'}
@@ -39,7 +39,7 @@ sh $PWD/scripts/multinode-local-testnet.sh
 sleep 5
 
 # create new upgrade proposal
-UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-40}
+UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-50}
 
 VERSION=$NEW_VERSION HEIGHT=$UPGRADE_HEIGHT bash $PWD/scripts/proposal-script.sh
 
@@ -67,7 +67,7 @@ cd $current_dir
 # re-run all validators. All should run
 screen -S validator1 -d -m oraid start --home=$HOME/.oraid/validator1
 screen -S validator2 -d -m oraid start --home=$HOME/.oraid/validator2
-screen -S validator2 -d -m oraid start --home=$HOME/.oraid/validator3
+screen -S validator3 -d -m oraid start --home=$HOME/.oraid/validator3
 
 # sleep a bit for the network to start
 echo "Sleep to wait for the network to start..."

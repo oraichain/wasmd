@@ -5,7 +5,19 @@ import (
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
+	v050 "github.com/CosmWasm/wasmd/app/upgrades/v050"
+	v0501 "github.com/CosmWasm/wasmd/app/upgrades/v0501"
+	v05010 "github.com/CosmWasm/wasmd/app/upgrades/v05010"
+	v0502 "github.com/CosmWasm/wasmd/app/upgrades/v0502"
+	v0503 "github.com/CosmWasm/wasmd/app/upgrades/v0503"
+	v0504 "github.com/CosmWasm/wasmd/app/upgrades/v0504"
+	v0505 "github.com/CosmWasm/wasmd/app/upgrades/v0505"
+	v0506 "github.com/CosmWasm/wasmd/app/upgrades/v0506"
+	v0507 "github.com/CosmWasm/wasmd/app/upgrades/v0507"
+	v0508 "github.com/CosmWasm/wasmd/app/upgrades/v0508"
+	v0509 "github.com/CosmWasm/wasmd/app/upgrades/v0509"
+	v2 "github.com/CosmWasm/wasmd/x/wasm/migrations/v2"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
@@ -27,22 +39,23 @@ import (
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	"github.com/CosmWasm/wasmd/app/upgrades/noop"
-	v050 "github.com/CosmWasm/wasmd/app/upgrades/v050"
-	v0501 "github.com/CosmWasm/wasmd/app/upgrades/v0501"
-	v0502 "github.com/CosmWasm/wasmd/app/upgrades/v0502"
-	v0503 "github.com/CosmWasm/wasmd/app/upgrades/v0503"
-	v0504 "github.com/CosmWasm/wasmd/app/upgrades/v0504"
-	v0505 "github.com/CosmWasm/wasmd/app/upgrades/v0505"
-	v0506 "github.com/CosmWasm/wasmd/app/upgrades/v0506"
-	v0507 "github.com/CosmWasm/wasmd/app/upgrades/v0507"
-	v0508 "github.com/CosmWasm/wasmd/app/upgrades/v0508"
-	v0509 "github.com/CosmWasm/wasmd/app/upgrades/v0509"
-	v2 "github.com/CosmWasm/wasmd/x/wasm/migrations/v2"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 )
 
 // Upgrades list of chain upgrades
-var Upgrades = []upgrades.Upgrade{v050.Upgrade, v0501.Upgrade, v0502.Upgrade, v0503.Upgrade, v0504.Upgrade, v0505.Upgrade, v0506.Upgrade, v0507.Upgrade, v0508.Upgrade, v0509.Upgrade}
+var Upgrades = []upgrades.Upgrade{
+	v050.Upgrade,
+	v0501.Upgrade,
+	v0502.Upgrade,
+	v0503.Upgrade,
+	v0504.Upgrade,
+	v0505.Upgrade,
+	v0506.Upgrade,
+	v0507.Upgrade,
+	v0508.Upgrade,
+	v0509.Upgrade,
+	v05010.Upgrade,
+}
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *WasmApp) RegisterUpgradeHandlers() {
