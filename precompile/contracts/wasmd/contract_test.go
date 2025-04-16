@@ -12,6 +12,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/app"
+	cmn "github.com/CosmWasm/wasmd/precompile/common"
 	"github.com/CosmWasm/wasmd/precompile/contracts/wasmd"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -125,14 +126,14 @@ func TestExecuteAndQuery(t *testing.T) {
 
 	// set evm params
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, wasmd.WasmdContractAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, cmn.WasmdContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(wasmd.WasmdContractAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(cmn.WasmdContractAddress))
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(wasmd.WasmdContractAddress)]
+	contract := p.Map[common.HexToAddress(cmn.WasmdContractAddress)]
 	require.NotNil(t, contract)
 
 	evm := vm.EVM{
