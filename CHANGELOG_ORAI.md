@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v0.50.10
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+
+Upgrade Oraichain mainnet to v0.50.10 to gasless contracts bugs.
+
+### BUG FIXES
+
+- fix gasless bug ([\#130](https://github.com/oraichain/wasmd/pull/130))
+
 ## v0.50.9
 
 <!--
