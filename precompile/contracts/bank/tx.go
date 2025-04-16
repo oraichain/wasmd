@@ -5,36 +5,16 @@ import (
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
-	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/evm/x/vm/core/vm"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
 )
 
-func parseArgs(args []interface{}) (common.Address, string, *big.Int, error) {
-	if err := pcommon.ValidateArgsLength(args, 3); err != nil {
-		return common.Address{}, "", nil, err
-	}
-
-	receiverEvmAddr := args[0].(common.Address)
-	denom := args[1].(string)
-	if denom == "" {
-		return common.Address{}, "", nil, errors.New("invalid denom")
-	}
-	amount := args[2].(*big.Int)
-	if amount.Cmp(big.NewInt(0)) == 0 {
-		return common.Address{}, "", nil, errors.New("invalid amount")
-	}
-
-	return receiverEvmAddr, denom, amount, nil
-}
-
 func (p Precompile) Send(ctx sdk.Context, contract *vm.Contract, method *abi.Method, args []interface{}) ([]byte, error) {
-	receiverEvmAddr, denom, amount, err := parseArgs(args)
+	receiverEvmAddr, denom, amount, err := parseTxArgs(args)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +33,8 @@ func (p Precompile) Send(ctx sdk.Context, contract *vm.Contract, method *abi.Met
 }
 
 func (p Precompile) Burn(ctx sdk.Context, contract *vm.Contract, method *abi.Method, args []interface{}) ([]byte, error) {
-	burnFromEvmAddr, denom, amount, err := parseArgs(args)
+
+	burnFromEvmAddr, denom, amount, err := parseTxArgs(args)
 	if err != nil {
 		return nil, err
 	}
