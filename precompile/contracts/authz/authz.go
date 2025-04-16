@@ -1,81 +1,157 @@
 package authz
 
-// import (
-// 	_ "embed"
-// 	"errors"
-// 	"fmt"
-// 	"math/big"
-// 	"strings"
+import (
+	_ "embed"
+	"fmt"
 
-// 	sdkmath "cosmossdk.io/math"
-// 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
-// 	sdk "github.com/cosmos/cosmos-sdk/types"
-// 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	cmn "github.com/cosmos/evm/precompiles/common"
 
-// 	"github.com/cosmos/cosmos-sdk/x/authz"
-// 	"github.com/ethereum/go-ethereum/common"
-// 	"github.com/ethereum/go-ethereum/precompile/contract"
-// )
+	"github.com/cosmos/evm/x/vm/core/vm"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/precompile/contract"
+)
 
-// // Singleton StatefulPrecompiledContract.
-// var (
-// 	// RawABI contains the raw ABI of wasmd contract.
-// 	//go:embed abi.json
-// 	RawABI string
+// Singleton StatefulPrecompiledContract.
+var (
+	// RawABI contains the raw ABI of wasmd contract.
+	//go:embed abi.json
+	RawABI string
 
-// 	ABI = contract.MustParseABI(RawABI)
-// )
+	ABI = contract.MustParseABI(RawABI)
+)
 
-// const (
-// 	SetGrantMethod  = "setGrant"
-// 	ExecGrantMethod = "execGrant"
-// 	GrantMethod     = "grant"
-// )
+const (
+	AuthzContractAddress = "0x9000000000000000000000000000000000000005"
 
-// const (
-// 	NoGrantError = "authorization not found for"
-// )
+	// Execute methods
+	SetGrantMethod  = "setGrant"
+	ExecGrantMethod = "execGrant"
 
-// type PrecompileExecutor struct {
-// 	evmKeeper   pcommon.EVMKeeper
-// 	authzKeeper pcommon.AuthzKeeper
-// }
+	// Query methods
+	GrantMethod = "grant"
 
-// // NewContract returns a new authz stateful precompiled contract.
-// //
-// //	This contract is used for testing purposes only and should not be used on public chains.
-// //	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
-// //	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
-// //	still to be determined.
-// func NewContract(evmKeeper pcommon.EVMKeeper, authzKeeper pcommon.AuthzKeeper) contract.StatefulPrecompiledContract {
-// 	executor := &PrecompileExecutor{
-// 		evmKeeper:   evmKeeper,
-// 		authzKeeper: authzKeeper,
-// 	}
+	// Define the minumum gas required needed for each method
+	// TODO: need to re-define gas required here
+	SetGrantMethodRequiredGas  = 5_000_000
+	ExecGrantMethodRequiredGas = 5_000_000
+	GrantMethodRequiredGas     = 30_000
+)
 
-// 	functions := []*contract.StatefulPrecompileFunction{
-// 		contract.NewStatefulPrecompileFunction(
-// 			ABI.Methods[SetGrantMethod].ID,
-// 			executor.setGrant,
-// 		),
-// 		contract.NewStatefulPrecompileFunction(
-// 			ABI.Methods[ExecGrantMethod].ID,
-// 			executor.execGrant,
-// 		),
-// 		contract.NewStatefulPrecompileFunction(
-// 			ABI.Methods[GrantMethod].ID,
-// 			executor.grant,
-// 		),
-// 	}
+const (
+	NoGrantError = "authorization not found for"
+)
 
-// 	// Construct the contract with functions.
-// 	precompile, err := contract.NewStatefulPrecompileContract(functions)
-// 	if err != nil {
-// 		panic(fmt.Sprintf("failed to instantiate authz precompile: %s", err.Error()))
-// 	}
+type Precompile struct {
+	cmn.Precompile
+	EVMKeeper   pcommon.EVMKeeper
+	AuthzKeeper pcommon.AuthzKeeper
+}
 
-// 	return precompile
-// }
+func NewPrecompile(
+	evmKeeper pcommon.EVMKeeper,
+	authzKeeper pcommon.AuthzKeeper,
+) (*Precompile, error) {
+	p := &Precompile{
+		Precompile: cmn.Precompile{
+			ABI: ABI,
+		},
+		EVMKeeper:   evmKeeper,
+		AuthzKeeper: authzKeeper,
+	}
+
+	p.SetAddress(common.HexToAddress(AuthzContractAddress))
+
+	return p, nil
+}
+
+func (p Precompile) Address() common.Address {
+	return p.Precompile.Address()
+}
+
+// RequiredGas calculates the precompiled contract's base gas rate.
+func (p Precompile) RequiredGas(input []byte) uint64 {
+	if len(input) < 4 {
+		return 0
+	}
+	methodID := input[:4]
+
+	method, err := p.MethodById(methodID)
+	if err != nil {
+		return 0
+	}
+
+	switch method.Name {
+	case SetGrantMethod:
+		return SetGrantMethodRequiredGas
+	case ExecGrantMethod:
+		return ExecGrantMethodRequiredGas
+	case GrantMethod:
+		return GrantMethodRequiredGas
+	}
+
+	return 0
+}
+
+// Run executes the precompiled contract addr methods defined in the ABI.
+func (p Precompile) Run(
+	evm *vm.EVM,
+	contract *vm.Contract,
+	readOnly bool,
+) (bz []byte, err error) {
+	ctx, stateDB, snapshot, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+	if err != nil {
+		return nil, err
+	}
+
+	// This handles any out of gas errors that may occur during the execution of a precompile.
+	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
+	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
+
+	switch method.Name {
+	case SetGrantMethod:
+		bz, err = p.SetGrant(ctx, contract, method, args)
+		break
+	case ExecGrantMethod:
+		bz, err = p.ExecGrant(ctx, contract, method, args)
+		break
+	case GrantMethod:
+		bz, err = p.GetAuthorization(ctx, contract, method, args)
+		break
+	default:
+		return nil, fmt.Errorf(cmn.ErrUnknownMethod, method.Name)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	cost := ctx.GasMeter().GasConsumed() - initialGas
+
+	if !contract.UseGas(cost) {
+		return nil, vm.ErrOutOfGas
+	}
+
+	if err := p.AddJournalEntries(stateDB, snapshot); err != nil {
+		return nil, err
+	}
+
+	return bz, nil
+}
+
+// IsTransaction checks if the given method name corresponds to a transaction or query.
+func (Precompile) IsTransaction(method *abi.Method) bool {
+	switch method.Name {
+	case SetGrantMethod:
+	case ExecGrantMethod:
+		return true
+	default:
+		return false
+	}
+
+	return false
+}
 
 // // Transaction function
 // func (p PrecompileExecutor) setGrant(
