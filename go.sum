@@ -966,8 +966,8 @@ github.com/openzipkin/zipkin-go v0.2.1/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnh
 github.com/openzipkin/zipkin-go v0.2.2/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
 github.com/oraichain/cometbft v0.38.6-0.20250207043129-6ccdb4a201d3 h1:Rj7XV6xqH2f2vxSpj9WtpGG/ShT1ntr2mIjW5u+XvWU=
 github.com/oraichain/cometbft v0.38.6-0.20250207043129-6ccdb4a201d3/go.mod h1:5l0SkgeLRXi6bBfQuevXjKqML1jjfJJlvI1Ulp02/o4=
-github.com/oraichain/cosmos-sdk v0.50.5-0.20250415032445-84a43f4d075c h1:jS0gr96U/V+BnnwscAmQjaI3ygt2DJ0YOabNb2fK8ls=
-github.com/oraichain/cosmos-sdk v0.50.5-0.20250415032445-84a43f4d075c/go.mod h1:hrWEFMU1eoXqLJeE6VVESpJDQH67FS1nnMrQIjO2daw=
+github.com/oraichain/cosmos-sdk v0.50.5-0.20250416091604-95e3312a3273 h1:wiSVmNPVU9f2b2F+WOQhAXnUWBSC49tdBdyNLVRCFK4=
+github.com/oraichain/cosmos-sdk v0.50.5-0.20250416091604-95e3312a3273/go.mod h1:hrWEFMU1eoXqLJeE6VVESpJDQH67FS1nnMrQIjO2daw=
 github.com/oraichain/cosmos-sdk/store v1.0.3-0.20250415032445-84a43f4d075c h1:pmyS4CQX0NBOIpVzd1qgh4pIPRI86iuxJMQuSdAhnB4=
 github.com/oraichain/cosmos-sdk/store v1.0.3-0.20250415032445-84a43f4d075c/go.mod h1:8DwVTz83/2PSI366FERGbWSH7hL6sB7HbYp8bqksNwM=
 github.com/oraichain/evm v0.0.0-20250415040052-99ff8ff6127a h1:PZTDVKYya6flAhHxqT7nkD8hU4HMhicJJO+rhneNopY=

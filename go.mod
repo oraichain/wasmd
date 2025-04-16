@@ -50,7 +50,7 @@ require (
 	cosmossdk.io/x/tx v0.13.7
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/CosmosContracts/juno/v18/x/globalfee v0.0.0-00010101000000-000000000000
-	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
+	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/cometbft/cometbft v0.38.17
 	github.com/cosmos/cosmos-db v1.1.1
 	github.com/cosmos/go-bip39 v1.0.0
@@ -288,7 +288,8 @@ replace (
 	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20250207043129-6ccdb4a201d3
 
 	// go list -m -json github.com/oraichain/cometbft@ee1321d28d8ce7633e9a229b7175f6571629f917 | jq '.|"\(.Path) \(.Version)"' -r
-	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20250415032445-84a43f4d075c
+	//upstream-evm
+	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20250416091604-95e3312a3273
 
 	github.com/cosmos/evm => github.com/oraichain/evm v0.0.0-20250415040052-99ff8ff6127a
 	// indexer and timestamp added
