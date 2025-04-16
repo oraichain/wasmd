@@ -425,7 +425,6 @@ func NewWasmApp(
 	overrideWasmVariables()
 
 	// initialize the Cosmos EVM application configuration
-	fmt.Println("BaseApp ChainID", bApp.ChainID())
 	if err := evmOpts(bApp.ChainID()); err != nil {
 		panic(err)
 	}
