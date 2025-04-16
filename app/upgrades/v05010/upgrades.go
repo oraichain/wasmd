@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 
 	"cosmossdk.io/math"
 	"github.com/CosmWasm/wasmd/app/upgrades"
@@ -39,7 +38,7 @@ func CreateUpgradeHandler(
 	return func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-		if err := UpgradeMintParams(sdkCtx, ak.ParamsKeeper, ak.MintKeeper); err != nil {
+		if err := UpgradeMintParams(sdkCtx, ak.MintKeeper); err != nil {
 			return nil, err
 		}
 
@@ -47,7 +46,7 @@ func CreateUpgradeHandler(
 	}
 }
 
-func UpgradeMintParams(ctx sdk.Context, paramsKeeper *paramskeeper.Keeper, mintKeeper *mintkeeper.Keeper) error {
+func UpgradeMintParams(ctx sdk.Context, mintKeeper *mintkeeper.Keeper) error {
 	mintParams, err := mintKeeper.Params.Get(ctx)
 	if err != nil {
 		// in case of error, set default params
@@ -61,11 +60,8 @@ func UpgradeMintParams(ctx sdk.Context, paramsKeeper *paramskeeper.Keeper, mintK
 	mintParams.InflationMin = mintParams.InflationRateChange
 	mintParams.InflationMax = mintParams.InflationRateChange
 
-	mintSpace, exist := paramsKeeper.GetSubspace(minttypes.ModuleName)
-	if exist {
-		mintSpace.SetParamSet(ctx, &mintParams)
-		mintKeeper.Params.Set(ctx, mintParams)
-	}
+	// set mint params
+	mintKeeper.Params.Set(ctx, mintParams)
 
 	return nil
 }
