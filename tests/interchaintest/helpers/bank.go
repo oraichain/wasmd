@@ -20,7 +20,6 @@ func QueryBankBalance(
 	tn := chain.GetNode()
 	stdout, _, err := tn.ExecQuery(ctx, "bank", "balance", userAddress, denom)
 	if err != nil {
-		fmt.Println("Error query bank balances ")
 		return 0, err
 	}
 	if stdout == nil {

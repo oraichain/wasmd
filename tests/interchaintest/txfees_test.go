@@ -2,15 +2,16 @@ package interchaintest
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"cosmossdk.io/math"
 	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
+	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -91,9 +92,9 @@ func TestAddFeeToken(t *testing.T) {
 	// vote on created proposal and waiting for passed proposal
 	err = orai.VoteOnProposalAllValidators(ctx, proposalUpdateParams, cosmos.ProposalVoteYes)
 	require.NoError(t, err, "failed to submit votes")
-	height, _ := orai.Height(ctx)
-	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, proposalUpdateParams, govv1beta1.StatusPassed)
-	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
+	err = testutil.WaitForBlocks(ctx, 10, orai)
+	proposal, err := helpers.QueryGovProposalStatus(t, ctx, orai, strconv.Itoa(int(proposalUpdateParams)))
+	require.Equal(t, proposal.Proposal.Status, "PROPOSAL_STATUS_PASSED", "proposal status did not change to passed in expected number of blocks")
 
 	// create proposal add token fee
 	proposalAddFeeToken, err := helpers.ProposalTxfeesAddFeeToken(
@@ -108,9 +109,9 @@ func TestAddFeeToken(t *testing.T) {
 	// vote on created proposal and waiting for passed proposal
 	err = orai.VoteOnProposalAllValidators(ctx, proposalAddFeeToken, cosmos.ProposalVoteYes)
 	require.NoError(t, err, "failed to submit votes")
-	height, _ = orai.Height(ctx)
-	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, proposalAddFeeToken, govv1beta1.StatusPassed)
-	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
+	err = testutil.WaitForBlocks(ctx, 10, orai)
+	proposal, err = helpers.QueryGovProposalStatus(t, ctx, orai, strconv.Itoa(int(proposalAddFeeToken)))
+	require.Equal(t, proposal.Proposal.Status, "PROPOSAL_STATUS_PASSED", "proposal status did not change to passed in expected number of blocks")
 
 	// execute a transaction with new fee token
 	rate, err := helpers.QueryTokenExchangeRate(ctx, orai, expectedDenom)

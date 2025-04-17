@@ -2,11 +2,11 @@ package interchaintest
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
@@ -68,9 +68,10 @@ func TestWasmGasLessContract(t *testing.T) {
 	// vote on created proposal and waiting for passed proposal
 	err = orai.VoteOnProposalAllValidators(ctx, proposalSetGasLessID, cosmos.ProposalVoteYes)
 	require.NoError(t, err, "failed to submit votes")
-	height, _ := orai.Height(ctx)
-	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, proposalSetGasLessID, govv1beta1.StatusPassed)
-	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
+	err = testutil.WaitForBlocks(ctx, 10, orai)
+	proposal, err := helpers.QueryGovProposalStatus(t, ctx, orai, strconv.Itoa(int(proposalSetGasLessID)))
+	require.NoError(t, err)
+	require.Equal(t, proposal.Proposal.Status, "PROPOSAL_STATUS_PASSED", "proposal status did not change to passed in expected number of blocks")
 
 	// Check gas less contract
 	gasLessContractsBefore, err := helpers.QueryGasLessContracts(ctx, orai)
@@ -97,9 +98,10 @@ func TestWasmGasLessContract(t *testing.T) {
 	// vote on created proposal and waiting for passed proposal
 	err = orai.VoteOnProposalAllValidators(ctx, proposalUnsetGasLessID, cosmos.ProposalVoteYes)
 	require.NoError(t, err, "failed to submit votes")
-	height, _ = orai.Height(ctx)
-	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, proposalUnsetGasLessID, govv1beta1.StatusPassed)
-	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
+	err = testutil.WaitForBlocks(ctx, 10, orai)
+	proposal, err = helpers.QueryGovProposalStatus(t, ctx, orai, strconv.Itoa(int(proposalUnsetGasLessID)))
+	require.NoError(t, err)
+	require.Equal(t, proposal.Proposal.Status, "PROPOSAL_STATUS_PASSED", "proposal status did not change to passed in expected number of blocks")
 
 	// Check gas less contract
 	gasLessContractsAfter, err := helpers.QueryGasLessContracts(ctx, orai)
