@@ -7,6 +7,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
@@ -71,9 +72,9 @@ func TestIbcHooks(t *testing.T) {
 	gaiaIBCDenom := transfertypes.ParseDenomTrace(gaiaDenom).IBCDenom()                                                           // ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2
 
 	// check contract address balance
-	balances, err := orai.BankQueryBalance(ctx, contractAddress, gaiaIBCDenom)
+	balances, err := helpers.QueryBankBalance(t, ctx, orai, gaiaIBCDenom, contractAddress)
 	require.NoError(t, err)
-	require.Equal(t, math.NewInt(0), balances)
+	require.Equal(t, uint64(0), balances)
 
 	// send ibc transaction to execite the contract
 	transfer := ibc.WalletAmount{
@@ -92,11 +93,11 @@ func TestIbcHooks(t *testing.T) {
 	require.NoError(t, err)
 
 	// check new balances
-	balances, err = orai.BankQueryBalance(ctx, contractAddress, gaiaIBCDenom)
+	balances, err = helpers.QueryBankBalance(t, ctx, orai, gaiaIBCDenom, contractAddress)
 	require.NoError(t, err)
-	require.Equal(t, amountToSend, balances)
+	require.Equal(t, amountToSend, math.NewInt(int64(balances)))
 
-	// check contract
+	// check contractx
 	var res GetCountResponse
 	err = orai.QueryContract(ctx, contractAddress, QueryMsg{GetCount: &GetCountQuery{}}, &res)
 	require.NoError(t, err)
