@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/stretchr/testify/require"
@@ -48,7 +49,7 @@ func TestStartOrai(t *testing.T) {
 		_ = ic.Close()
 	})
 
-	a, err := orai.AuthQueryModuleAccounts(ctx)
+	a, err := helpers.QueryAuthModuleAccounts(t, ctx, orai)
 
 	require.NoError(t, err)
 	t.Log("module accounts", a)

@@ -20,6 +20,24 @@ type TokenFactoryParams struct {
 	DenomCreationGasConsume string    `json:"denom_creation_gas_consume,omitempty"`
 }
 
+type Account struct {
+	AccountNumber uint64   `json:"account_number"`
+	Address       string   `json:"address"`
+	Name          string   `json:"name"`
+	Permissions   []string `json:"permissions"`
+	PublicKey     string   `json:"public_key"`
+	Sequence      uint64   `json:"sequence"`
+}
+
+type ModuleAccount struct {
+	Type  string  `json:"type"`
+	Value Account `json:"value"`
+}
+
+type AuthModuleAccounts struct {
+	Accounts []ModuleAccount `json:"accounts"`
+}
+
 type QueryDenomsFromCreatorResponse struct {
 	Denoms []string `json:"denoms"`
 }
