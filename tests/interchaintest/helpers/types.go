@@ -5,6 +5,7 @@ import (
 
 	types1 "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 type ParamChange struct {
@@ -138,4 +139,9 @@ type TallyResult struct {
 	NoCount string `protobuf:"bytes,3,opt,name=no_count,json=noCount,proto3" json:"no_count,omitempty"`
 	// no_with_veto_count is the number of no with veto votes on a proposal.
 	NoWithVetoCount string `protobuf:"bytes,4,opt,name=no_with_veto_count,json=noWithVetoCount,proto3" json:"no_with_veto_count,omitempty"`
+}
+
+type QueryDenomMetadataResponse struct {
+	// metadata describes and provides all the client information for the requested token.
+	Metadata banktypes.Metadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata"`
 }

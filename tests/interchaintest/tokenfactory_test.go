@@ -120,8 +120,9 @@ func TestTokenfactorySetMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	// check denom meta data
-	metadata, err := orai.BankQueryDenomMetadata(ctx, expectedDenom)
+	// metadata, err := orai.BankQueryDenomMetadata(ctx, expectedDenom)
+	metadata, err := helpers.QueryBankDenomMetadata(t, ctx, orai, expectedDenom)
 	require.NoError(t, err)
 	require.NotNil(t, metadata)
-	require.Equal(t, expectedMetadata, *metadata)
+	require.Equal(t, expectedMetadata, metadata.Metadata)
 }
