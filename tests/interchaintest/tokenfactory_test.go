@@ -2,16 +2,17 @@ package interchaintest
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/oraichain/wasmd/tests/interchaintest/helpers"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
+	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
 // TestStartOrai is a basic test to assert that spinning up a Orai network with 1 validator works properly.
@@ -44,9 +45,10 @@ func TestTokenfactoryParamChange(t *testing.T) {
 	// vote on created proposal and waiting for passed proposal
 	err = orai.VoteOnProposalAllValidators(ctx, propId, cosmos.ProposalVoteYes)
 	require.NoError(t, err, "failed to submit votes")
-	height, _ := orai.Height(ctx)
-	_, err = cosmos.PollForProposalStatus(ctx, orai, height, height+10, propId, govv1beta1.StatusPassed)
-	require.NoError(t, err, "proposal status did not change to passed in expected number of blocks")
+	// height, _ := orai.Height(ctx)
+	err = testutil.WaitForBlocks(ctx, 10, orai)
+	proposal, err := helpers.QueryGovProposalStatus(t, ctx, orai, strconv.Itoa(int(propId)))
+	require.Equal(t, proposal.Proposal.Status, "PROPOSAL_STATUS_PASSED", "proposal status did not change to passed in expected number of blocks")
 
 	// check result
 	newParam, err := helpers.QueryTokenFactoryParam(t, ctx, orai)
