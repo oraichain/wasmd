@@ -44,7 +44,7 @@ func TestAddFeeToken(t *testing.T) {
 	// mint token
 	tokenToMint := uint64(100_000_000_000)
 	_ = helpers.TxTokenFactoryMintToken(t, ctx, orai, oraiUser, expectedDenom, tokenToMint)
-	oraiUserBalance, err := helpers.QueryBalance(t, ctx, orai, expectedDenom, oraiUser.FormattedAddress())
+	oraiUserBalance, err := helpers.QueryBankBalance(t, ctx, orai, expectedDenom, oraiUser.FormattedAddress())
 	require.NoError(t, err)
 	require.Equal(t, tokenToMint, oraiUserBalance)
 

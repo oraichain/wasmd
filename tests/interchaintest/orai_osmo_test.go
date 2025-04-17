@@ -69,7 +69,7 @@ func TestTokenFactoryForceTransferWithIbc(t *testing.T) {
 	// mint token
 	tokenToMint := uint64(100_000_000_000)
 	_ = helpers.TxTokenFactoryMintToken(t, ctx, orai, oraiUser, expectedDenom, tokenToMint)
-	oraiUserBalance, err := helpers.QueryBalance(t, ctx, orai, expectedDenom, oraiUserAddress)
+	oraiUserBalance, err := helpers.QueryBankBalance(t, ctx, orai, expectedDenom, oraiUserAddress)
 	require.NoError(t, err)
 	require.Equal(t, tokenToMint, oraiUserBalance)
 
@@ -78,7 +78,7 @@ func TestTokenFactoryForceTransferWithIbc(t *testing.T) {
 	escrowedAddress := sdk.MustBech32ifyAddressBytes(orai.Config().Bech32Prefix, addr.Bytes())
 
 	// balance before transfer ibc must be 0
-	escrowedBalance, err := helpers.QueryBalance(t, ctx, orai, expectedDenom, escrowedAddress)
+	escrowedBalance, err := helpers.QueryBankBalance(t, ctx, orai, expectedDenom, escrowedAddress)
 	require.NoError(t, err)
 	require.Equal(t, escrowedBalance, uint64(0))
 
@@ -89,7 +89,7 @@ func TestTokenFactoryForceTransferWithIbc(t *testing.T) {
 	oraiIBCDenom := transfertypes.ParseDenomTrace(oraiDenom).IBCDenom()
 
 	// osmosis user balance before transfer ibc must be 0
-	userOsmosisBalance, err := helpers.QueryBalance(t, ctx, osmo, oraiIBCDenom, osmoUserAddr)
+	userOsmosisBalance, err := helpers.QueryBankBalance(t, ctx, osmo, oraiIBCDenom, osmoUserAddr)
 	require.NoError(t, err)
 	require.Equal(t, userOsmosisBalance, uint64(0))
 
@@ -109,13 +109,13 @@ func TestTokenFactoryForceTransferWithIbc(t *testing.T) {
 	require.NoError(t, err)
 
 	// balance after transfer ibc must be equalt amount to send
-	escrowedBalance, err = helpers.QueryBalance(t, ctx, orai, expectedDenom, escrowedAddress)
+	escrowedBalance, err = helpers.QueryBankBalance(t, ctx, orai, expectedDenom, escrowedAddress)
 	fmt.Println("escrowed balance: ", escrowedBalance)
 	require.NoError(t, err)
 	require.Equal(t, escrowedBalance, uint64(amountToSend.Int64()))
 
 	// osmosis user balance after transfer ibc must be equal amount to send
-	userOsmosisBalance, err = helpers.QueryBalance(t, ctx, osmo, oraiIBCDenom, osmoUserAddr)
+	userOsmosisBalance, err = helpers.QueryBankBalance(t, ctx, osmo, oraiIBCDenom, osmoUserAddr)
 	require.NoError(t, err)
 	require.Equal(t, userOsmosisBalance, uint64(amountToSend.Int64()))
 
@@ -123,7 +123,7 @@ func TestTokenFactoryForceTransferWithIbc(t *testing.T) {
 	_, err = helpers.TxTokenFactoryForceTransfer(t, ctx, orai, oraiUser, expectedDenom, uint64(amountToSend.Int64()), escrowedAddress, oraiUserAddress)
 	require.Error(t, err)
 
-	escrowedBalance, err = helpers.QueryBalance(t, ctx, orai, expectedDenom, escrowedAddress)
+	escrowedBalance, err = helpers.QueryBankBalance(t, ctx, orai, expectedDenom, escrowedAddress)
 	fmt.Println("escrowed balance: ", escrowedBalance)
 	require.NoError(t, err)
 	require.Equal(t, escrowedBalance, uint64(amountToSend.Int64()))

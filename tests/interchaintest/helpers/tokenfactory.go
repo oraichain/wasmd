@@ -192,19 +192,3 @@ func QueryDenomAuthorityMetadata(t *testing.T,
 
 	return res.AuthorityMetadata.Admin, nil
 }
-
-func QueryBalance(
-	t *testing.T,
-	ctx context.Context,
-	chain *cosmos.CosmosChain,
-	denom string,
-	userAddress string,
-) (uint64, error) {
-	tn := chain.GetNode()
-	balance, err := tn.Chain.GetBalance(ctx, userAddress, denom)
-	if err != nil {
-		return 0, err
-	}
-
-	return balance.Uint64(), nil
-}

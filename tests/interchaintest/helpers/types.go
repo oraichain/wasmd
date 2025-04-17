@@ -145,3 +145,8 @@ type QueryDenomMetadataResponse struct {
 	// metadata describes and provides all the client information for the requested token.
 	Metadata banktypes.Metadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata"`
 }
+
+type QueryBalanceResponse struct {
+	// balance is the balance of the coin.
+	Balance *sdk.Coin `protobuf:"bytes,1,opt,name=balance,proto3" json:"balance,omitempty"`
+}
