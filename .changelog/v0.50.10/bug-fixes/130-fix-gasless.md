@@ -1,0 +1,1 @@
+- fix gasless bug ([\#130](https://github.com/oraichain/wasmd/pull/130))

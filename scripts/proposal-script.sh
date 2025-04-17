@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-VERSION=${VERSION:-"v0.50.9"}
+VERSION=${VERSION:-"v0.50.10"}
 HEIGHT=${HEIGHT:-200}
 VALIDATOR1_HOME=${VALIDATOR1_HOME:-"$HOME/.oraid/validator1"}
 VALIDATOR1_ARGS="--from validator1 --chain-id testing -y --keyring-backend test --home $VALIDATOR1_HOME --fees 2orai -b sync"
