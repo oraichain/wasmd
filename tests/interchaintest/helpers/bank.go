@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 )
 
@@ -19,9 +20,10 @@ func QueryBankBalance(
 	tn := chain.GetNode()
 	stdout, _, err := tn.ExecQuery(ctx, "bank", "balance", userAddress, denom)
 	if err != nil {
+		fmt.Println("Error query bank balances ")
 		return 0, err
 	}
-	fmt.Println("Bank balance: ", string(stdout))
+	fmt.Println("Bank balance==============: ", string(stdout))
 	if stdout == nil {
 		return 0, err
 	}
@@ -33,6 +35,33 @@ func QueryBankBalance(
 	}
 
 	return balance.Balance.Amount.Uint64(), nil
+}
+
+func QueryBankBalances(
+	t *testing.T,
+	ctx context.Context,
+	chain *cosmos.CosmosChain,
+	userAddress string,
+) (sdk.Coins, error) {
+	tn := chain.GetNode()
+	stdout, _, err := tn.ExecQuery(ctx, "bank", "balances", userAddress)
+	if err != nil {
+		fmt.Println("Error query bank balances ")
+		return sdk.Coins{}, err
+	}
+
+	fmt.Println("Bank balances: ", string(stdout))
+	if stdout == nil {
+		return sdk.Coins{}, err
+	}
+
+	var balance QueryAllBalancesResponse
+	err = json.Unmarshal(stdout, &balance)
+	if err != nil {
+		return sdk.Coins{}, err
+	}
+
+	return balance.Balances, nil
 }
 
 // Query helpers

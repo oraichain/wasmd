@@ -150,3 +150,8 @@ type QueryBalanceResponse struct {
 	// balance is the balance of the coin.
 	Balance *sdk.Coin `protobuf:"bytes,1,opt,name=balance,proto3" json:"balance,omitempty"`
 }
+
+type QueryAllBalancesResponse struct {
+	// balances is the balances of all the coins.
+	Balances sdk.Coins `protobuf:"bytes,1,rep,name=balances,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"balances"`
+}
