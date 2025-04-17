@@ -117,13 +117,9 @@ func TestTokenFactoryForceTransferWithIbc(t *testing.T) {
 	require.Equal(t, escrowedBalance, uint64(amountToSend.Int64()))
 
 	// osmosis user balance after transfer ibc must be equal amount to send
-	// userOsmosisBalance, err = helpers.QueryBankBalance(t, ctx, osmo, oraiIBCDenom, osmoUserAddr)
-	// require.NoError(t, err)
-	// require.Equal(t, userOsmosisBalance, uint64(amountToSend.Int64()))
-	err = testutil.WaitForBlocks(ctx, 10, osmo)
+	userOsmosisBalance, err = helpers.QueryBalance(t, ctx, osmo, oraiIBCDenom, osmoUserAddr)
 	require.NoError(t, err)
-	_, err = helpers.QueryBankBalances(t, ctx, osmo, osmoUserAddr)
-	require.NoError(t, err)
+	require.Equal(t, userOsmosisBalance, uint64(amountToSend.Int64()))
 
 	// try to force transfer tokenfactory from escrowed address
 	_, err = helpers.TxTokenFactoryForceTransfer(t, ctx, orai, oraiUser, expectedDenom, uint64(amountToSend.Int64()), escrowedAddress, oraiUserAddress)

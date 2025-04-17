@@ -23,7 +23,6 @@ func QueryBankBalance(
 		fmt.Println("Error query bank balances ")
 		return 0, err
 	}
-	fmt.Println("Bank balance==============: ", string(stdout))
 	if stdout == nil {
 		return 0, err
 	}
