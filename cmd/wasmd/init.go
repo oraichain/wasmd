@@ -74,6 +74,13 @@ func InitAppConfig(denom string) (string, *cosmosevmserverconfig.Config) {
 	// Optionally allow the chain developer to overwrite the SDK's default
 	// server config.
 	srvCfg := cosmosevmserverconfig.DefaultConfig()
+	srvCfg.API.Enable = true
+	srvCfg.GRPC.Enable = true
+	srvCfg.GRPCWeb.Enable = true
+	srvCfg.Telemetry.Enabled = false
+
+	// JSONRPCConfig
+	srvCfg.JSONRPC.Enable = true
 	// The SDK's default minimum gas price is set to "" (empty value) inside
 	// app.toml. If left empty by validators, the node will halt on startup.
 	// However, the chain developer can set a default app.toml value for their
@@ -202,7 +209,6 @@ func initCmd(mbm module.BasicManager, customAppState app.GenesisState, defaultNo
 
 			// config for app.toml file with EVM config
 			appConfigTemplate, defaultAppConfig := InitAppConfig("orai")
-			defaultAppConfig.API.Enable = true
 			srvconfig.SetConfigTemplate(appConfigTemplate)
 			srvconfig.WriteConfigFile(filepath.Join(config.RootDir, "config/app.toml"), defaultAppConfig)
 
