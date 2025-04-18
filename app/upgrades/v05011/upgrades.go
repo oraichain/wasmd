@@ -50,11 +50,11 @@ func CreateUpgradeHandler(
 
 		// We need to migrate the EthAccounts to BaseAccounts
 		logger.Info("==========migrating EthAccounts to BaseAccounts==========")
-		MigrateEthAccountsToBaseAccounts(ctx, *ak.AccountKeeper, ak.EVMKeeper)
+		MigrateEthAccountsToBaseAccounts(ctx, *ak.AccountKeeper, ak.EvmKeeper)
 		logger.Info("=========================================================")
 		// Set actives precompiles
 		logger.Info("=============Set actives precompile contracts============")
-		ActivateStaticPrecompiles(ctx, ak.EVMKeeper)
+		ActivateStaticPrecompiles(ctx, ak.EvmKeeper)
 		logger.Info("=========================================================")
 
 		return migrationRes, err

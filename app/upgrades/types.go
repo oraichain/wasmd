@@ -37,7 +37,7 @@ type AppKeepers struct {
 	IBCFeeKeeper              ibcfeekeeper.Keeper
 	IBCKeeper                 *ibckeeper.Keeper
 	MintKeeper                *mintkeeper.Keeper
-	EVMKeeper                 *evmkeeper.Keeper
+	EvmKeeper                 *evmkeeper.Keeper
 }
 type ModuleManager interface {
 	RunMigrations(ctx context.Context, cfg module.Configurator, fromVM module.VersionMap) (module.VersionMap, error)
