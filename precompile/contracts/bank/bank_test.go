@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
+	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
@@ -71,14 +72,14 @@ func TestSend(t *testing.T) {
 
 	// Set EVM parameters to register the bank precompile address
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, bank.BankPrecompileAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.BankContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(bank.BankPrecompileAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.BankContractAddress))
 
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(bank.BankPrecompileAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.BankContractAddress)]
 	require.NotNil(t, contract)
 
 	evm := vm.EVM{
@@ -131,14 +132,14 @@ func TestBurn(t *testing.T) {
 
 	// Set EVM parameters to register the bank precompile address
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, bank.BankPrecompileAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.BankContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(bank.BankPrecompileAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.BankContractAddress))
 
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(bank.BankPrecompileAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.BankContractAddress)]
 	require.NotNil(t, contract)
 
 	evm := vm.EVM{
@@ -206,14 +207,14 @@ func TestBurnFrom(t *testing.T) {
 	require.NoError(t, err)
 
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, bank.BankPrecompileAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.BankContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(bank.BankPrecompileAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.BankContractAddress))
 
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(bank.BankPrecompileAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.BankContractAddress)]
 	require.NotNil(t, contract)
 
 	// burn from
@@ -293,14 +294,14 @@ func TestBalance(t *testing.T) {
 
 	// Set EVM parameters to register the bank precompile address
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, bank.BankPrecompileAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.BankContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(bank.BankPrecompileAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.BankContractAddress))
 
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(bank.BankPrecompileAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.BankContractAddress)]
 	require.NotNil(t, contract)
 
 	evm := vm.EVM{
@@ -341,14 +342,14 @@ func TestSupply(t *testing.T) {
 
 	// Set EVM parameters to register the bank precompile address
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, bank.BankPrecompileAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.BankContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(bank.BankPrecompileAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.BankContractAddress))
 
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(bank.BankPrecompileAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.BankContractAddress)]
 
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
