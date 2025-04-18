@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eu
+set -ux
 
 # ------------------------------------------------------------------------------------------------
 # Setup chain with old binary
@@ -86,7 +86,7 @@ cd $current_dir
 # ------------------------------------------------------------------------------------------------
 
 # create new upgrade proposal
-UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-50}
+UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-100}
 
 VERSION=$NEW_VERSION HEIGHT=$UPGRADE_HEIGHT bash $PWD/scripts/proposal-script.sh
 
