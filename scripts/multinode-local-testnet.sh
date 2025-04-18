@@ -61,6 +61,7 @@ update_genesis '.app_state["gov"]["params"]["voting_period"]="6s"'
 # update mint genesis
 update_genesis '.app_state["mint"]["params"]["mint_denom"]="orai"'
 update_genesis '.app_state["mint"]["params"]["blocks_per_year"]="45051428"'
+update_genesis '.app_state["mint"]["params"]["inflation_rate_change"]="0.070000000000000000"'
 update_genesis '.app_state["mint"]["params"]["inflation_max"]="0.070000000000000000"'
 update_genesis '.app_state["mint"]["params"]["inflation_min"]="0.070000000000000000"'
 update_genesis '.initial_height="1"'
