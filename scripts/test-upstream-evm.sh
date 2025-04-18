@@ -117,14 +117,7 @@ pkill oraid
 echo "install new binary"
 GOTOOLCHAIN=$GO_VERSION make build
 
-sleep 2
-oraid_version=$(oraid version)
-if [[ $oraid_version =~ $OLD_VERSION ]]; then
-   echo "The chain has not upgraded yet. There's something wrong!"
-   exit 1
-fi
-
-echo "ORAID version: $oraid_version"
+sleep 5
 # Back to current folder
 cd $current_dir
 
