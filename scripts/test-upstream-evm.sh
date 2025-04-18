@@ -7,9 +7,9 @@ set -eu
 # ------------------------------------------------------------------------------------------------
 
 # setup the network using the old binary
-OLD_VERSION=${OLD_VERSION:-"v0.50.9"}
+OLD_VERSION=${OLD_VERSION:-"v0.50.10"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
-NEW_VERSION=${NEW_VERSION:-"v0.50.10"}
+NEW_VERSION=${NEW_VERSION:-"v0.50.11"}
 HIDE_LOGS="/dev/null"
 GO_VERSION=$(go version | awk '{print $3}')
 
@@ -47,17 +47,8 @@ PRIVATE_KEY_EVM_ADDRESS=${PRIVATE_KEY_EVM_ADDRESS:-"0xB0ac9d216b303a32907632731a
 VALIDATOR1_ARGS=${VALIDATOR1_ARGS:-"--from validator1 --home $HOME/.oraid/validator1"}
 USER="validator1"
 
-# clone or pull latest repo
-if [ -d "$PWD/../evm-bridge-proxy" ]; then
-  cd ../evm-bridge-proxy
-  git checkout feat/test-upstream-evm
-  git pull origin feat/test-upstream-evm
-else
-  git clone https://github.com/oraichain/evm-bridge-proxy.git ../evm-bridge-proxy
-  cd ../evm-bridge-proxy
-  git checkout feat/test-upstream-evm 
-  git pull origin feat/test-upstream-evm
-fi
+# Use local evm-contracts directory
+cd $PWD/scripts/evm-contracts/counter
 
 # prepare env and chain
 yarn && yarn compile;
@@ -117,6 +108,7 @@ pkill oraid
 echo "install new binary"
 GOTOOLCHAIN=$GO_VERSION make build
 
+sleep 5
 # Back to current folder
 cd $current_dir
 
@@ -170,7 +162,7 @@ if ! [[ $inflation =~ $re ]]; then
    exit 1
 fi
 
-evm_denom=$(curl --no-progress-meter http://localhost:1317/ethermint/evm/v1/params | jq '.params.evm_denom')
+evm_denom=$(curl --no-progress-meter http://localhost:1317/cosmos/evm/vm/v1/params | jq '.params.evm_denom')
 if ! [[ $evm_denom =~ "aorai" ]]; then
    echo "Error: EVM denom is not correct. The upgraded version is not the latest!" >&2
    echo "Tests Failed"
@@ -181,6 +173,7 @@ fi
 # Test counter contract
 # ------------------------------------------------------------------------------------------------
 
+cd $PWD/scripts/evm-contracts/counter
 # try querying counter value
 output=$(COUNTER_ADDRESS=$contract_addr yarn hardhat run scripts/query-counter.ts --network testing)
 counter_value=$(echo "$output" | awk '/^[0-9]+$/ { print $1 }')
