@@ -79,6 +79,10 @@ if ! [ $counter_value == "10" ] ; then
    exit 1
 fi
 
+# try to increment the counter
+output=$(COUNTER_ADDRESS=$contract_addr yarn hardhat run scripts/increase-counter.ts --network testing)
+echo "Increment counter output: $output"
+
 cd $current_dir
 
 # ------------------------------------------------------------------------------------------------
@@ -86,7 +90,7 @@ cd $current_dir
 # ------------------------------------------------------------------------------------------------
 
 # create new upgrade proposal
-UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-100}
+UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-80}
 
 VERSION=$NEW_VERSION HEIGHT=$UPGRADE_HEIGHT bash $PWD/scripts/proposal-script.sh
 
@@ -177,7 +181,7 @@ cd $PWD/scripts/evm-contracts/counter
 # try querying counter value
 output=$(COUNTER_ADDRESS=$contract_addr yarn hardhat run scripts/query-counter.ts --network testing)
 counter_value=$(echo "$output" | awk '/^[0-9]+$/ { print $1 }')
-if ! [ $counter_value == "10" ] ; then
+if ! [ $counter_value == "11" ] ; then
    echo "Could not query counter value. Upstream EVM Test Failed"; 
    exit 1
 fi
