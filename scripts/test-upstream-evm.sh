@@ -7,9 +7,9 @@ set -eu
 # ------------------------------------------------------------------------------------------------
 
 # setup the network using the old binary
-OLD_VERSION=${OLD_VERSION:-"v0.50.9"}
+OLD_VERSION=${OLD_VERSION:-"v0.50.10"}
 ARGS="--chain-id testing -y --keyring-backend test --gas auto --gas-adjustment 1.5"
-NEW_VERSION=${NEW_VERSION:-"v0.50.10"}
+NEW_VERSION=${NEW_VERSION:-"v0.50.11"}
 HIDE_LOGS="/dev/null"
 GO_VERSION=$(go version | awk '{print $3}')
 
@@ -117,6 +117,14 @@ pkill oraid
 echo "install new binary"
 GOTOOLCHAIN=$GO_VERSION make build
 
+sleep 2
+oraid_version=$(oraid version)
+if [[ $oraid_version =~ $OLD_VERSION ]]; then
+   echo "The chain has not upgraded yet. There's something wrong!"
+   exit 1
+fi
+
+echo "ORAID version: $oraid_version"
 # Back to current folder
 cd $current_dir
 
@@ -170,7 +178,7 @@ if ! [[ $inflation =~ $re ]]; then
    exit 1
 fi
 
-evm_denom=$(curl --no-progress-meter http://localhost:1317/ethermint/evm/v1/params | jq '.params.evm_denom')
+evm_denom=$(curl --no-progress-meter http://localhost:1317/cosmos/evm/vm/v1/params | jq '.params.evm_denom')
 if ! [[ $evm_denom =~ "aorai" ]]; then
    echo "Error: EVM denom is not correct. The upgraded version is not the latest!" >&2
    echo "Tests Failed"
@@ -180,7 +188,7 @@ fi
 # ------------------------------------------------------------------------------------------------
 # Test counter contract
 # ------------------------------------------------------------------------------------------------
-
+cd ../evm-bridge-proxy
 # try querying counter value
 output=$(COUNTER_ADDRESS=$contract_addr yarn hardhat run scripts/query-counter.ts --network testing)
 counter_value=$(echo "$output" | awk '/^[0-9]+$/ { print $1 }')
