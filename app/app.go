@@ -656,7 +656,7 @@ func NewWasmApp(
 	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec, runtime.NewKVStoreService(keys[evmtypes.StoreKey]), tkeys[evmtypes.TransientKey], Authority,
-		app.AccountKeeper, app.PrecisebankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
+		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
 		&app.Erc20Keeper, tracer, evmSs,
 	)
 
