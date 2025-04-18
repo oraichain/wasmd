@@ -1,0 +1,36 @@
+{
+  "name": "@oraichain/bridge-proxy",
+  "scripts": {
+    "test": "hardhat test --no-compile",
+    "erc20-deploy": "hardhat run scripts/erc20-deploy.ts --network testing",
+    "evm-send-token": "hardhat run scripts/evm-send-token.ts --network testing",
+    "compile": "hardhat compile",
+    "clean": "hardhat clean",
+    "contracts:analyze": "slither contracts --solc-remaps @=node_modules/@",
+    "contracts:size": "hardhat size-contracts --no-compile"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@openzeppelin/contracts-upgradeable": "^4.6.0",
+    "@openzeppelin/hardhat-upgrades": "^1.12.0",
+    "@openzeppelin/test-helpers": "^0.5.15",
+    "@typechain/ethers-v5": "^10.1.0",
+    "@typechain/hardhat": "^6.1.2",
+    "@types/dotenv": "^8.2.0",
+    "@types/mocha": "^9.1.1",
+    "dotenv": "^16.3.1",
+    "ethers": "^5.5.1",
+    "hardhat": "^2.11.2",
+    "hardhat-contract-sizer": "^2.10.0",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.1.0",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.6.0",
+    "@uniswap/lib": "^4.0.1-alpha",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

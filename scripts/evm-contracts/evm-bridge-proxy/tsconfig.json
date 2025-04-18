@@ -1,0 +1,27 @@
+{
+    "compilerOptions": {
+        "target": "ES2021",
+        "module": "commonjs",
+        "strict": true,
+        "baseUrl": ".",
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "moduleResolution": "node",
+        "forceConsistentCasingInFileNames": true,
+        "outDir": "dist",
+    },
+    "ts-node": {
+        "transpileOnly": true,
+    },
+    "include": [
+        "./tasks",
+        "./test",
+        "./scripts",
+        "./constants.ts",
+        "./typechain-types",
+    ],
+    "files": [
+        "./hardhat.config.ts",
+        "./hardhat-bnb.config.ts",
+    ]
+}
