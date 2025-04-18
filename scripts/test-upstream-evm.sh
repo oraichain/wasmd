@@ -48,7 +48,7 @@ VALIDATOR1_ARGS=${VALIDATOR1_ARGS:-"--from validator1 --home $HOME/.oraid/valida
 USER="validator1"
 
 # Use local evm-contracts directory
-cd $PWD/scripts/evm-contracts/upstream-evm
+cd $PWD/scripts/evm-contracts/counter
 
 # prepare env and chain
 yarn && yarn compile;
@@ -173,7 +173,7 @@ fi
 # Test counter contract
 # ------------------------------------------------------------------------------------------------
 
-cd $PWD/scripts/evm-contracts/upstream-evm
+cd $PWD/scripts/evm-contracts/counter
 # try querying counter value
 output=$(COUNTER_ADDRESS=$contract_addr yarn hardhat run scripts/query-counter.ts --network testing)
 counter_value=$(echo "$output" | awk '/^[0-9]+$/ { print $1 }')

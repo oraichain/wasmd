@@ -17,11 +17,9 @@
         "./tasks",
         "./test",
         "./scripts",
-        "./constants.ts",
         "./typechain-types",
     ],
     "files": [
         "./hardhat.config.ts",
-        "./hardhat-bnb.config.ts",
     ]
 }
