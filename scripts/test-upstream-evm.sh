@@ -47,17 +47,8 @@ PRIVATE_KEY_EVM_ADDRESS=${PRIVATE_KEY_EVM_ADDRESS:-"0xB0ac9d216b303a32907632731a
 VALIDATOR1_ARGS=${VALIDATOR1_ARGS:-"--from validator1 --home $HOME/.oraid/validator1"}
 USER="validator1"
 
-# clone or pull latest repo
-if [ -d "$PWD/../evm-bridge-proxy" ]; then
-  cd ../evm-bridge-proxy
-  git checkout feat/test-upstream-evm
-  git pull origin feat/test-upstream-evm
-else
-  git clone https://github.com/oraichain/evm-bridge-proxy.git ../evm-bridge-proxy
-  cd ../evm-bridge-proxy
-  git checkout feat/test-upstream-evm 
-  git pull origin feat/test-upstream-evm
-fi
+# Use local evm-contracts directory
+cd $PWD/scripts/evm-contracts/evm-bridge-proxy
 
 # prepare env and chain
 yarn && yarn compile;
@@ -181,7 +172,8 @@ fi
 # ------------------------------------------------------------------------------------------------
 # Test counter contract
 # ------------------------------------------------------------------------------------------------
-cd ../evm-bridge-proxy
+
+cd $PWD/scripts/evm-contracts/evm-bridge-proxy
 # try querying counter value
 output=$(COUNTER_ADDRESS=$contract_addr yarn hardhat run scripts/query-counter.ts --network testing)
 counter_value=$(echo "$output" | awk '/^[0-9]+$/ { print $1 }')
