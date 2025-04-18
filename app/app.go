@@ -158,6 +158,7 @@ import (
 	tokenfactorykeeper "github.com/CosmWasm/wasmd/x/tokenfactory/keeper"
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 
+	ethermintlegacytypes "github.com/CosmWasm/wasmd/app/upgrades/v05011/types"
 	evmante "github.com/cosmos/evm/ante/evm"
 	"github.com/cosmos/evm/ethereum/eip712"
 	etherminttypes "github.com/cosmos/evm/types"
@@ -375,6 +376,9 @@ func NewWasmApp(
 	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
 
 	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry)
+
+	// register legacy types for migration. We can remove this in the futures
+	ethermintlegacytypes.RegisterInterfaces(interfaceRegistry)
 
 	// Below we could construct and set an application specific mempool and
 	// ABCI 1.0 PrepareProposal and ProcessProposal handlers. These defaults are

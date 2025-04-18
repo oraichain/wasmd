@@ -86,7 +86,7 @@ cd $current_dir
 # ------------------------------------------------------------------------------------------------
 
 # create new upgrade proposal
-UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-40}
+UPGRADE_HEIGHT=${UPGRADE_HEIGHT:-50}
 
 VERSION=$NEW_VERSION HEIGHT=$UPGRADE_HEIGHT bash $PWD/scripts/proposal-script.sh
 

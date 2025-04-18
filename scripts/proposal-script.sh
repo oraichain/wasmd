@@ -2,7 +2,7 @@
 set -eu
 
 VERSION=${VERSION:-"v0.50.11"}
-HEIGHT=${HEIGHT:-200}
+HEIGHT=${HEIGHT:-400}
 VALIDATOR1_HOME=${VALIDATOR1_HOME:-"$HOME/.oraid/validator1"}
 VALIDATOR1_ARGS="--from validator1 --chain-id testing -y --keyring-backend test --home $VALIDATOR1_HOME --fees 2orai -b sync"
 VALIDATOR2_ARGS="--from validator2 --chain-id testing -y --keyring-backend test --home $HOME/.oraid/validator2 --fees 2orai -b sync"
