@@ -13,7 +13,7 @@ import (
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	addrprecompile "github.com/CosmWasm/wasmd/precompile/contracts/addr"
 	authzprecompile "github.com/CosmWasm/wasmd/precompile/contracts/authz"
-	bankprecompile "github.com/CosmWasm/wasmd/precompile/contracts/bank"
+	wasmdbankprecompile "github.com/CosmWasm/wasmd/precompile/contracts/bank"
 	wasmprecompile "github.com/CosmWasm/wasmd/precompile/contracts/wasmd"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -21,6 +21,7 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	bankprecompile "github.com/cosmos/evm/precompiles/bank"
 	distprecompile "github.com/cosmos/evm/precompiles/distribution"
 	evidenceprecompile "github.com/cosmos/evm/precompiles/evidence"
 	govprecompile "github.com/cosmos/evm/precompiles/gov"
@@ -89,10 +90,14 @@ func NewAvailableStaticPrecompiles(
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate ICS20 precompile: %w", err))
 	}
-
-	bankPrecompile, err := bankprecompile.NewPrecompile(evmKeeper, bankKeeper, authzKeeper)
+	bankPrecompile, err := bankprecompile.NewPrecompile(bankKeeper, erc20Keeper)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate bank precompile: %w", err))
+	}
+
+	wasmdBankPrecompile, err := wasmdbankprecompile.NewPrecompile(evmKeeper, bankKeeper, authzKeeper)
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate wasmd bank precompile: %w", err))
 	}
 
 	govPrecompile, err := govprecompile.NewPrecompile(govKeeper, authzKeeper)
@@ -144,6 +149,7 @@ func NewAvailableStaticPrecompiles(
 	precompiles[wasmdPrecompile.Address()] = wasmdPrecompile
 	precompiles[addrPrecompile.Address()] = addrPrecompile
 	precompiles[authzPrecompile.Address()] = authzPrecompile
+	precompiles[wasmdBankPrecompile.Address()] = wasmdBankPrecompile
 
 	return precompiles
 }
