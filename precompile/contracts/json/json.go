@@ -24,7 +24,6 @@ var (
 )
 
 const (
-	// @TODO: These values are placeholders and should be replaced with the actual gas values
 	GasExtractAsBytes     = 30_000
 	GasExtractAsBytesList = 30_000
 	GasExtractAsUint256   = 30_000
