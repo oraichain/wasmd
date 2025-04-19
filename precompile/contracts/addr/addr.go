@@ -23,8 +23,6 @@ var (
 )
 
 const (
-	AddrContractAddress = "0x9000000000000000000000000000000000000003"
-
 	// Define the minumum gas required needed for each method
 	// TODO: need to re-define gas required here
 	AssociateMethodRequiredGas        = 100_000
@@ -56,7 +54,7 @@ func NewPrecompile(evmKeeper pcommon.EVMKeeper) (*Precompile, error) {
 	}
 
 	// SetAddress defines the address of the addr compile contract.
-	p.SetAddress(common.HexToAddress(AddrContractAddress))
+	p.SetAddress(common.HexToAddress(pcommon.AddrContractAddress))
 
 	return p, nil
 }

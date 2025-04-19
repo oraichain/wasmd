@@ -14,6 +14,7 @@ import (
 	addrprecompile "github.com/CosmWasm/wasmd/precompile/contracts/addr"
 	authzprecompile "github.com/CosmWasm/wasmd/precompile/contracts/authz"
 	wasmdbankprecompile "github.com/CosmWasm/wasmd/precompile/contracts/bank"
+	jsonprecompile "github.com/CosmWasm/wasmd/precompile/contracts/json"
 	wasmprecompile "github.com/CosmWasm/wasmd/precompile/contracts/wasmd"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -95,11 +96,6 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate bank precompile: %w", err))
 	}
 
-	wasmdBankPrecompile, err := wasmdbankprecompile.NewPrecompile(evmKeeper, bankKeeper, authzKeeper)
-	if err != nil {
-		panic(fmt.Errorf("failed to instantiate wasmd bank precompile: %w", err))
-	}
-
 	govPrecompile, err := govprecompile.NewPrecompile(govKeeper, authzKeeper)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate gov precompile: %w", err))
@@ -131,6 +127,16 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate authz precompile: %w", err))
 	}
 
+	wasmdBankPrecompile, err := wasmdbankprecompile.NewPrecompile(evmKeeper, bankKeeper, authzKeeper)
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate wasmd bank precompile: %w", err))
+	}
+
+	jsonPrecompile, err := jsonprecompile.NewPrecompile()
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate json precompile: %w", err))
+	}
+
 	// Stateless precompiles
 	precompiles[bech32Precompile.Address()] = bech32Precompile
 	precompiles[p256Precompile.Address()] = p256Precompile
@@ -150,6 +156,6 @@ func NewAvailableStaticPrecompiles(
 	precompiles[addrPrecompile.Address()] = addrPrecompile
 	precompiles[authzPrecompile.Address()] = authzPrecompile
 	precompiles[wasmdBankPrecompile.Address()] = wasmdBankPrecompile
-
+	precompiles[jsonPrecompile.Address()] = jsonPrecompile
 	return precompiles
 }

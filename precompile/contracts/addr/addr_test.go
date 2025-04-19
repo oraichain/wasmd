@@ -19,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 
+	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -64,14 +65,14 @@ func TestGetCosmosAddr(t *testing.T) {
 
 	// set evm params
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, addr.AddrContractAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AddrContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(addr.AddrContractAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AddrContractAddress))
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(addr.AddrContractAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.AddrContractAddress)]
 	require.NotNil(t, contract)
 
 	suppliedGas := uint64(20_000_000)
@@ -167,14 +168,14 @@ func TestGetEvmAddr(t *testing.T) {
 
 	// set evm params
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, addr.AddrContractAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AddrContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(addr.AddrContractAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AddrContractAddress))
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(addr.AddrContractAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.AddrContractAddress)]
 	require.NotNil(t, contract)
 
 	suppliedGas := uint64(20_000_000)
@@ -275,14 +276,14 @@ func TestAssociatePubKey(t *testing.T) {
 
 	// set evm params
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, addr.AddrContractAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AddrContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(addr.AddrContractAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AddrContractAddress))
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(addr.AddrContractAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.AddrContractAddress)]
 	require.NotNil(t, contract)
 
 	suppliedGas := uint64(20_000_000)
@@ -430,14 +431,14 @@ func TestAssociate(t *testing.T) {
 
 	// set evm params
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, addr.AddrContractAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AddrContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(addr.AddrContractAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AddrContractAddress))
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(addr.AddrContractAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.AddrContractAddress)]
 	require.NotNil(t, contract)
 
 	suppliedGas := uint64(20_000_000)

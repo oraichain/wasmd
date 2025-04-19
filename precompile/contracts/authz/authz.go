@@ -23,8 +23,6 @@ var (
 )
 
 const (
-	AuthzContractAddress = "0x9000000000000000000000000000000000000005"
-
 	// Execute methods
 	SetGrantMethod  = "setGrant"
 	ExecGrantMethod = "execGrant"
@@ -60,7 +58,7 @@ func NewPrecompile(
 		AuthzKeeper: authzKeeper,
 	}
 
-	p.SetAddress(common.HexToAddress(AuthzContractAddress))
+	p.SetAddress(common.HexToAddress(pcommon.AuthzContractAddress))
 
 	return p, nil
 }

@@ -26,12 +26,12 @@ var (
 
 const (
 	GasSend        = 100_000
-	GasBalance     = 2_851
-	GasAllBalances = 2_851
-	GasName        = 3_421
-	GasSymbol      = 3_464
-	GasDecimals    = 427
-	GasSupply      = 2_477
+	GasBalance     = 30_000
+	GasAllBalances = 30_000
+	GasName        = 30_000
+	GasSymbol      = 30_000
+	GasDecimals    = 30_000
+	GasSupply      = 30_000
 	GasBurn        = 100_000
 
 	SendMethod        = "send"
