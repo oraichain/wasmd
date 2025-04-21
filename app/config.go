@@ -13,6 +13,9 @@ const (
 	OraichainID = "Oraichain"
 	Denom       = "orai"
 
+	// Testnet
+	OraichainTestnetId = "Oraichain-testnet"
+
 	// Interchaintest
 	IctOraichainID = "orai-1"
 
@@ -38,6 +41,11 @@ var sealed = false
 // chain id
 var ChainsCoinInfo = map[string]evmtypes.EvmCoinInfo{
 	OraichainID: {
+		Denom: Denom,
+		// DisplayDenom: DisplayDenom,
+		Decimals: evmtypes.SixDecimals,
+	},
+	OraichainTestnetId: {
 		Denom: Denom,
 		// DisplayDenom: DisplayDenom,
 		Decimals: evmtypes.SixDecimals,
