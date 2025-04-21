@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v0.50.11
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+Upgrade Oraichain mainnet to v0.50.11 to integrate cosmos-evm.
+
+### IMPROVEMENTS
+
+- Integrate cosmos-evm ([\#123](https://github.com/oraichain/wasmd/pull/123))
+
 ## v0.50.10
 
 <!--
