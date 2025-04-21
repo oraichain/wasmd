@@ -25,15 +25,13 @@ var (
 )
 
 const (
-	BankPrecompileAddress = "0x9000000000000000000000000000000000000004"
-
 	GasSend        = 100_000
-	GasBalance     = 2_851
-	GasAllBalances = 2_851
-	GasName        = 3_421
-	GasSymbol      = 3_464
-	GasDecimals    = 427
-	GasSupply      = 2_477
+	GasBalance     = 30_000
+	GasAllBalances = 30_000
+	GasName        = 30_000
+	GasSymbol      = 30_000
+	GasDecimals    = 30_000
+	GasSupply      = 30_000
 	GasBurn        = 100_000
 
 	SendMethod        = "send"
@@ -73,7 +71,7 @@ func NewPrecompile(
 	}
 
 	// SetAddress defines the address of the bank precompile contract.
-	p.SetAddress(common.HexToAddress(BankPrecompileAddress))
+	p.SetAddress(common.HexToAddress(pcommon.BankContractAddress))
 
 	return p, nil
 }

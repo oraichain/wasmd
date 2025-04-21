@@ -13,6 +13,7 @@ import (
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	"github.com/CosmWasm/wasmd/app"
+	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	"github.com/CosmWasm/wasmd/precompile/contracts/authz"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/evm/x/vm/core/vm"
@@ -75,14 +76,14 @@ func TestSetGrant(t *testing.T) {
 
 	// set evm params
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, authz.AuthzContractAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AuthzContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(authz.AuthzContractAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AuthzContractAddress))
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(authz.AuthzContractAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.AuthzContractAddress)]
 	require.NotNil(t, contract)
 
 	suppliedGas := uint64(20_000_000)
@@ -175,14 +176,14 @@ func TestQueryGrant(t *testing.T) {
 
 	// set evm params
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, authz.AuthzContractAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AuthzContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(authz.AuthzContractAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AuthzContractAddress))
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(authz.AuthzContractAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.AuthzContractAddress)]
 	require.NotNil(t, contract)
 
 	suppliedGas := uint64(20_000_000)
@@ -262,14 +263,14 @@ func TestExecGrant(t *testing.T) {
 
 	// set evm params
 	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
-	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, authz.AuthzContractAddress)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AuthzContractAddress)
 	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
 
-	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(authz.AuthzContractAddress))
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AuthzContractAddress))
 	require.True(t, found)
 	require.NoError(t, err)
 
-	contract := p.Map[common.HexToAddress(authz.AuthzContractAddress)]
+	contract := p.Map[common.HexToAddress(pcommon.AuthzContractAddress)]
 	require.NotNil(t, contract)
 
 	suppliedGas := uint64(20_000_000)
