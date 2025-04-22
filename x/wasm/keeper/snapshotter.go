@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/hex"
+	"fmt"
 	"io"
 	"math"
 
@@ -22,6 +23,8 @@ var _ snapshot.ExtensionSnapshotter = &WasmSnapshotter{}
 
 // SnapshotFormat format 1 is just gzipped wasm byte code for each item payload. No protobuf envelope, no metadata.
 const SnapshotFormat = 1
+
+var codeIdCounter uint64 = 1
 
 type WasmSnapshotter struct {
 	wasm *Keeper
@@ -99,19 +102,29 @@ func (ws *WasmSnapshotter) RestoreExtension(height uint64, format uint32, payloa
 	return snapshot.ErrUnknownFormat
 }
 
-func restoreV1(_ sdk.Context, k *Keeper, compressedCode []byte) error {
+func restoreV1(ctx sdk.Context, k *Keeper, compressedCode []byte) error {
 	if !ioutils.IsGzip(compressedCode) {
+		fmt.Println("Error restoreV1 !ioutils.IsGzip(compressedCode)")
 		return types.ErrInvalid.Wrap("not a gzip")
 	}
 	wasmCode, err := ioutils.Uncompress(compressedCode, math.MaxInt64)
 	if err != nil {
+		fmt.Println("Error restoreV1 ioutils.Uncompress(compressedCode, math.MaxInt64)")
 		return errorsmod.Wrap(types.ErrCreateFailed, err.Error())
 	}
 
 	// FIXME: check which codeIDs the checksum matches??
-	_, err = k.wasmVM.StoreCodeUnchecked(wasmCode)
+	checkSum, err := k.wasmVM.StoreCodeUnchecked(wasmCode)
+	codeInfo := k.GetCodeInfo(ctx, codeIdCounter)
 	if err != nil {
+		fmt.Println("Error restoreV1 k.wasmVM.StoreCodeUnchecked(wasmCode): Code ", codeIdCounter)
 		return errorsmod.Wrap(types.ErrCreateFailed, err.Error())
+	} else {
+		fmt.Println("=======", "StoreCode ", codeIdCounter, "========")
+		fmt.Println("checkSum", checkSum.String())
+		fmt.Println("code info: ", hex.EncodeToString(codeInfo.CodeHash))
+		fmt.Println("===========================================")
+		codeIdCounter++
 	}
 	return nil
 }
