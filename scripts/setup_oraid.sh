@@ -37,5 +37,7 @@ jq '.initial_height="1"' $NODE_HOME/config/genesis.json > tmp.$$.json && mv tmp.
 
 update_genesis '.app_state["tokenfactory"]["params"]["denom_creation_fee"][0]["denom"]="orai"'
 update_genesis '.app_state["tokenfactory"]["params"]["denom_creation_fee"][0]["amount"]="1"'
+# update evm params
+update_genesis '.app_state["evm"]["params"]["active_static_precompiles"]=["0x9000000000000000000000000000000000000001", "0x9000000000000000000000000000000000000002", "0x9000000000000000000000000000000000000003", "0x9000000000000000000000000000000000000004", "0x9000000000000000000000000000000000000005"]'
 
-oraid start $START_ARGS
+oraid start $START_ARGS 
