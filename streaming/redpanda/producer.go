@@ -75,6 +75,23 @@ func (p *Producer) SendBlockToRedpanda(topic string, block abci.RequestFinalizeB
 	return nil
 }
 
+func (p *Producer) SendTxToRedpanda(topic string, tx ctypes.ResultTx) error {
+	ctx := context.Background()
+	valueBz, err := json.Marshal(tx)
+	if err != nil {
+		return err
+	}
+
+	p.client.Produce(ctx, &kgo.Record{Topic: topic, Value: valueBz}, func(_ *kgo.Record, e error) {
+		err = e
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *Producer) Close() {
 	p.client.Close()
 }

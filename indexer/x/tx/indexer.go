@@ -301,7 +301,24 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 		txHashBz := cmttypes.Tx(tx).Hash()
 		topicMsg := ctypes.ResultTx{Height: req.Height, Hash: txHashBz, TxResult: *res.TxResults[i], Index: uint32(i), Tx: tx, Timestamp: req.Time.Format(time.RFC3339)}
 
+		// TODO: emit tx with type to redpanda
 		err = producer.SendToRedpanda(topicAndKeys, topicMsg)
+		if err != nil {
+			return err
+		}
+
+		// TODO: emit tx to redpanda
+		txsTopics := "REDPANDA_TOPIC_TXS"
+		if !admin.IsTopicExist(txsTopics) {
+			err := admin.CreateTopic(txsTopics)
+			if err != nil {
+				return err
+			}
+
+			cs.ri.SetTopics("txs")
+		}
+
+		err = producer.SendTxToRedpanda(txsTopics, topicMsg)
 		if err != nil {
 			return err
 		}
