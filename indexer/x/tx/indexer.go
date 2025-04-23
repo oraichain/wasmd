@@ -241,8 +241,25 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 		hclog.Default().Warn("Redpanda info is empty. Won't emit any events...")
 		return nil
 	}
+
 	admin := cs.ri.GetAdmin()
 	producer := cs.ri.GetProducer()
+
+	// TODO: emit block to redpanda
+	blockTopics := "REDPANDA_TOPIC_BLOCK"
+	if !admin.IsTopicExist(blockTopics) {
+		err := admin.CreateTopic(blockTopics)
+		if err != nil {
+			return err
+		}
+
+		cs.ri.SetTopics("block")
+	}
+
+	err := producer.SendBlockToRedpanda(blockTopics, *req)
+	if err != nil {
+		return err
+	}
 
 	for i, tx := range req.Txs {
 		cosmosTx, err := indexerUtil.UnmarshalTxBz(cs, tx)

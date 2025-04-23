@@ -32,7 +32,12 @@ func NewRedPandaInfo(brokers []string, topics []string) *RedpandaInfo {
 func DefaultTopics() []string {
 	wasmTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(wasmtypes.ModuleName))
 	bankTopic := "REDPANDA_TOPIC_" + strings.ToUpper(string(banktypes.ModuleName))
-	return []string{wasmTopic, bankTopic}
+
+	// TODO: add more topics
+	blockTopic := "REDPANDA_TOPIC_BLOCK"
+	txsTopic := "REDPANDA_TOPIC_TXS"
+
+	return []string{wasmTopic, bankTopic, blockTopic, txsTopic}
 }
 
 func (ri *RedpandaInfo) SetBrokers(initialBrokers []string) {

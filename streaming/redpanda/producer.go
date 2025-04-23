@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
@@ -51,6 +53,23 @@ func (p *Producer) SendToRedpanda(topicAndKeys []TopicAndKey, tx ctypes.ResultTx
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (p *Producer) SendBlockToRedpanda(topic string, block abci.RequestFinalizeBlock) error {
+	ctx := context.Background()
+	valueBz, err := json.Marshal(block)
+	if err != nil {
+		return err
+	}
+
+	p.client.Produce(ctx, &kgo.Record{Topic: topic, Value: valueBz}, func(_ *kgo.Record, e error) {
+		err = e
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil
