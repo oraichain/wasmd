@@ -34,10 +34,12 @@ echo "cw-stargate-staking-query contract address: $contract_address"
 # clone or pull latest repo
 if [ -d "$PWD/../evm-entry-point" ]; then
   cd ../evm-entry-point
-  git pull origin main
+  git checkout chore/test-evm-precompile
+  git pull origin chore/test-evm-precompile
 else
   git clone https://github.com/oraidex/evm-entry-point.git ../evm-entry-point
   cd ../evm-entry-point
+  git checkout chore/test-evm-precompile
 fi
 
 # prepare env and chain
