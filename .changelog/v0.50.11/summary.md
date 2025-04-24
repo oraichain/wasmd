@@ -3,4 +3,4 @@
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
-Upgrade Oraichain mainnet to v0.50.11 to integrate cosmos-evm.
+Upgrade Oraichain mainnet to v0.50.11 to integrate cosmos-evm, implement streaming blocks to redpanda and fix gas simulations of gas-less contract.
