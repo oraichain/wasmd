@@ -37,7 +37,7 @@ func setup(db dbm.DB, withGenesis bool, invCheckPeriod uint, opts ...wasmkeeper.
 
 	logLevel := log.LevelOption(zerolog.InfoLevel)
 
-	wasmApp := app.NewWasmApp(log.NewLogger(os.Stdout, logLevel), db, nil, true, simtestutil.EmptyAppOptions{}, nil)
+	wasmApp := app.NewWasmApp(log.NewLogger(os.Stdout, logLevel), db, nil, true, simtestutil.EmptyAppOptions{}, nil, app.EvmAppOptions)
 
 	if withGenesis {
 		return wasmApp, wasmApp.DefaultGenesis()

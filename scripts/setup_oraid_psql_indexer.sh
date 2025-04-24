@@ -5,7 +5,6 @@ CHAINID=${CHAINID:-testing}
 USER=${USER:-tupt}
 MONIKER=${MONIKER:-node001}
 HIDE_LOGS="/dev/null"
-# PASSWORD=${PASSWORD:-$1}
 NODE_HOME="$PWD/.oraid"
 ARGS="--keyring-backend test --home $NODE_HOME"
 START_ARGS="--json-rpc.address="0.0.0.0:8545" --json-rpc.ws-address="0.0.0.0:8546" --json-rpc.api="eth,web3,net,txpool,debug" --json-rpc.enable --home $NODE_HOME"
@@ -44,7 +43,7 @@ export REDPANDA_BROKERS="localhost:19092"
 go build -o $PWD/streaming/streaming $PWD/streaming/streaming.go
 
 # add indexer info
-sed -i '' -E "s%^indexer *=.*%indexer = \"null\"%; " $CONFIG_TOML
+sed -i '' -E "s%^indexer *=.*%indexer = \"psql\"%; " $CONFIG_TOML
 sed -i '' -E "s%^psql-conn *=.*%psql-conn = \"$PSQL_CONN\"%; " $CONFIG_TOML
 
 # export PSQL conn and chain id

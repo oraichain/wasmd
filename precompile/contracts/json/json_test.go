@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/CosmWasm/wasmd/app"
+	pcommon "github.com/CosmWasm/wasmd/precompile/common"
 	"github.com/CosmWasm/wasmd/precompile/contracts/json"
-	"github.com/CosmWasm/wasmd/precompile/registry"
+	"github.com/cosmos/evm/x/vm/core/vm"
+	"github.com/cosmos/evm/x/vm/statedb"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/evmos/ethermint/x/evm/statedb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,10 +17,23 @@ func TestExtractAsBytes(t *testing.T) {
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 
+	// Set EVM parameters to register the JSON precompile address
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.JsonContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.JsonContractAddress))
+
+	require.True(t, found)
+	require.NoError(t, err)
+
+	// Get the contract from the precompile's Map
+	jsonAddr := common.HexToAddress(pcommon.JsonContractAddress)
+	contract := p.Map[jsonAddr]
+	require.NotNil(t, contract)
+
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := json.NewContract()
 	method := json.ABI.Methods[json.ExtractAsBytesMethod]
 	suppliedGas := uint64(10_000_000)
 
@@ -44,11 +57,13 @@ func TestExtractAsBytes(t *testing.T) {
 	} {
 		args, err := method.Inputs.Pack(test.body, "key")
 		require.Nil(t, err)
-		res, _, err := p.Run(&evm, registry.JsonContractAddress, registry.JsonContractAddress,
+		res, _, err := evm.RunPrecompiledContract(
+			contract,
+			vm.AccountRef(jsonAddr),
 			append(method.ID, args...),
 			suppliedGas,
-			false,
 			nil,
+			false,
 		)
 		require.Nil(t, err)
 		output, err := method.Outputs.Unpack(res)
@@ -62,10 +77,21 @@ func TestExtractAsBytesList(t *testing.T) {
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 
+	// Set EVM parameters to register the JSON precompile address
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.JsonContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.JsonContractAddress))
+
+	require.True(t, found)
+	require.NoError(t, err)
+
+	// Get the contract from the precompile's Map
+	jsonAddr := common.HexToAddress(pcommon.JsonContractAddress)
+	contract := p.Map[jsonAddr]
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := json.NewContract()
 	method := json.ABI.Methods[json.ExtractAsBytesListMethod]
 	suppliedGas := uint64(10_000_000)
 
@@ -89,11 +115,13 @@ func TestExtractAsBytesList(t *testing.T) {
 	} {
 		args, err := method.Inputs.Pack(test.body, "key")
 		require.Nil(t, err)
-		res, _, err := p.Run(&evm, registry.JsonContractAddress, registry.JsonContractAddress,
+		res, _, err := evm.RunPrecompiledContract(
+			contract,
+			vm.AccountRef(jsonAddr),
 			append(method.ID, args...),
 			suppliedGas,
-			false,
 			nil,
+			false,
 		)
 		require.Nil(t, err)
 		output, err := method.Outputs.Unpack(res)
@@ -107,10 +135,23 @@ func TestExtractAsUint256(t *testing.T) {
 	tApp := app.Setup(t)
 	ctx := tApp.NewContext(true)
 
+	// Set EVM parameters to register the JSON precompile address
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.JsonContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.JsonContractAddress))
+
+	require.True(t, found)
+	require.NoError(t, err)
+
+	// Get the contract from the precompile's Map
+	jsonAddr := common.HexToAddress(pcommon.JsonContractAddress)
+	contract := p.Map[jsonAddr]
+	require.NotNil(t, contract)
+
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := json.NewContract()
 	method := json.ABI.Methods[json.ExtractAsUint256Method]
 	suppliedGas := uint64(10_000_000)
 	n := new(big.Int)
@@ -130,11 +171,13 @@ func TestExtractAsUint256(t *testing.T) {
 	} {
 		args, err := method.Inputs.Pack(test.body, "key")
 		require.Nil(t, err)
-		res, _, err := p.Run(&evm, registry.JsonContractAddress, registry.JsonContractAddress,
+		res, _, err := evm.RunPrecompiledContract(
+			contract,
+			vm.AccountRef(jsonAddr),
 			append(method.ID, args...),
 			suppliedGas,
-			false,
 			nil,
+			false,
 		)
 		require.Nil(t, err)
 		output, err := method.Outputs.Unpack(res)

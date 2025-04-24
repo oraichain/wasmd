@@ -5,23 +5,23 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/CosmWasm/wasmd/app"
-	"github.com/CosmWasm/wasmd/precompile/contracts/authz"
-	"github.com/CosmWasm/wasmd/precompile/registry"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/go-bip39"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/x/evm/statedb"
-	"github.com/stretchr/testify/require"
-
 	sdkmath "cosmossdk.io/math"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
+
+	"github.com/CosmWasm/wasmd/app"
+	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	"github.com/CosmWasm/wasmd/precompile/contracts/authz"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/evm/x/vm/core/vm"
+	"github.com/cosmos/evm/x/vm/statedb"
+	"github.com/cosmos/go-bip39"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/require"
 )
 
 func MockAddressPair() (sdk.AccAddress, common.Address) {
@@ -74,23 +74,38 @@ func TestSetGrant(t *testing.T) {
 	tApp.GetBankKeeper().SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, granteeAddr, grantCoins)
 	tApp.GetBankKeeper().SetParams(ctx, banktypes.DefaultParams())
 
+	// set evm params
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AuthzContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AuthzContractAddress))
+	require.True(t, found)
+	require.NoError(t, err)
+
+	contract := p.Map[common.HexToAddress(pcommon.AuthzContractAddress)]
+	require.NotNil(t, contract)
+
+	suppliedGas := uint64(20_000_000)
+	setGrantMethod := authz.ABI.Methods[authz.SetGrantMethod]
+
+	// Create the EVM
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := authz.NewContract(tApp.EvmKeeper, authzKeeper)
-	method := authz.ABI.Methods[authz.SetGrantMethod]
-	suppliedGas := uint64(10_000_000)
 
-	args, err := method.Inputs.Pack(granteeEvmAddr, denom, grantCoins[0].Amount.BigInt())
+	args, err := setGrantMethod.Inputs.Pack(granteeEvmAddr, denom, grantCoins[0].Amount.BigInt())
 	require.Nil(t, err)
-	res, _, err := p.Run(&evm, granterEvmAddr, registry.AddrContractAddress,
-		append(method.ID, args...),
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(granterEvmAddr),
+		append(setGrantMethod.ID, args...),
 		suppliedGas,
-		false,
 		nil,
+		false,
 	)
 	require.Nil(t, err)
-	output, err := method.Outputs.Unpack(res)
+	output, err := setGrantMethod.Outputs.Unpack(res)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(output))
 	require.Equal(t, output[0].(bool), true)
@@ -102,7 +117,11 @@ func TestSetGrant(t *testing.T) {
 		Pagination: nil,
 	}
 
-	grant, err := authzKeeper.Grants(ctx, grantMsg)
+	// Because evm using cache context, we need to get the cache context
+	cacheCtx, err := evm.StateDB.(*statedb.StateDB).GetCacheContext()
+	require.NoError(t, err)
+
+	grant, err := authzKeeper.Grants(cacheCtx, grantMsg)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(grant.Grants))
 
@@ -155,40 +174,56 @@ func TestQueryGrant(t *testing.T) {
 	_, err = authzKeeper.Grant(ctx, setGrantMsg)
 	require.NoError(t, err)
 
-	// query
+	// set evm params
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AuthzContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AuthzContractAddress))
+	require.True(t, found)
+	require.NoError(t, err)
+
+	contract := p.Map[common.HexToAddress(pcommon.AuthzContractAddress)]
+	require.NotNil(t, contract)
+
+	suppliedGas := uint64(20_000_000)
+	grantMethod := authz.ABI.Methods[authz.GrantMethod]
+
+	// Create the EVM
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := authz.NewContract(tApp.EvmKeeper, authzKeeper)
-	method := authz.ABI.Methods[authz.GrantMethod]
-	suppliedGas := uint64(10_000_000)
 
 	// have grant
-	args, err := method.Inputs.Pack(granterEvmAddr, granteeEvmAddr, denom)
+	args, err := grantMethod.Inputs.Pack(granterEvmAddr, granteeEvmAddr, denom)
 	require.Nil(t, err)
-	res, _, err := p.Run(&evm, granteeEvmAddr, registry.AddrContractAddress,
-		append(method.ID, args...),
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(granteeEvmAddr),
+		append(grantMethod.ID, args...),
 		suppliedGas,
-		false,
 		nil,
+		false,
 	)
 	require.Nil(t, err)
-	output, err := method.Outputs.Unpack(res)
+	output, err := grantMethod.Outputs.Unpack(res)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(output))
 	require.Equal(t, output[0].(*big.Int), big.NewInt(grantCoins[0].Amount.Int64()))
 
 	// no grant
-	args, err = method.Inputs.Pack(granterEvmAddr, evmAddr, denom)
+	args, err = grantMethod.Inputs.Pack(granterEvmAddr, evmAddr, denom)
 	require.Nil(t, err)
-	res, _, err = p.Run(&evm, evmAddr, registry.AddrContractAddress,
-		append(method.ID, args...),
+	res, _, err = evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(evmAddr),
+		append(grantMethod.ID, args...),
 		suppliedGas,
-		false,
 		nil,
+		false,
 	)
 	require.Nil(t, err)
-	output, err = method.Outputs.Unpack(res)
+	output, err = grantMethod.Outputs.Unpack(res)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(output))
 	require.Equal(t, output[0].(*big.Int).Int64(), big.NewInt(0).Int64())
@@ -226,29 +261,47 @@ func TestExecGrant(t *testing.T) {
 	_, err = authzKeeper.Grant(ctx, setGrantMsg)
 	require.NoError(t, err)
 
-	// exec grant
+	// set evm params
+	EVMParams := tApp.GetEVMKeeper().GetParams(ctx)
+	EVMParams.ActiveStaticPrecompiles = append(EVMParams.ActiveStaticPrecompiles, pcommon.AuthzContractAddress)
+	tApp.GetEVMKeeper().SetParams(ctx, EVMParams)
+
+	p, found, err := tApp.GetEVMKeeper().GetPrecompileInstance(ctx, common.HexToAddress(pcommon.AuthzContractAddress))
+	require.True(t, found)
+	require.NoError(t, err)
+
+	contract := p.Map[common.HexToAddress(pcommon.AuthzContractAddress)]
+	require.NotNil(t, contract)
+
+	suppliedGas := uint64(20_000_000)
+	execGrantMethod := authz.ABI.Methods[authz.ExecGrantMethod]
+
+	// Create the EVM
 	evm := vm.EVM{
 		StateDB: statedb.New(ctx, tApp.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))),
 	}
-	p := authz.NewContract(tApp.EvmKeeper, authzKeeper)
-	method := authz.ABI.Methods[authz.ExecGrantMethod]
-	suppliedGas := uint64(10_000_000)
 
-	args, err := method.Inputs.Pack(granterEvmAddr, recipientEvmAddr, denom, transferCoins[0].Amount.BigInt())
+	args, err := execGrantMethod.Inputs.Pack(granterEvmAddr, recipientEvmAddr, denom, transferCoins[0].Amount.BigInt())
 	require.Nil(t, err)
-	res, _, err := p.Run(&evm, granteeEvmAddr, registry.AddrContractAddress,
-		append(method.ID, args...),
+	res, _, err := evm.RunPrecompiledContract(
+		contract,
+		vm.AccountRef(granteeEvmAddr),
+		append(execGrantMethod.ID, args...),
 		suppliedGas,
-		false,
 		nil,
+		false,
 	)
 	require.Nil(t, err)
-	output, err := method.Outputs.Unpack(res)
+	output, err := execGrantMethod.Outputs.Unpack(res)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(output))
 	require.Equal(t, output[0].(bool), true)
 
-	granterBalance := bankKeeper.GetBalance(ctx, granterAddr, denom)
+	// Because evm using cache context, we need to get the cache context
+	cacheCtx, err := evm.StateDB.(*statedb.StateDB).GetCacheContext()
+	require.NoError(t, err)
+
+	granterBalance := bankKeeper.GetBalance(cacheCtx, granterAddr, denom)
 	require.Equal(t, granterBalance, sdk.NewCoin(denom, grantCoins[0].Amount.Sub(transferCoins[0].Amount)))
 
 	grantMsg := &authztypes.QueryGrantsRequest{
@@ -258,7 +311,7 @@ func TestExecGrant(t *testing.T) {
 		Pagination: nil,
 	}
 
-	grant, err := authzKeeper.Grants(ctx, grantMsg)
+	grant, err := authzKeeper.Grants(cacheCtx, grantMsg)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(grant.Grants))
 

@@ -2,15 +2,17 @@ package json
 
 import (
 	_ "embed"
-	gjson "encoding/json"
 	"fmt"
-	"math/big"
-	"strings"
 
 	pcommon "github.com/CosmWasm/wasmd/precompile/common"
+	cmn "github.com/cosmos/evm/precompiles/common"
+	"github.com/cosmos/evm/x/vm/core/vm"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/contract"
 )
+
+var _ vm.PrecompiledContract = &Precompile{}
 
 // Singleton StatefulPrecompiledContract.
 var (
@@ -22,264 +24,102 @@ var (
 )
 
 const (
+	GasExtractAsBytes     = 30_000
+	GasExtractAsBytesList = 30_000
+	GasExtractAsUint256   = 30_000
+
 	ExtractAsBytesMethod     = "extractAsBytes"
 	ExtractAsBytesListMethod = "extractAsBytesList"
 	ExtractAsUint256Method   = "extractAsUint256"
 )
 
-type PrecompileExecutor struct {
+type Precompile struct {
+	cmn.Precompile
 }
 
-// NewContract returns a new wasmd stateful precompiled contract.
-//
-//	This contract is used for testing purposes only and should not be used on public chains.
-//	The functions of this contract (once implemented), will be used to exercise and test the various aspects of
-//	the EVM such as gas usage, argument parsing, events, etc. The specific operations tested under this contract are
-//	still to be determined.
-func NewContract() contract.StatefulPrecompiledContract {
-
-	executor := &PrecompileExecutor{}
-
-	functions := []*contract.StatefulPrecompileFunction{
-		contract.NewStatefulPrecompileFunction(
-			ABI.Methods[ExtractAsBytesMethod].ID,
-			executor.extractAsBytes,
-		),
-		contract.NewStatefulPrecompileFunction(
-			ABI.Methods[ExtractAsBytesListMethod].ID,
-			executor.extractAsBytesList,
-		),
-		contract.NewStatefulPrecompileFunction(
-			ABI.Methods[ExtractAsUint256Method].ID,
-			executor.ExtractAsUint256,
-		),
+func NewPrecompile() (*Precompile, error) {
+	p := &Precompile{
+		Precompile: cmn.Precompile{
+			ABI: ABI,
+		},
 	}
 
-	// Construct the contract with functions.
-	precompile, err := contract.NewStatefulPrecompileContract(functions)
+	// SetAddress defines the address of the bank precompile contract.
+	p.SetAddress(common.HexToAddress(pcommon.JsonContractAddress))
 
+	return p, nil
+}
+
+func (p Precompile) Address() common.Address {
+	return p.Precompile.Address()
+}
+
+// RequiredGas calculates the precompiled contract's base gas rate.
+func (p Precompile) RequiredGas(input []byte) uint64 {
+	// NOTE: This check avoid panicking when trying to decode the method ID
+	if len(input) < 4 {
+		return 0
+	}
+
+	methodID := input[:4]
+
+	method, err := p.MethodById(methodID)
 	if err != nil {
-		panic(fmt.Sprintf("failed to instantiate json precompile: %s", err.Error()))
+		// This should never happen since this method is going to fail during Run
+		return 0
 	}
 
-	return precompile
+	switch method.Name {
+	case ExtractAsBytesMethod:
+		return GasExtractAsBytes
+	case ExtractAsBytesListMethod:
+		return GasExtractAsBytesList
+	case ExtractAsUint256Method:
+		return GasExtractAsUint256
+	default:
+		return 0
+	}
 }
 
-func (p PrecompileExecutor) extractAsBytes(accessibleState contract.AccessibleState,
-	caller common.Address,
-	callingContract common.Address,
-	packedInput []byte,
-	suppliedGas uint64,
-	readOnly bool,
-	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
-
-	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
-	if rerr != nil {
-		return
-	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			ret = nil
-			remainingGas = 0
-			rerr = fmt.Errorf("%s", err)
-			ctx.Logger().Error("Error Extracting as bytes: ", rerr.Error())
-			return
-		}
-	}()
-	method := ABI.Methods[ExtractAsBytesMethod]
-
-	args, err := method.Inputs.Unpack(packedInput)
-	if err != nil {
-		rerr = err
-		return
-	}
-
-	if err := pcommon.ValidateNonPayable(value); err != nil {
-		rerr = err
-		return
-	}
-
-	if err := pcommon.ValidateArgsLength(args, 2); err != nil {
-		rerr = err
-		return
-	}
-
-	// type assertion will always succeed because it's already validated in p.Prepare call in Run()
-	bz := args[0].([]byte)
-	decoded := map[string]gjson.RawMessage{}
-	if err := gjson.Unmarshal(bz, &decoded); err != nil {
-		rerr = err
-		return
-	}
-	key := args[1].(string)
-	result, ok := decoded[key]
-	if !ok {
-		rerr = fmt.Errorf("Could not decode key extractAsBytes\n")
-		return
-	}
-
-	// in the case of a string value, remove the quotes
-	if len(result) >= 2 && result[0] == '"' && result[len(result)-1] == '"' {
-		result = result[1 : len(result)-1]
-	}
-
-	ret, rerr = method.Outputs.Pack([]byte(result))
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
-	return
-}
-
-func (p PrecompileExecutor) extractAsBytesList(accessibleState contract.AccessibleState,
-	caller common.Address,
-	callingContract common.Address,
-	packedInput []byte,
-	suppliedGas uint64,
-	readOnly bool,
-	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
-
-	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
-	if rerr != nil {
-		return
-	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			ret = nil
-			remainingGas = 0
-			rerr = fmt.Errorf("%s\n", err)
-			ctx.Logger().Error("Error Extracting as bytes list: ", rerr.Error())
-			return
-		}
-	}()
-	method := ABI.Methods[ExtractAsBytesListMethod]
-
-	args, err := method.Inputs.Unpack(packedInput)
-	if err != nil {
-		rerr = err
-		return
-	}
-
-	if err := pcommon.ValidateNonPayable(value); err != nil {
-		rerr = err
-		return
-	}
-
-	if err := pcommon.ValidateArgsLength(args, 2); err != nil {
-		rerr = err
-		return
-	}
-
-	// type assertion will always succeed because it's already validated in p.Prepare call in Run()
-	bz := args[0].([]byte)
-	decoded := map[string]gjson.RawMessage{}
-	if err := gjson.Unmarshal(bz, &decoded); err != nil {
-		rerr = err
-		return
-	}
-	key := args[1].(string)
-	result, ok := decoded[key]
-	if !ok {
-		rerr = fmt.Errorf("input does not contain key %s in extractAsBytesList\n", key)
-		return
-	}
-
-	decodedResult := []gjson.RawMessage{}
-	if err := gjson.Unmarshal(result, &decodedResult); err != nil {
-		rerr = err
-		return
-	}
-
-	decodedBytes := [][]byte{}
-	for _, r := range decodedResult {
-		decodedBytes = append(decodedBytes, []byte(r))
-	}
-
-	ret, rerr = method.Outputs.Pack(decodedBytes)
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
-	return
-}
-
-func (p PrecompileExecutor) ExtractAsUint256(accessibleState contract.AccessibleState,
-	caller common.Address,
-	callingContract common.Address,
-	packedInput []byte,
-	suppliedGas uint64,
-	readOnly bool,
-	value *big.Int) (ret []byte, remainingGas uint64, rerr error) {
-
-	ctx, initialGas, rerr := pcommon.GetPrecompileCtx(accessibleState)
-	if rerr != nil {
-		return
-	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			ret = nil
-			remainingGas = 0
-			rerr = fmt.Errorf("%s", err)
-			ctx.Logger().Error("Error Extracting as uint256: ", rerr.Error())
-			return
-		}
-	}()
-
-	byteArr := make([]byte, 32)
-	uint_, err := p.extractAsUint256(packedInput, value)
-	if err != nil {
-		rerr = err
-		return
-	}
-
-	if uint_.BitLen() > 256 {
-		rerr = fmt.Errorf("value does not fit in 32 bytes\n")
-	}
-
-	uint_.FillBytes(byteArr)
-
-	remainingGas, rerr = contract.DeductGas(suppliedGas, ctx.GasMeter().GasConsumed()-initialGas)
-
-	return byteArr, remainingGas, nil
-}
-
-func (p PrecompileExecutor) extractAsUint256(
-	packedInput []byte,
-	value *big.Int) (*big.Int, error) {
-
-	method := ABI.Methods[ExtractAsUint256Method]
-
-	args, err := method.Inputs.Unpack(packedInput)
+func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
+	ctx, stateDB, snapshot, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := pcommon.ValidateNonPayable(value); err != nil {
+	// This handles any out of gas errors that may occur during the execution of a precompile query.
+	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
+	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
+
+	switch method.Name {
+	case ExtractAsBytesMethod:
+		bz, err = p.ExtractAsBytes(ctx, contract, method, args)
+	case ExtractAsBytesListMethod:
+		bz, err = p.ExtractAsBytesList(ctx, contract, method, args)
+	case ExtractAsUint256Method:
+		bz, err = p.ExtractAsUint256(ctx, contract, method, args)
+	default:
+		return nil, fmt.Errorf(cmn.ErrUnknownMethod, method.Name)
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
-	if err := pcommon.ValidateArgsLength(args, 2); err != nil {
+	cost := ctx.GasMeter().GasConsumed() - initialGas
+
+	if !contract.UseGas(cost) {
+		return nil, vm.ErrOutOfGas
+	}
+
+	if err := p.AddJournalEntries(stateDB, snapshot); err != nil {
 		return nil, err
 	}
 
-	// type assertion will always succeed because it's already validated in p.Prepare call in Run()
-	bz := args[0].([]byte)
-	decoded := map[string]gjson.RawMessage{}
-	if err := gjson.Unmarshal(bz, &decoded); err != nil {
-		return nil, err
-	}
-	key := args[1].(string)
-	result, ok := decoded[key]
-	if !ok {
-		return nil, fmt.Errorf("input does not contain key %s", key)
-	}
+	return bz, nil
+}
 
-	// Assuming result is your byte slice
-	// Convert byte slice to string and trim quotation marks
-	strValue := strings.Trim(string(result), "\"")
-
-	// Convert the string to big.Int
-	value, success := new(big.Int).SetString(strValue, 10)
-	if !success {
-		return nil, fmt.Errorf("failed to convert %s to big.Int", strValue)
-	}
-
-	return value, nil
+func (p Precompile) IsTransaction(method *abi.Method) bool {
+	// All methods in this precompile are read-only (queries)
+	return false
 }

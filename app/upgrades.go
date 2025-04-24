@@ -8,6 +8,7 @@ import (
 	v050 "github.com/CosmWasm/wasmd/app/upgrades/v050"
 	v0501 "github.com/CosmWasm/wasmd/app/upgrades/v0501"
 	v05010 "github.com/CosmWasm/wasmd/app/upgrades/v05010"
+	v05011 "github.com/CosmWasm/wasmd/app/upgrades/v05011"
 	v0502 "github.com/CosmWasm/wasmd/app/upgrades/v0502"
 	v0503 "github.com/CosmWasm/wasmd/app/upgrades/v0503"
 	v0504 "github.com/CosmWasm/wasmd/app/upgrades/v0504"
@@ -29,13 +30,13 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	"github.com/CosmWasm/wasmd/app/upgrades/noop"
@@ -55,6 +56,7 @@ var Upgrades = []upgrades.Upgrade{
 	v0508.Upgrade,
 	v0509.Upgrade,
 	v05010.Upgrade,
+	v05011.Upgrade,
 }
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
@@ -87,6 +89,7 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 		TxFeesKeeper:              app.TxFeesKeeper,
 		ICAControllerKeeper:       app.ICAControllerKeeper,
 		IBCFeeKeeper:              app.IBCFeeKeeper,
+		EvmKeeper:                 app.EvmKeeper,
 		Codec:                     app.appCodec,
 		GetStoreKey:               app.GetKey,
 	}

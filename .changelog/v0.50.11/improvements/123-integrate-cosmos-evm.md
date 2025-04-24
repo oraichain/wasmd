@@ -1,0 +1,1 @@
+- Integrate cosmos-evm ([\#123](https://github.com/oraichain/wasmd/pull/123))

@@ -7,7 +7,7 @@
       "key": "DenomCreationFee",
       "value": [
         {
-          "amount": "1000",
+          "amount": "1",
           "denom": "orai"
         }
       ]
