@@ -289,9 +289,9 @@ replace (
 
 	// go list -m -json github.com/oraichain/cometbft@ee1321d28d8ce7633e9a229b7175f6571629f917 | jq '.|"\(.Path) \(.Version)"' -r
 	//upstream-evm
-	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20250416091604-95e3312a3273
+	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20250424103535-b341b75429de
 
-	github.com/cosmos/evm => github.com/oraichain/evm v0.0.0-20250423065701-e2c9be150c2c
+	github.com/cosmos/evm => github.com/oraichain/evm v0.0.0-20250424102624-13a7f4eafb79
 	// indexer and timestamp added
 	github.com/cosmos/ibc-go/modules/capability => github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705
 
