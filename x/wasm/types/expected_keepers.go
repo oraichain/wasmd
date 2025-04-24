@@ -10,6 +10,7 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -47,6 +48,9 @@ type AccountKeeper interface {
 	GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
 	// Set an account in the store.
 	SetAccount(ctx context.Context, acc sdk.AccountI)
+
+	GetParams(ctx context.Context) (params authtypes.Params)
+	GetModuleAddress(moduleName string) sdk.AccAddress
 }
 
 // DistributionKeeper defines a subset of methods implemented by the cosmos-sdk distribution keeper

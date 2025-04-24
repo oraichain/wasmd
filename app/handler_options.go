@@ -112,7 +112,9 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
-		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
+		// ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
+		// replace by custom gas tx size for gasless contract
+		wasmkeeper.NewConsumeGasForTxSizeDecorator(options.AccountKeeper, options.WasmKeeper),
 		// nil so that it only checks with the min gas price of the chain, not the custom fee checker. For cosmos messages, the default tx fee checker is enough
 		globalfeeante.NewFeeDecorator(options.BypassMinFeeMsgTypes, options.GlobalFeeKeeper, options.StakingKeeper, maxBypassMinFeeMsgGasUsage),
 		// ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, nil),
