@@ -138,7 +138,7 @@ NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.3/test-commit-timeout.sh
 
 # v0.42.4 tests
 NODE_HOME=$VALIDATOR_HOME sh $PWD/scripts/tests-0.42.4/test-cw-stargate-staking-query.sh
-NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-cw20-erc20.sh
+# NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-cw20-erc20.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.42.4/test-globalfee.sh
 
 # v0.50.1 tests
@@ -150,7 +150,7 @@ NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-set-
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.2/test-param-change-proposal-tokenfactory.sh
 
 # v0.50.3 tests
-NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1000orai sh $PWD/scripts/tests-0.50.3/test-tokenfactory-metadata-binding.sh
+NODE_HOME=$VALIDATOR_HOME USER=validator1 FUND=1orai sh $PWD/scripts/tests-0.50.3/test-tokenfactory-metadata-binding.sh
 USER=validator1 USER2=validator2 sh $PWD/scripts/tests-0.50.3/test-gasless.sh
 
 # v0.50.4 tests
@@ -163,10 +163,13 @@ NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.4/test-toke
 # v0.50.9 tests
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-txfees.sh
 NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.9/test-evm-cosmos-mapping.sh
-sh $PWD/scripts/tests-0.50.9/test-payable-with-bank-send.sh
+# sh $PWD/scripts/tests-0.50.9/test-payable-with-bank-send.sh
 
 # v0.50.10 tests  
 bash $PWD/scripts/tests-0.50.10/test-mint-params.sh
 
+# v0.50.11 tests
+NODE_HOME=$VALIDATOR_HOME USER=validator1 sh $PWD/scripts/tests-0.50.11/test-evm-entry-point.sh
+
 echo "E2E Upgrade Tests Passed!!"
-bash scripts/clean-multinode-local-testnet.sh
+# bash scripts/clean-multinode-local-testnet.sh

@@ -40,6 +40,7 @@ else
   git clone https://github.com/oraidex/evm-entry-point.git ../evm-entry-point
   cd ../evm-entry-point
   git checkout chore/test-evm-precompile
+  git pull origin chore/test-evm-precompile
 fi
 
 # prepare env and chain
@@ -87,3 +88,5 @@ sleep 2
 # create native erc20 
 echo "Creating native erc20..."
 output=$(TOKEN_FACTORY_ADDRESS=$token_factory_contract_address pnpm hardhat run scripts/create-native-erc20.ts --network testing)
+
+echo "Test EVM entry point: Passed!"

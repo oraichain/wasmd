@@ -10,7 +10,7 @@ VALIDATOR2_ARGS="--from validator2 --chain-id $CHAIN_ID -y --keyring-backend tes
 HIDE_LOGS="/dev/null"
 
 DEFAULT_AMOUNT=100000000
-CHANGE_AMOUNT=1000
+CHANGE_AMOUNT=1
 CHANGE_KEY="DenomCreationFee"
 CHANGE_VALUE="[{\"amount\":\"$CHANGE_AMOUNT\",\"denom\":\"orai\"}]"
 PROPOSAL_FILE=${PROPOSAL_FILE:-"$PWD/scripts/json/tokenfactory-proposal.json"}
