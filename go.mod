@@ -291,7 +291,7 @@ replace (
 	//upstream-evm
 	github.com/cosmos/cosmos-sdk => github.com/oraichain/cosmos-sdk v0.50.5-0.20250424103535-b341b75429de
 
-	github.com/cosmos/evm => github.com/oraichain/evm v0.0.0-20250424140401-985b9b4f76e2
+	github.com/cosmos/evm => github.com/oraichain/evm v0.0.0-20250426030020-eaf7653531d8
 	// indexer and timestamp added
 	github.com/cosmos/ibc-go/modules/capability => github.com/oraichain/ibc-go-fork/modules/capability v0.0.0-20241202080239-8bdb6f914705
 
