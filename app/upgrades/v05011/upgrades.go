@@ -14,6 +14,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	ethsecp256k1 "github.com/cosmos/evm/crypto/ethsecp256k1"
 	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -72,6 +73,17 @@ func MigrateEthAccountsToBaseAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 		}
 
 		ctx.Logger().Info(fmt.Sprintf("Migrate account %s\n", account.GetAddress().String()))
+
+		// Migrate pubkey if pubkey type is eth_secp256k1
+		legacyPubkey := ethAcc.GetPubKey()
+		if legacyPubkey != nil && legacyPubkey.Type() == "eth_secp256k1" {
+			ctx.Logger().Info(fmt.Sprintf("Migrate account with ethpubkey: %s\n", account.GetAddress().String()))
+			pubkey := &ethsecp256k1.PubKey{
+				Key: ethAcc.GetPubKey().Bytes(),
+			}
+			ethAcc.SetPubKey(pubkey)
+		}
+
 		// NOTE: we only need to add store entries for smart contracts
 		codeHashBytes := common.HexToHash(ethAcc.CodeHash).Bytes()
 		if !evmtypes.IsEmptyCodeHash(codeHashBytes) {

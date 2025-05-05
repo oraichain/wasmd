@@ -6,6 +6,9 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+
+	ethsecp256k1 "github.com/CosmWasm/wasmd/app/upgrades/v05011/ethsecp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
 // RegisterInterfaces registers the tendermint concrete client-related
@@ -19,4 +22,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		(*authtypes.GenesisAccount)(nil),
 		&EthAccount{},
 	)
+
+	registry.RegisterImplementations((*cryptotypes.PubKey)(nil), &ethsecp256k1.PubKey{})
+	registry.RegisterImplementations((*cryptotypes.PrivKey)(nil), &ethsecp256k1.PrivKey{})
 }
