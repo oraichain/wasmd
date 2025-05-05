@@ -76,7 +76,7 @@ func MigrateEthAccountsToBaseAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 
 		// Migrate pubkey if pubkey type is eth_secp256k1
 		legacyPubkey := ethAcc.GetPubKey()
-		if legacyPubkey.Type() == "eth_secp256k1" {
+		if legacyPubkey != nil && legacyPubkey.Type() == "eth_secp256k1" {
 			pubkey := &ethsecp256k1.PubKey{
 				Key: ethAcc.GetPubKey().Bytes(),
 			}
