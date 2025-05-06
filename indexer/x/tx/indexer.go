@@ -250,7 +250,7 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 	if !admin.IsTopicExist(blockTopics) {
 		err := admin.CreateTopic(blockTopics)
 		if err != nil {
-			return err
+			return fmt.Errorf("[Streaming] failed to create block topic: %w", err)
 		}
 
 		cs.ri.SetTopics("block")
@@ -258,13 +258,13 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 
 	err := producer.SendBlockToRedpanda(blockTopics, *req)
 	if err != nil {
-		return err
+		return fmt.Errorf("[Streaming] failed to send block to redpanda: %w", err)
 	}
 
 	for i, tx := range req.Txs {
 		cosmosTx, err := indexerUtil.UnmarshalTxBz(cs, tx)
 		if err != nil {
-			return err
+			return fmt.Errorf("[Streaming] failed to unmarshal tx: %w", err)
 		}
 
 		// get topic for tx
@@ -289,7 +289,7 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 			if !admin.IsTopicExist(topic) {
 				err := admin.CreateTopic(topic)
 				if err != nil {
-					return err
+					return fmt.Errorf("[Streaming] failed to create topic: %w", err)
 				}
 
 				cs.ri.SetTopics(module)
@@ -304,7 +304,7 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 		// TODO: emit tx with type to redpanda
 		err = producer.SendToRedpanda(topicAndKeys, topicMsg)
 		if err != nil {
-			return err
+			return fmt.Errorf("[Streaming] failed to send tx to redpanda: %w", err)
 		}
 
 		// TODO: emit tx to redpanda
@@ -312,7 +312,7 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 		if !admin.IsTopicExist(txsTopics) {
 			err := admin.CreateTopic(txsTopics)
 			if err != nil {
-				return err
+				return fmt.Errorf("[Streaming] failed to create txs topic: %w", err)
 			}
 
 			cs.ri.SetTopics("txs")
@@ -320,7 +320,7 @@ func (cs *TxEventSink) EmitModuleEvents(req *abci.RequestFinalizeBlock, res *abc
 
 		err = producer.SendTxToRedpanda(txsTopics, topicMsg)
 		if err != nil {
-			return err
+			return fmt.Errorf("[Streaming] failed to send tx to redpanda: %w", err)
 		}
 	}
 
