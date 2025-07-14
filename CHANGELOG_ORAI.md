@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.50.12
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+
+Upgrade Oraichain mainnet to v0.50.12 to fix bug on ICA stack
+
+### BUG FIXES
+
+- fix bug ICA stack
+  ([\#147](https://github.com/oraichain/wasmd/pull/147))
+
+### IMPROVEMENTS
+
+- update CI workflows
+  ([\#148](https://github.com/oraichain/wasmd/pull/148))
+
 ## v0.50.11
 
 <!--
@@ -7,6 +27,7 @@
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
+
 Upgrade Oraichain mainnet to v0.50.11 to integrate cosmos-evm, implement streaming blocks to redpanda and fix gas simulations of gas-less contract.
 
 ### BUG FIXES
@@ -71,6 +92,7 @@ Upgrade Oraichain mainnet to v0.50.9 to upgrade cosmos-sdk dependency, add dynam
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
+
 Upgrade Oraichain mainnet to v0.50.7 to upgrade cosmos-sdk dependency and fix gasless contract bug.
 
 ### BUG FIXES
@@ -89,6 +111,7 @@ Upgrade Oraichain mainnet to v0.50.7 to upgrade cosmos-sdk dependency and fix ga
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
+
 Upgrade Oraichain mainnet to v0.50.6 to upgrade ethermint dependency and fix mempool evm app hash.
 
 ### BUG FIXES
@@ -107,6 +130,7 @@ Upgrade Oraichain mainnet to v0.50.6 to upgrade ethermint dependency and fix mem
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
+
 Upgrade Oraichain mainnet to v0.50.5 to upgrade cometbft dependency and fix store non-utf8 value to database.
 
 ### BUG FIXES
@@ -126,7 +150,8 @@ Upgrade Oraichain mainnet to v0.50.5 to upgrade cometbft dependency and fix stor
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
-Upgrade Oraichain mainnet to v0.50.4 to implement some features such as increasing wasm file size of smart contract, disabling force-transfer capability of tokenfactory module. 
+
+Upgrade Oraichain mainnet to v0.50.4 to implement some features such as increasing wasm file size of smart contract, disabling force-transfer capability of tokenfactory module.
 
 ### IMPROVEMENTS
 
@@ -143,7 +168,7 @@ Upgrade Oraichain mainnet to v0.50.4 to implement some features such as increasi
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
 
-Upgrade Oraichain mainnet to v0.50.3 to fix gasless contract and set metadata tokenfactory bindings bug. 
+Upgrade Oraichain mainnet to v0.50.3 to fix gasless contract and set metadata tokenfactory bindings bug.
 Otherwise, v0.50.3 also supports interchain tests.
 
 ### BUG FIXES
@@ -217,7 +242,7 @@ Upgrade Oraichain mainnet to v0.50.1 to fix some IBC and cosmos sdk bugs.
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
 
-Upgrade Oraichain mainnet to v0.50.0 with Cosmos SDK v0.50.10, CometBFT 0.38.12 and more. This upgrade allows Oraichain to apply strategic features, improve performances and user 
+Upgrade Oraichain mainnet to v0.50.0 with Cosmos SDK v0.50.10, CometBFT 0.38.12 and more. This upgrade allows Oraichain to apply strategic features, improve performances and user
 experiences.
 
 ### BREAKING CHANGE
@@ -257,4 +282,3 @@ Oraichain Wasmd is a fork of [Wasmd](https://github.com/cosmwasm/wasmd) as of Oc
 ## CHANGELOG
 
 Read our [README](../README.md) for mor information
-
