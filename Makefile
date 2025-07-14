@@ -166,6 +166,10 @@ ictest-basic:
 ictest-interchain-account:
 	cd tests/interchaintest && go test -race -v -run TestInterchainAccount .
 
+# Executes interchain account tests via interchaintest
+ictest-interchain-account-from-gaia:
+	cd tests/interchaintest && go test -race -v -run TestInterchainAccountFromGaia .
+
 # Executes token factory param change tests via interchaintest
 ictest-tf-param-change:
 	cd tests/interchaintest && go test -race -v -run TestTokenfactoryParamChange .
