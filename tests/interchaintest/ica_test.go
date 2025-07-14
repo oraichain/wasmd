@@ -205,7 +205,7 @@ func TestInterchainAccountFromOrai(t *testing.T) {
 	_, err = helpers.ExecuteICA(t, ctx, orai, oraiUser.KeyName(), ibcConnection[0].ID, msgICAJson)
 	require.NoError(t, err)
 
-	err = testutil.WaitForBlocks(ctx, 10, orai, gaia)
+	err = testutil.WaitForBlocks(ctx, 20, orai, gaia)
 	require.NoError(t, err)
 }
 
