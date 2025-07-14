@@ -31,7 +31,7 @@ const (
 
 	// Chain and relayer version inf
 	IBCRelayerImage     = "ghcr.io/cosmos/relayer"
-	OraidICTestRepo     = "ghcr.io/oraichain/oraid-ictest"
+	OraidICTestRepo     = "docker.io/oraichain/oraid-ictest"
 	IBCRelayerVersion   = "latest"
 	GaiaImageVersion    = "v21.0.0"
 	OsmosisImageVersion = "v28.0.0"
