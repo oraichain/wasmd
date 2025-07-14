@@ -56,3 +56,7 @@ type HackatomExampleInitMsg struct {
 type QuerySqrtPriceResponse struct {
 	Data string `json:"data,omitempty"`
 }
+
+type IcaAccount struct {
+	Address string `json:"address"`
+}

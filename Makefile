@@ -163,8 +163,8 @@ ictest-basic:
 	cd tests/interchaintest && go test -race -v -run TestStartOrai .
 
 # Executes interchain account tests via interchaintest
-ictest-interchain-account:
-	cd tests/interchaintest && go test -race -v -run TestInterchainAccount .
+ictest-interchain-account-from-orai:
+	cd tests/interchaintest && go test -race -v -run TestInterchainAccountFromOrai .
 
 # Executes interchain account tests via interchaintest
 ictest-interchain-account-from-gaia:

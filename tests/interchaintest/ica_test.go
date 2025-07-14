@@ -2,6 +2,7 @@ package interchaintest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -15,10 +16,15 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 )
 
 // TestStartOrai is a basic test to assert that spinning up a Orai network with 1 validator works properly.
-func TestInterchainAccount(t *testing.T) {
+func TestInterchainAccountFromOrai(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -127,6 +133,31 @@ func TestInterchainAccount(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	transfer := ibc.WalletAmount{
+		Address: gaiaUser.FormattedAddress(),
+		Denom:   orai.Config().Denom,
+		Amount:  math.NewInt(1_000_000),
+	}
+
+	channel, err := ibc.GetTransferChannel(ctx, r, eRep, orai.Config().ChainID, gaia.Config().ChainID)
+	require.NoError(t, err)
+
+	transferTx, err := orai.SendIBCTransfer(ctx, channel.ChannelID, oraiUser.FormattedAddress(), transfer, ibc.TransferOptions{})
+	require.NoError(t, err)
+
+	// waiting for ACK -> transfer successfully
+	oraiHeight, err := orai.Height(ctx)
+	require.NoError(t, err)
+	_, err = testutil.PollForAck(ctx, orai, oraiHeight-5, oraiHeight+25, transferTx.Packet)
+	require.NoError(t, err)
+
+	oraiDenom := transfertypes.GetPrefixedDenom(channel.Counterparty.PortID, channel.Counterparty.ChannelID, orai.Config().Denom)
+	ibcDenom := transfertypes.ParseDenomTrace(oraiDenom).IBCDenom()
+	// check balance of ica address
+	balance, err := gaia.BankQueryBalance(ctx, gaiaUser.FormattedAddress(), ibcDenom)
+	require.NoError(t, err)
+	require.Equal(t, math.NewInt(1_000_000), balance)
+
 	// Get ibc connection
 	ibcConnection, err := r.GetConnections(ctx, eRep, orai.Config().ChainID)
 	require.NoError(t, err)
@@ -140,6 +171,42 @@ func TestInterchainAccount(t *testing.T) {
 	icaAddress, err := helpers.QueryInterchainAccount(t, ctx, orai, oraiUser.FormattedAddress(), ibcConnection[0].ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, icaAddress)
+
+	gaia.SendFunds(ctx, gaiaUser.KeyName(), ibc.WalletAmount{
+		Address: icaAddress,
+		Amount:  math.NewInt(1_000_000),
+		Denom:   ibcDenom,
+	})
+
+	balance, err = gaia.BankQueryBalance(ctx, icaAddress, ibcDenom)
+	require.NoError(t, err)
+	require.Equal(t, math.NewInt(1_000_000), balance)
+
+	// send 1000 orai to the ica addre
+
+	msg := banktypes.MsgSend{
+		FromAddress: icaAddress,
+		ToAddress:   gaiaUser.FormattedAddress(),
+		Amount:      sdk.NewCoins(sdk.NewCoin(ibcDenom, math.NewInt(1_000_000))),
+	}
+
+	msgJson, err := json.Marshal(msg)
+	require.NoError(t, err)
+
+	msgICA := icatypes.InterchainAccountPacketData{
+		Type: icatypes.EXECUTE_TX,
+		Data: msgJson,
+		Memo: "",
+	}
+
+	msgICAJson, err := json.Marshal(msgICA)
+	require.NoError(t, err)
+
+	_, err = helpers.ExecuteICA(t, ctx, orai, oraiUser.KeyName(), ibcConnection[0].ID, msgICAJson)
+	require.NoError(t, err)
+
+	err = testutil.WaitForBlocks(ctx, 10, orai, gaia)
+	require.NoError(t, err)
 }
 
 // TestStartOrai is a basic test to assert that spinning up a Orai network with 1 validator works properly.
