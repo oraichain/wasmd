@@ -964,8 +964,6 @@ github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.5/go.mod h1:/wsWhb9smxS
 github.com/openzipkin/zipkin-go v0.1.6/go.mod h1:QgAqvLzwWbR/WpD4A3cGpPtJrZXNIiJc5AZX7/PBEpw=
 github.com/openzipkin/zipkin-go v0.2.1/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
 github.com/openzipkin/zipkin-go v0.2.2/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
-github.com/oraichain/cometbft v0.38.6-0.20250207043129-6ccdb4a201d3 h1:Rj7XV6xqH2f2vxSpj9WtpGG/ShT1ntr2mIjW5u+XvWU=
-github.com/oraichain/cometbft v0.38.6-0.20250207043129-6ccdb4a201d3/go.mod h1:5l0SkgeLRXi6bBfQuevXjKqML1jjfJJlvI1Ulp02/o4=
 github.com/oraichain/cosmos-sdk v0.50.5-0.20250424103535-b341b75429de h1:66gg1LdbHEBiwnyrRrWQnv8CTcYmvnqmvVlfR666oqU=
 github.com/oraichain/cosmos-sdk v0.50.5-0.20250424103535-b341b75429de/go.mod h1:hrWEFMU1eoXqLJeE6VVESpJDQH67FS1nnMrQIjO2daw=
 github.com/oraichain/cosmos-sdk/store v1.0.3-0.20250415032445-84a43f4d075c h1:pmyS4CQX0NBOIpVzd1qgh4pIPRI86iuxJMQuSdAhnB4=
@@ -982,6 +980,8 @@ github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597 h1:vFCKH25Q
 github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597/go.mod h1:JAaOF+0j23OoyEgd6uhE3cgNDpZcfVZx4/DBbnMjUsc=
 github.com/oraichain/juno/x/globalfee v0.0.0-20250312030216-ffe51b3d33e8 h1:ccMFmwQIfCZmKCFtBIeF+9vzJgMY46HxPCB7jQc8i04=
 github.com/oraichain/juno/x/globalfee v0.0.0-20250312030216-ffe51b3d33e8/go.mod h1:T9g8covTFLipVYRou8cuvfjg+xtPmQINjxFjzRxEbo8=
+github.com/oraichain/private-cometbft v0.0.0-20260115035732-0dc4c91f67e0 h1:8XN3T3VbdrnUaY9z7VcFkAjWNePVw/oexn9DiD2vj/8=
+github.com/oraichain/private-cometbft v0.0.0-20260115035732-0dc4c91f67e0/go.mod h1:5l0SkgeLRXi6bBfQuevXjKqML1jjfJJlvI1Ulp02/o4=
 github.com/ory/dockertest v3.3.5+incompatible h1:iLLK6SQwIhcbrG783Dghaaa3WPzGc+4Emza6EbVUUGA=
 github.com/ory/dockertest v3.3.5+incompatible/go.mod h1:1vX4m9wsvi00u5bseYwXaSnhNrne+V0E6LAcBILJdPs=
 github.com/ory/dockertest/v3 v3.9.1 h1:v4dkG+dlu76goxMiTT2j8zV7s4oPPEppKT8K8p2f1kY=
