@@ -10,6 +10,7 @@ import (
 	v05010 "github.com/CosmWasm/wasmd/app/upgrades/v05010"
 	v05011 "github.com/CosmWasm/wasmd/app/upgrades/v05011"
 	v05012 "github.com/CosmWasm/wasmd/app/upgrades/v05012"
+	v05013 "github.com/CosmWasm/wasmd/app/upgrades/v05013"
 	v0502 "github.com/CosmWasm/wasmd/app/upgrades/v0502"
 	v0503 "github.com/CosmWasm/wasmd/app/upgrades/v0503"
 	v0504 "github.com/CosmWasm/wasmd/app/upgrades/v0504"
@@ -59,6 +60,7 @@ var Upgrades = []upgrades.Upgrade{
 	v05010.Upgrade,
 	v05011.Upgrade,
 	v05012.Upgrade,
+	v05013.Upgrade,
 }
 
 // RegisterUpgradeHandlers registers the chain upgrade handlers
