@@ -285,7 +285,7 @@ replace (
 	github.com/CosmosContracts/juno/v18/x/clock => github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597
 	github.com/CosmosContracts/juno/v18/x/globalfee => github.com/oraichain/juno/x/globalfee v0.0.0-20250312030216-ffe51b3d33e8
 
-	github.com/cometbft/cometbft => github.com/oraichain/private-cometbft v0.0.0-20260115035732-0dc4c91f67e0
+	github.com/cometbft/cometbft => github.com/oraichain/cometbft v0.38.6-0.20260115035732-0dc4c91f67e0
 
 	// go list -m -json github.com/oraichain/cometbft@ee1321d28d8ce7633e9a229b7175f6571629f917 | jq '.|"\(.Path) \(.Version)"' -r
 	//upstream-evm
