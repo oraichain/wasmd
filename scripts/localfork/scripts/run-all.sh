@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${ROOT_DIR}/scripts"
 chmod +x ./*.sh
 
-export FORK_HEIGHT="${FORK_HEIGHT:-20}"
+export FORK_HEIGHT="${FORK_HEIGHT:-40}"
 export OLD_TAG="${OLD_TAG:-v0.50.13b}"
 
 ./00-build.sh

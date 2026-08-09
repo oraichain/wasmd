@@ -8,8 +8,8 @@ import (
 //
 //	-X github.com/CosmWasm/wasmd/app/upgrades/v05014.forkHeightStr=40
 //
-// Production default remains 118018800.
-var forkHeightStr = "118018800"
+// Production default remains 118018795 (halt 118018794 + 1).
+var forkHeightStr = "118018795"
 
 // ForkHeight is the block height at which RunForkLogic executes.
 var ForkHeight = mustParseForkHeight(forkHeightStr)

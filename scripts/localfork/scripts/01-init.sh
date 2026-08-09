@@ -44,6 +44,16 @@ for i in "${!NODES[@]}"; do
     > "${DATA_DIR}/${n}/${n}_key.json"
 done
 
+# Non-blacklist account used by 06-verify to prove post-fork bank send still works (out + back).
+TESTER_KEY=tester
+TESTER_FUND=50000000000
+run "${DATA_DIR}/node-a" keys add "${TESTER_KEY}" --keyring-backend "${KEYRING}" --output json \
+  > "${DATA_DIR}/node-a/${TESTER_KEY}_key.json"
+TESTER_ADDR=$(jq -r .address "${DATA_DIR}/node-a/${TESTER_KEY}_key.json")
+echo "${TESTER_ADDR}" > "${DATA_DIR}/tester.address"
+jq -n --arg address "${TESTER_ADDR}" '{address:$address,key:"tester"}' \
+  > "${ROOT_DIR}/test-address.json"
+
 BALANCES_JSON="${BALANCES_JSON:-${ROOT_DIR}/genesis-balances.json}"
 
 echo "==> Build shared genesis accounts on node-a"
@@ -59,6 +69,9 @@ for i in "${!NODES[@]}"; do
   run "${DATA_DIR}/node-a" genesis add-genesis-account "${ADDR}" "${total}${DENOM}"
 done
 
+echo "  add-genesis-account ${TESTER_KEY} ${TESTER_ADDR} ${TESTER_FUND}${DENOM}"
+run "${DATA_DIR}/node-a" genesis add-genesis-account "${TESTER_ADDR}" "${TESTER_FUND}${DENOM}"
+
 if [[ ! -f "${BALANCES_JSON}" ]]; then
   echo "ERROR: genesis balances file not found: ${BALANCES_JSON}"
   exit 1
@@ -66,10 +79,91 @@ fi
 
 echo "==> Add genesis balances from ${BALANCES_JSON}"
 # One container run: avoid N docker startups for many accounts.
+# Skip SDK module account addresses: add-genesis-account would create a BaseAccount
+# there and InitGenesis then panics with "account is not a module account".
 ADD_SCRIPT="${DATA_DIR}/add-genesis-balances.sh"
 python3 - <<PY
+import hashlib
 import json
 from pathlib import Path
+
+# cosmos-sdk crypto.AddressHash(name) = sha256(name)[:20]
+MODULE_NAMES = (
+    "fee_collector",
+    "distribution",
+    "mint",
+    "bonded_tokens_pool",
+    "not_bonded_tokens_pool",
+    "gov",
+    "transfer",
+    "wasm",
+    "tokenfactory",
+    "evm",
+    "erc20",
+    "precisebank",
+    "ibc",
+    "ibcfee",
+    "crisis",
+    "nft",
+    "group",
+    "authz",
+    "feegrant",
+    "consensus",
+    "upgrade",
+    "params",
+    "slashing",
+    "staking",
+    "bank",
+    "capability",
+    "evidence",
+    "packetforward",
+    "icq",
+    "interchainaccounts",
+    "icahost",
+    "icacontroller",
+)
+
+def bech32_encode(hrp: str, witprog: bytes) -> str:
+    charset = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+
+    def polymod(values):
+        gen = [0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3]
+        chk = 1
+        for v in values:
+            b = chk >> 25
+            chk = ((chk & 0x1FFFFFF) << 5) ^ v
+            for i in range(5):
+                chk ^= gen[i] if ((b >> i) & 1) else 0
+        return chk
+
+    def hrp_expand(h):
+        return [ord(x) >> 5 for x in h] + [0] + [ord(x) & 31 for x in h]
+
+    def convertbits(data, frombits, tobits, pad=True):
+        acc = 0
+        bits = 0
+        ret = []
+        maxv = (1 << tobits) - 1
+        for value in data:
+            acc = (acc << frombits) | value
+            bits += frombits
+            while bits >= tobits:
+                bits -= tobits
+                ret.append((acc >> bits) & maxv)
+        if pad and bits:
+            ret.append((acc << (tobits - bits)) & maxv)
+        return ret
+
+    data = convertbits(witprog, 8, 5)
+    values = hrp_expand(hrp) + data
+    polymod_val = polymod(values + [0, 0, 0, 0, 0, 0]) ^ 1
+    checksum = [(polymod_val >> 5 * (5 - i)) & 31 for i in range(6)]
+    return hrp + "1" + "".join(charset[d] for d in data + checksum)
+
+skip = {
+    bech32_encode("orai", hashlib.sha256(n.encode()).digest()[:20]): n
+    for n in MODULE_NAMES
+}
 
 path = Path("${BALANCES_JSON}")
 script = Path("${ADD_SCRIPT}")
@@ -81,11 +175,15 @@ if isinstance(balances, dict):
 
 lines = ["#!/bin/bash", "set -euo pipefail", "HOME=/orai"]
 n = 0
+skipped = []
 for row in balances:
     addr = (row.get("address") or "").strip()
     amt = str(row.get("amount") or "").strip()
     denom = (row.get("denom") or data.get("denom") or default_denom).strip()
     if not addr or not amt or int(amt) <= 0:
+        continue
+    if addr in skip:
+        skipped.append(f"{skip[addr]} ({addr})")
         continue
     lines.append(
         f'oraid genesis add-genesis-account "{addr}" "{amt}{denom}" --home /orai/.oraid'
@@ -97,6 +195,8 @@ lines.append(f'echo "added {n} genesis balances"')
 script.write_text("\n".join(lines) + "\n")
 script.chmod(0o755)
 print(f"  prepared {n} add-genesis-account commands (decimals={data.get('decimals', '?')})")
+if skipped:
+    print(f"  skipped {len(skipped)} module account address(es): {', '.join(skipped)}")
 PY
 docker run --rm \
   -v "${DATA_DIR}/node-a:/orai/.oraid" \
@@ -193,7 +293,10 @@ POWER_A=${POWER_A}
 POWER_B=${POWER_B}
 POWER_S=${POWER_S}
 BALANCES_JSON=${BALANCES_JSON}
+TESTER_KEY=${TESTER_KEY}
+TESTER_ADDR=${TESTER_ADDR}
 EOF
 
 echo "✓ Initialized ${DATA_DIR} (A=${POWER_A}% B=${POWER_B}% S=${POWER_S}%, fork=${FORK_HEIGHT})"
 echo "  genesis balances: ${BALANCES_JSON}"
+echo "  send-test address: ${TESTER_ADDR} (${TESTER_KEY})"

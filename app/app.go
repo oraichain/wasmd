@@ -481,6 +481,8 @@ func NewWasmApp(
 		AuthorityAddr,
 		logger,
 	)
+	RegisterBankSendRestrictions(app.BankKeeper)
+	ActivateSendBlacklist()
 
 	// optional: enable sign mode textual by overwriting the default tx config (after setting the bank keeper)
 	enabledSignModes := append(authtx.DefaultSignModes, signingtypes.SignMode_SIGN_MODE_TEXTUAL)

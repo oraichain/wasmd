@@ -6,19 +6,17 @@ Reproduce recovery fork behavior:
 
 | Node | Voting power | Binary before halt | Binary after halt | Expected |
 |------|--------------|--------------------|-------------------|----------|
-| **A** | 30% | **old** (`v0.50.13b`) | **new** (current + fork) | continues, applies fork state |
+| **A** | 30% | **old** (`v0.50.13b`) | **new** (current + fork) | burn blacklist + continue |
 | **B** | 30% | **old** (`v0.50.13b`) | **old** (`v0.50.13b`) | **apphash** / consensus failure |
-| **S** | 40% | **old** (`v0.50.13b`) | **new** (current + fork) | continues with A (70% > 2/3) |
+| **S** | 40% | **old** (`v0.50.13b`) | **new** (current + fork) | continue with A (70% > 2/3) |
 
 Halt sequence: stop **S** first (A+B=60% < 2/3 → chain halt) → stop **A** → restart **A+S** with new binary.
 
-**Binaries**
-- `localfork-old:local` ← `git archive` tag **`v0.50.13b`** (override with `OLD_TAG=...`)
-- `localfork-new:local` ← current workspace (`FORK_HEIGHT` via ldflags)
+**Fork logic (new binary)** at `FORK_HEIGHT`:
+1. Burn all `orai` on `BlacklistAddresses` (top balances from `genesis-balances.json`)
+2. After fork block (`height > FORK_HEIGHT`): bank `SendRestriction` blocks in/out for those addresses
 
-`RunForkLogic` is currently a **noop** (mock mint/burn removed). After real fork logic is implemented, restore state-marker checks in `scripts/06-verify.sh` and re-run.
-
-Default mock `FORK_HEIGHT=40` (via ldflags). Production default remains `118018800`.
+Default mock `FORK_HEIGHT=40` (ldflags). Production default: `118018795`.
 
 ## Chain ID
 
@@ -26,50 +24,42 @@ Must be a known EVM chain id for `v0.50.13b`:
 - mock default: **`testing`**
 - also valid: `Oraichain`, `Oraichain-testnet`, `orai-1`
 
-Do **not** use arbitrary ids like `localfork-1` (old binary panics: `unknown chain id`).
+## Prerequisites
 
 - Docker + Docker Compose
 - `jq`, `curl`, `python3`
 - Git tag `v0.50.13b` present locally
-- Enough disk/RAM to build `oraid` twice
+- `scripts/localfork/genesis-balances.json` (gitignored; required by `01-init.sh`)
 
 ## Quick start
 
 ```bash
 cd scripts/localfork
 chmod +x scripts/*.sh
-FORK_HEIGHT=20 OLD_TAG=v0.50.13b ./scripts/run-all.sh
+FORK_HEIGHT=40 OLD_TAG=v0.50.13b ./scripts/run-all.sh
 ```
 
 Or step by step:
 
 ```bash
-export FORK_HEIGHT=20
+export FORK_HEIGHT=40
 export OLD_TAG=v0.50.13b
-./scripts/00-build.sh      # old=v0.50.13b , new=HEAD+fork
-./scripts/01-init.sh       # genesis A30/B30/S40 + genesis-balances.json
-./scripts/02-start-old.sh  # all 3 on old binary
-./scripts/03-wait-height.sh
-./scripts/04-halt.sh       # stop S, then A
-./scripts/05-restart-new.sh # A+S=new, B=old
-./scripts/06-verify.sh     # fork marker + B apphash
+./scripts/00-build.sh
+./scripts/01-init.sh
+./scripts/02-start-old.sh
+./scripts/03-wait-height.sh   # halts at FORK_HEIGHT-2
+./scripts/04-halt.sh
+./scripts/05-restart-new.sh
+./scripts/06-verify.sh        # burned balances + B apphash
 ```
 
-This harness boots a **fresh local genesis** (exact 30/30/40 valset) and injects
-wallet balances from `genesis-balances.json` — not a full mainnet state fork.
+## Genesis balances
 
-Amounts are **base units** (`orai`, 6 decimals). Example: `600003387` ORAI → `600003387000000`.
+Fresh local genesis (valset 30/30/40) + balances from `genesis-balances.json` (base units, 6 decimals).
 
-Override: `BALANCES_JSON=/path/to.json ./scripts/01-init.sh`
+Blacklist used by fork + verify: `blacklist-addresses.json` (must match `app/upgrades/v05014.BlacklistAddresses`).
 
-## Using a mainnet snapshot later
-
-To drive the same flow from full snapshot state instead of balance-only genesis:
-
-1. Sync/export on Ubuntu: `oraid export --for-zero-height > state.json`
-2. Replace CometBFT/app valset with A/B/S keys + powers 30/30/40
-3. Copy `state.json` → each `data/node-*/config/genesis.json` and copy `wasm/`
-4. Reuse `02`→`06` scripts (set `FORK_HEIGHT` near snapshot height, e.g. `118018800`)
+Send-test account (not blacklisted): `test-address.json` — funded in genesis; `06-verify.sh` sends `tester → node-a` then `node-a → tester` after fork.
 
 ## Ports
 
@@ -85,7 +75,11 @@ To drive the same flow from full snapshot state instead of balance-only genesis:
 # height
 curl -s localhost:26657/status | jq .result.sync_info.latest_block_height
 
-# B logs (apphash only after real fork state changes land)
+# burned blacklist balance on A (expect 0)
+ADDR=orai1hru4a5w0c29wr36l2dgaymqqd4h0vju9tlvk8w
+curl -s "localhost:1317/cosmos/bank/v1beta1/balances/${ADDR}/by_denom?denom=orai" | jq .
+
+# B logs
 docker logs localfork-b 2>&1 | grep -i apphash
 ```
 

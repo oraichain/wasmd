@@ -5,6 +5,8 @@ import (
 )
 
 // BeginBlockForks runs any hard-fork BeginForkLogic scheduled for the current height.
+// Blacklist set is activated at app startup; enforcement is height-gated
+// (height > ForkHeight) in BlacklistSendRestriction.
 func BeginBlockForks(ctx sdk.Context, app *WasmApp) {
 	keepers := app.GetUpgradeKeepers()
 	for _, fork := range Forks {
