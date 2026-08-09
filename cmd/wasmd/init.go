@@ -79,6 +79,7 @@ func InitAppConfig(denom string) (string, *cosmosevmserverconfig.Config) {
 	srvCfg.GRPCWeb.Enable = true
 	srvCfg.Telemetry.Enabled = false
 
+	// JSONRPCConfig
 	srvCfg.JSONRPC.Enable = true
 	// The SDK's default minimum gas price is set to "" (empty value) inside
 	// app.toml. If left empty by validators, the node will halt on startup.
