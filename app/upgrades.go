@@ -93,7 +93,7 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 		TxFeesKeeper:              app.TxFeesKeeper,
 		ICAControllerKeeper:       app.ICAControllerKeeper,
 		IBCFeeKeeper:              app.IBCFeeKeeper,
-		EvmKeeper:                 app.EvmKeeper,
+		EvmKeeper:                 nil,
 		Codec:                     app.appCodec,
 		GetStoreKey:               app.GetKey,
 	}

@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
-	precisebankkeeper "github.com/CosmWasm/wasmd/x/precisebank/keeper"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -51,14 +49,6 @@ func (app *WasmApp) GetAccountKeeper() authkeeper.AccountKeeper {
 
 func (app *WasmApp) GetWasmKeeper() wasmkeeper.Keeper {
 	return app.WasmKeeper
-}
-
-func (app *WasmApp) GetPrecisebankKeeper() precisebankkeeper.Keeper {
-	return app.PrecisebankKeeper
-}
-
-func (app *WasmApp) GetEVMKeeper() *evmkeeper.Keeper {
-	return app.EvmKeeper
 }
 
 // FundAccount is a utility function that funds an account by minting and sending the coins to the address.

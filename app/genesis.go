@@ -15,8 +15,6 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	mint "github.com/cosmos/cosmos-sdk/x/mint/types"
 	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
-	feemarket "github.com/cosmos/evm/x/feemarket/types"
-	evm "github.com/cosmos/evm/x/vm/types"
 )
 
 // GenesisState of the blockchain is represented here as a map of raw json
@@ -38,9 +36,6 @@ func NewDefaultGenesisState(cdc codec.Codec, moduleBasics module.BasicManager) G
 	mintGenesis := mint.DefaultGenesisState()
 	stakingGenesis := staking.DefaultGenesisState()
 	tokenFactoryGenesis := tokenfactory.DefaultGenesis()
-	evmGenesis := evm.DefaultGenesisState()
-	feeMarketGenesis := feemarket.DefaultGenesisState()
-	// erc20Genesis := erc20.DefaultGenesisState()
 
 	// custom crisis genesis state
 	crisisGenesis.ConstantFee = sdk.NewCoin(appconfig.MinimalDenom, sdk.TokensFromConsensusPower(10, sdkmath.NewInt(1_000_000)))
@@ -70,21 +65,10 @@ func NewDefaultGenesisState(cdc codec.Codec, moduleBasics module.BasicManager) G
 	tokenFactoryGenesis.Params.DenomCreationFee = sdk.NewCoins(sdk.NewCoin(appconfig.MinimalDenom, sdk.TokensFromConsensusPower(10, sdkmath.NewInt(10_000_000))))
 	genesisSate[tokenfactory.ModuleName] = cdc.MustMarshalJSON(tokenFactoryGenesis)
 
-	// custom evm genesis state
-	evmGenesis.Params.EvmDenom = appconfig.EvmDenom
-	genesisSate[evm.ModuleName] = cdc.MustMarshalJSON(evmGenesis)
-
-	// custom fee market genesis state
-	feeMarketGenesis.Params.BaseFee = sdkmath.LegacyNewDec(1)
-	feeMarketGenesis.Params.BaseFeeChangeDenominator = 2
-	feeMarketGenesis.Params.NoBaseFee = true
-	genesisSate[feemarket.ModuleName] = cdc.MustMarshalJSON(feeMarketGenesis)
-
 	for _, b := range moduleBasics {
 		name := b.Name()
 		if name == crisis.ModuleName || name == gov.ModuleName ||
-			name == mint.ModuleName || name == staking.ModuleName || name == tokenfactory.ModuleName ||
-			name == evm.ModuleName || name == feemarket.ModuleName {
+			name == mint.ModuleName || name == staking.ModuleName || name == tokenfactory.ModuleName {
 			continue
 		}
 

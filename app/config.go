@@ -62,8 +62,8 @@ var ChainsCoinInfo = map[string]evmtypes.EvmCoinInfo{
 	},
 }
 
-// EvmAppOptions allows to setup the global configuration
-// for the Cosmos EVM chain.
+// EvmAppOptions registers the base denom for the chain.
+// EVMConfigurator / execution config is omitted (EVM AppModules soft-removed).
 func EvmAppOptions(chainID string) error {
 	if sealed {
 		return nil
@@ -74,30 +74,7 @@ func EvmAppOptions(chainID string) error {
 		return fmt.Errorf("unknown chain id: %s", chainID)
 	}
 
-	// set the denom info for the chain
 	if err := setBaseDenom(coinInfo); err != nil {
-		return err
-	}
-
-	baseDenom, err := sdk.GetBaseDenom()
-	if err != nil {
-		return err
-	}
-
-	ethCfg := evmtypes.DefaultChainConfig(chainID)
-
-	fmt.Println("=========================")
-	fmt.Println("\t\tEVM Config\t\t")
-	fmt.Println("base denom:", baseDenom)
-	fmt.Println("decimals:", uint8(coinInfo.Decimals))
-	fmt.Println("ethCfg:", ethCfg)
-	fmt.Println("=========================")
-
-	err = evmtypes.NewEVMConfigurator().
-		WithChainConfig(ethCfg).
-		WithEVMCoinInfo(baseDenom, uint8(coinInfo.Decimals)).
-		Configure()
-	if err != nil {
 		return err
 	}
 
