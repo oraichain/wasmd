@@ -2,3 +2,4 @@
 data/
 docker-compose.override.yml
 *.log
+genesis-balances.json

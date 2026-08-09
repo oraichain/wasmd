@@ -47,7 +47,7 @@ Or step by step:
 export FORK_HEIGHT=20
 export OLD_TAG=v0.50.13b
 ./scripts/00-build.sh      # old=v0.50.13b , new=HEAD+fork
-./scripts/01-init.sh       # genesis A30/B30/S40
+./scripts/01-init.sh       # genesis A30/B30/S40 + genesis-balances.json
 ./scripts/02-start-old.sh  # all 3 on old binary
 ./scripts/03-wait-height.sh
 ./scripts/04-halt.sh       # stop S, then A
@@ -55,11 +55,16 @@ export OLD_TAG=v0.50.13b
 ./scripts/06-verify.sh     # fork marker + B apphash
 ```
 
+This harness boots a **fresh local genesis** (exact 30/30/40 valset) and injects
+wallet balances from `genesis-balances.json` — not a full mainnet state fork.
+
+Amounts are **base units** (`orai`, 6 decimals). Example: `600003387` ORAI → `600003387000000`.
+
+Override: `BALANCES_JSON=/path/to.json ./scripts/01-init.sh`
+
 ## Using a mainnet snapshot later
 
-This harness currently boots a **fresh local genesis** (needed for exact 30/30/40 valset).
-
-To drive the same flow from snapshot state:
+To drive the same flow from full snapshot state instead of balance-only genesis:
 
 1. Sync/export on Ubuntu: `oraid export --for-zero-height > state.json`
 2. Replace CometBFT/app valset with A/B/S keys + powers 30/30/40

@@ -44,6 +44,8 @@ for i in "${!NODES[@]}"; do
     > "${DATA_DIR}/${n}/${n}_key.json"
 done
 
+BALANCES_JSON="${BALANCES_JSON:-${ROOT_DIR}/genesis-balances.json}"
+
 echo "==> Build shared genesis accounts on node-a"
 # reset node-a genesis as template
 run "${DATA_DIR}/node-a" init node-a --chain-id "${CHAIN_ID}" --default-denom "${DENOM}" -o
@@ -56,6 +58,53 @@ for i in "${!NODES[@]}"; do
   echo "  add-genesis-account ${n} ${ADDR} ${total}${DENOM}"
   run "${DATA_DIR}/node-a" genesis add-genesis-account "${ADDR}" "${total}${DENOM}"
 done
+
+if [[ ! -f "${BALANCES_JSON}" ]]; then
+  echo "ERROR: genesis balances file not found: ${BALANCES_JSON}"
+  exit 1
+fi
+
+echo "==> Add genesis balances from ${BALANCES_JSON}"
+# One container run: avoid N docker startups for many accounts.
+ADD_SCRIPT="${DATA_DIR}/add-genesis-balances.sh"
+python3 - <<PY
+import json
+from pathlib import Path
+
+path = Path("${BALANCES_JSON}")
+script = Path("${ADD_SCRIPT}")
+default_denom = "${DENOM}"
+data = json.loads(path.read_text())
+balances = data.get("balances") or data
+if isinstance(balances, dict):
+    balances = balances.get("balances") or []
+
+lines = ["#!/bin/bash", "set -euo pipefail", "HOME=/orai"]
+n = 0
+for row in balances:
+    addr = (row.get("address") or "").strip()
+    amt = str(row.get("amount") or "").strip()
+    denom = (row.get("denom") or data.get("denom") or default_denom).strip()
+    if not addr or not amt or int(amt) <= 0:
+        continue
+    lines.append(
+        f'oraid genesis add-genesis-account "{addr}" "{amt}{denom}" --home /orai/.oraid'
+    )
+    n += 1
+if n == 0:
+    raise SystemExit("no balances found in genesis-balances.json")
+lines.append(f'echo "added {n} genesis balances"')
+script.write_text("\n".join(lines) + "\n")
+script.chmod(0o755)
+print(f"  prepared {n} add-genesis-account commands (decimals={data.get('decimals', '?')})")
+PY
+docker run --rm \
+  -v "${DATA_DIR}/node-a:/orai/.oraid" \
+  -v "${ADD_SCRIPT}:/tmp/add-genesis-balances.sh:ro" \
+  -e HOME=/orai \
+  --entrypoint bash \
+  "${IMAGE}" \
+  /tmp/add-genesis-balances.sh
 
 # Push shared genesis to all nodes before gentx
 for n in "${NODES[@]}"; do
@@ -143,6 +192,8 @@ DENOM=${DENOM}
 POWER_A=${POWER_A}
 POWER_B=${POWER_B}
 POWER_S=${POWER_S}
+BALANCES_JSON=${BALANCES_JSON}
 EOF
 
 echo "✓ Initialized ${DATA_DIR} (A=${POWER_A}% B=${POWER_B}% S=${POWER_S}%, fork=${FORK_HEIGHT})"
+echo "  genesis balances: ${BALANCES_JSON}"
