@@ -183,8 +183,6 @@ const appName = "WasmApp"
 var (
 	NodeDir      = ".oraid"
 	Bech32Prefix = "orai"
-	CosmosDenom  = Bech32Prefix
-	EvmDenom     = "aorai" // atto orai. This will be converted automatically by evmutil of kava
 
 	EnabledCapabilities = []string{
 		tokenfactorytypes.EnableBurnFrom,
@@ -323,7 +321,6 @@ func NewWasmApp(
 	loadLatest bool,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
-	evmOpts EVMOptionsFn,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *WasmApp {
 
@@ -396,11 +393,6 @@ func NewWasmApp(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 	overrideWasmVariables()
-
-	// initialize the Cosmos EVM application configuration
-	if err := evmOpts(bApp.ChainID()); err != nil {
-		panic(err)
-	}
 
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,
@@ -1180,6 +1172,7 @@ func (app *WasmApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*
 
 // BeginBlocker application updates every begin block
 func (app *WasmApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	BeginBlockForks(ctx, app)
 	return app.ModuleManager.BeginBlock(ctx)
 }
 

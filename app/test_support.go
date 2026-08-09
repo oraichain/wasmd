@@ -109,7 +109,6 @@ func (app *WasmApp) InitializeFromGenesisStatesWithTimeAndChainIDAndHeight(genTi
 			Validators:    []abci.ValidatorUpdate{},
 			AppStateBytes: stateBytes,
 			ChainId:       chainID,
-			// Set consensus params, which is needed by x/feemarket
 			ConsensusParams: &tmproto.ConsensusParams{
 				Block: &tmproto.BlockParams{
 					MaxBytes: 200000,
