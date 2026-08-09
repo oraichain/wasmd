@@ -1,0 +1,73 @@
+services:
+  node-a:
+    image: localfork-old:local
+    container_name: localfork-a
+    hostname: node-a
+    volumes:
+      - ./data/node-a:/orai/.oraid
+    ports:
+      - "26657:26657"
+      - "1317:1317"
+      - "9090:9090"
+    command:
+      - start
+      - --home=/orai/.oraid
+      - --minimum-gas-prices=0.001orai
+      - --rpc.laddr=tcp://0.0.0.0:26657
+      - --grpc.address=0.0.0.0:9090
+      - --grpc.enable
+    networks:
+      localfork:
+        ipv4_address: 192.168.10.2
+    restart: "no"
+
+  node-b:
+    image: localfork-old:local
+    container_name: localfork-b
+    hostname: node-b
+    volumes:
+      - ./data/node-b:/orai/.oraid
+    ports:
+      - "26667:26657"
+      - "1327:1317"
+      - "9100:9090"
+    command:
+      - start
+      - --home=/orai/.oraid
+      - --minimum-gas-prices=0.001orai
+      - --rpc.laddr=tcp://0.0.0.0:26657
+      - --grpc.address=0.0.0.0:9090
+      - --grpc.enable
+    networks:
+      localfork:
+        ipv4_address: 192.168.10.3
+    restart: "no"
+
+  node-s:
+    image: localfork-old:local
+    container_name: localfork-s
+    hostname: node-s
+    volumes:
+      - ./data/node-s:/orai/.oraid
+    ports:
+      - "26677:26657"
+      - "1337:1317"
+      - "9110:9090"
+    command:
+      - start
+      - --home=/orai/.oraid
+      - --minimum-gas-prices=0.001orai
+      - --rpc.laddr=tcp://0.0.0.0:26657
+      - --grpc.address=0.0.0.0:9090
+      - --grpc.enable
+    networks:
+      localfork:
+        ipv4_address: 192.168.10.4
+    restart: "no"
+
+networks:
+  localfork:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24

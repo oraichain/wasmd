@@ -127,7 +127,7 @@ func initRootCmd(
 		DBOpener:        config.OpenDB,
 		PostSetup:       indexerserver.StartIndexerService,
 	}
-	// cosmosevmserver registers start/export and related server commands (JSON-RPC remains off after EVM soft-remove).
+	// ethermintserver adds additional flags to start the JSON-RPC server for evm support
 	cosmosevmserver.AddCommands(
 		rootCmd,
 		startOpts,

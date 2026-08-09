@@ -32,8 +32,6 @@ func (s *UpgradeTestSuite) SetupTest() {
 	})
 }
 
-// BeginNewBlock advances one block via app BeginBlocker (which runs fork logic).
-// The bool is kept for API compatibility with Osmosis helpers and is unused.
 func (s *UpgradeTestSuite) BeginNewBlock(_ bool) {
 	newHeight := s.Ctx.BlockHeight() + 1
 	newTime := s.Ctx.BlockTime().Add(time.Second)
@@ -44,7 +42,7 @@ func (s *UpgradeTestSuite) BeginNewBlock(_ bool) {
 	_, err := s.App.BeginBlocker(s.Ctx)
 	s.Require().NoError(err)
 
-	s.Ctx = s.App.NewContextLegacy(false, header)
+	s.Ctx = s.Ctx.WithBlockHeader(header)
 }
 
 func (s *UpgradeTestSuite) TestUpgradePayments() {
@@ -55,11 +53,9 @@ func (s *UpgradeTestSuite) TestUpgradePayments() {
 		{
 			"Test that upgrade succeeds",
 			func() {
-				// First run block N-1, BeginNewBlock takes ctx height + 1
 				s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight - 2)
 				s.BeginNewBlock(false)
 
-				// run upgrade height
 				s.Require().NotPanics(func() {
 					s.BeginNewBlock(false)
 				})
@@ -69,7 +65,7 @@ func (s *UpgradeTestSuite) TestUpgradePayments() {
 
 	for _, tc := range testCases {
 		s.Run(fmt.Sprintf("Case %s", tc.msg), func() {
-			s.SetupTest() // reset
+			s.SetupTest()
 			tc.upgrade()
 		})
 	}

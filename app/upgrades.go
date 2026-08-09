@@ -69,6 +69,28 @@ var Forks = []upgrades.Fork{
 	v05014.Fork,
 }
 
+// GetUpgradeKeepers returns the keepers bundle used by upgrade/fork handlers.
+func (app *WasmApp) GetUpgradeKeepers() upgrades.AppKeepers {
+	return upgrades.AppKeepers{
+		AccountKeeper:             &app.AccountKeeper,
+		BankKeeper:                app.BankKeeper,
+		ParamsKeeper:              &app.ParamsKeeper,
+		ConsensusParamsKeeper:     &app.ConsensusParamsKeeper,
+		CapabilityKeeper:          app.CapabilityKeeper,
+		ScopedICAControllerKeeper: &app.ScopedICAControllerKeeper,
+		ScopedIBCKeeper:           &app.ScopedIBCKeeper,
+		IBCKeeper:                 app.IBCKeeper,
+		MintKeeper:                &app.MintKeeper,
+		GovKeeper:                 &app.GovKeeper,
+		TxFeesKeeper:              app.TxFeesKeeper,
+		ICAControllerKeeper:       app.ICAControllerKeeper,
+		IBCFeeKeeper:              app.IBCFeeKeeper,
+		EvmKeeper:                 nil,
+		Codec:                     app.appCodec,
+		GetStoreKey:               app.GetKey,
+	}
+}
+
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *WasmApp) RegisterUpgradeHandlers() {
 	setupLegacyKeyTables(&app.ParamsKeeper)
