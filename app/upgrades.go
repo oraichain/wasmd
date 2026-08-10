@@ -43,6 +43,7 @@ import (
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	"github.com/CosmWasm/wasmd/app/upgrades/noop"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 )
 
@@ -85,6 +86,8 @@ func (app *WasmApp) GetUpgradeKeepers() upgrades.AppKeepers {
 		TxFeesKeeper:              app.TxFeesKeeper,
 		ICAControllerKeeper:       app.ICAControllerKeeper,
 		IBCFeeKeeper:              app.IBCFeeKeeper,
+		ContractKeeper:            wasmkeeper.NewDefaultPermissionKeeper(app.WasmKeeper),
+		WasmKeeper:                &app.WasmKeeper,
 		EvmKeeper:                 nil,
 		Codec:                     app.appCodec,
 		GetStoreKey:               app.GetKey,
