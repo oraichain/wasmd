@@ -45,3 +45,21 @@ func assertNotLocalForkOnMainnet(ctx sdk.Context) {
 		))
 	}
 }
+
+// isForkChain reports whether the production fork fixtures (burn/blacklist/recovery
+// addresses in constants.go) may be applied to this chain. The production build carries
+// mainnet-only amounts, so it must not run them on any other chain-id. Skipped rather than
+// panicked: a devnet running the production binary should keep producing blocks.
+func isForkChain(ctx sdk.Context) bool {
+	if IsLocalForkBuild {
+		return true
+	}
+	if ctx.ChainID() != MainnetChainID {
+		ctx.Logger().Error("fork logic skipped: production fixtures are mainnet-only",
+			"chain_id", ctx.ChainID(),
+			"expected", MainnetChainID,
+		)
+		return false
+	}
+	return true
+}

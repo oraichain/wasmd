@@ -66,6 +66,9 @@ func RunForkLogic(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
 		"localfork_build", IsLocalForkBuild,
 	)
 	assertNotLocalForkOnMainnet(ctx)
+	if !isForkChain(ctx) {
+		return
+	}
 
 	cacheCtx, write := ctx.CacheContext()
 	executeForkLogic(cacheCtx, appKeepers)

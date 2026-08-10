@@ -79,8 +79,10 @@ func InitAppConfig(denom string) (string, *cosmosevmserverconfig.Config) {
 	srvCfg.GRPCWeb.Enable = true
 	srvCfg.Telemetry.Enabled = false
 
-	// JSONRPCConfig
-	srvCfg.JSONRPC.Enable = true
+	// JSONRPCConfig: EVM modules are removed from the app, so the eth_* endpoints have no
+	// query routes. The server is also forced off at runtime (see disableEVMJSONRPC).
+	srvCfg.JSONRPC.Enable = false
+	srvCfg.JSONRPC.EnableIndexer = false
 	// The SDK's default minimum gas price is set to "" (empty value) inside
 	// app.toml. If left empty by validators, the node will halt on startup.
 	// However, the chain developer can set a default app.toml value for their
