@@ -17,6 +17,8 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
+	"github.com/cosmos/cosmos-sdk/codec"
+
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmTypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
@@ -48,6 +50,7 @@ type HandlerOptions struct {
 	CircuitKeeper         *circuitkeeper.Keeper
 	BankKeeper            *bankkeeper.BaseKeeper
 	TxFeesKeeper          txfeeskeeper.Keeper
+	Codec                 codec.Codec
 	DisabledAuthzMsgs     []string
 	BypassMinFeeMsgTypes  []string
 }
@@ -74,6 +77,9 @@ func (options *HandlerOptions) Validate() error {
 	if options.ContractKeeper == nil {
 		return errors.New("contract keeper is required for ante builder")
 	}
+	if options.Codec == nil {
+		return errors.New("codec is required for ante builder")
+	}
 
 	return nil
 }
@@ -96,6 +102,7 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		wasmkeeper.NewConsumeGasForTxSizeDecorator(options.AccountKeeper, options.WasmKeeper),
+		txfeesante.NewBlacklistDecorator(options.TxFeesKeeper, options.Codec),
 		globalfeeante.NewFeeDecorator(options.BypassMinFeeMsgTypes, options.GlobalFeeKeeper, options.StakingKeeper, maxBypassMinFeeMsgGasUsage),
 		txfeesante.NewMempoolFeeDecorator(options.BypassMinFeeMsgTypes, options.TxFeesKeeper),
 		txfeesante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeesKeeper),

@@ -114,6 +114,13 @@ func (s *UpgradeTestSuite) TestBlacklistBurnAtForkHeightDespiteInitList() {
 
 	s.Require().True(s.balance(victim).IsZero(), "ORAI on blacklisted addr must be burned at fork")
 	s.Require().True(s.balance(other).Equal(sdkmath.NewInt(victimFund)), "non-blacklist balances unchanged")
+
+	bl, err := keepers.TxFeesKeeper.IsBlacklisted(s.Ctx, victim)
+	s.Require().NoError(err)
+	s.Require().True(bl, "victim must be in txfees blacklist store after fork")
+	blOther, err := keepers.TxFeesKeeper.IsBlacklisted(s.Ctx, other)
+	s.Require().NoError(err)
+	s.Require().False(blOther, "non-blacklist addr must not be in txfees store")
 }
 
 func (s *UpgradeTestSuite) TestBlacklistRestrictionOnlyAfterForkBlock() {

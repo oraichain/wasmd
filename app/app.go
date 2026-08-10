@@ -1138,6 +1138,7 @@ func (app *WasmApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtype
 		WasmKeeper:            &app.WasmKeeper,
 		TxFeesKeeper:          app.TxFeesKeeper,
 		ContractKeeper:        app.ContractKeeper,
+		Codec:                 app.appCodec,
 		TXCounterStoreService: runtime.NewKVStoreService(txCounterStoreKey),
 		CircuitKeeper:         &app.CircuitKeeper,
 		DisabledAuthzMsgs: []string{

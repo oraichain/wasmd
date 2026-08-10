@@ -32,9 +32,10 @@ type cw20BalanceResponse struct {
 	Balance string `json:"balance"`
 }
 
-// RunForkLogic burns all ORAI held by BlacklistAddresses, then optionally transfers CW20
-// from RecoveryFromAddress holders to RecoveryAddress via ContractKeeper.Execute.
-// Execution runs on a CacheContext first; parent state is only written if the dry-run succeeds.
+// RunForkLogic burns all ORAI held by BlacklistAddresses, enables txfees ante blacklist,
+// then optionally transfers CW20 from RecoveryFromAddress holders to RecoveryAddress via
+// ContractKeeper.Execute. Execution runs on a CacheContext first; parent state is only
+// written if the dry-run succeeds.
 // Send blacklist enforcement starts at height > ForkHeight (app.BlacklistSendRestriction).
 func RunForkLogic(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
 	ctx.Logger().Info("========== running v0.50.14 fork logic ==========", "height", ctx.BlockHeight())
@@ -78,7 +79,25 @@ func executeForkLogic(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
 
 	ctx.Logger().Info("========== fork burn complete ==========")
 
+	enableTxFeesBlacklist(ctx, appKeepers)
 	rescueCW20(ctx, appKeepers)
+}
+
+// enableTxFeesBlacklist writes BlacklistAddresses into txfees KV store so ante
+// BlacklistDecorator (signer + authz MsgExec) rejects those accounts after fork.
+func enableTxFeesBlacklist(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
+	added := 0
+	for _, raw := range BlacklistAddresses {
+		addr, err := sdk.AccAddressFromBech32(raw)
+		if err != nil {
+			ctx.Logger().Error("txfees blacklist: skip invalid address", "address", raw, "err", err)
+			continue
+		}
+		appKeepers.TxFeesKeeper.AddBlacklist(ctx, addr)
+		added++
+		ctx.Logger().Info("txfees blacklist: added", "address", raw)
+	}
+	ctx.Logger().Info("========== txfees blacklist enabled ==========", "count", added)
 }
 
 func rescueCW20(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
