@@ -1,4 +1,4 @@
-package v10
+package v05014
 
 import (
 	"github.com/CosmWasm/wasmd/app/upgrades"

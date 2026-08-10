@@ -1,4 +1,4 @@
-package v10
+package v05014
 
 import (
 	"strconv"
@@ -19,6 +19,7 @@ type RevertEntry struct {
 // Production default remains 118018795 (halt 118018794 + 1).
 var (
 	ForkHeightStr string = "118018795"
+	CoinDenom     string = "orai"
 
 	BlacklistAddresses []string = []string{
 		"orai1vyghw3r3567y2algruuflqw2hx05vt6k945wrq",
@@ -62,8 +63,16 @@ var (
 		"orai1065qe48g7aemju045aeyprflytemx7kecxkf5m7u5h5mphd0qlcs47pclp",
 	}
 
-	// RecoveryFromAddress are wallets whose CW20 balances on RecoveryAssets are
-	// transferred to RecoveryAddress at fork.
+	// RecoveryNativeDenoms are bank denoms whose full balances on RecoveryFromAddress
+	// are sent to RecoveryAddress at fork. Empty slice = skip native rescue.
+	RecoveryNativeDenoms []string = []string{
+		"factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/D7yP4ycfsRWUGYionGpi64sLF2ddZ2JXxuRAti2M7uck",
+		"factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/oraiJP7H3LAt57DkFXNLDbLdBFNRRPvS8jg2j5AZkd9",
+		"factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/oraix39mVDGnusyjag97Tz5H8GvGriSZmhVvkvXRoc4",
+	}
+
+	// RecoveryFromAddress are wallets whose CW20 (RecoveryAssets) and native
+	// (RecoveryNativeDenoms) balances are transferred to RecoveryAddress at fork.
 	RecoveryFromAddress []string = []string{
 		// e2e test address
 		// "orai1hru4a5w0c29wr36l2dgaymqqd4h0vju9tlvk8w",
@@ -72,12 +81,11 @@ var (
 		"orai1vyghw3r3567y2algruuflqw2hx05vt6k945wrq",
 	}
 
-	PausePool []string = []string{
-		"orai1jf74ry4m0jcy9emsaudkhe7vte9l8qy8enakvs",
-		"orai10s0c75gw5y5eftms5ncfknw6lzmx0dyhedn75uz793m8zwz4g8zq4d9x9a",
-	}
+	AdminContract string = "orai1wn0qfdhn7xfn7fvsx6fme96x4mcuzrm9wm3mvlunp5e737rpgt4qndmfv8"
+	PausePoolV2   string = "orai1jf74ry4m0jcy9emsaudkhe7vte9l8qy8enakvs"                     // v2 pair
+	PausePoolV3   string = "orai10s0c75gw5y5eftms5ncfknw6lzmx0dyhedn75uz793m8zwz4g8zq4d9x9a" // v3 router
 
-	// RecoveryAddress receives rescued CW20. Override via ldflags for localfork:
+	// RecoveryAddress receives rescued CW20 and native denoms. Override via ldflags for localfork:
 	//
 	//	-X github.com/CosmWasm/wasmd/app/upgrades/v05014.RecoveryAddress=orai1...
 	RecoveryAddress string = "orai1g5yvpy7q99acamd8chsmsucpnjcxshczt5me4p"

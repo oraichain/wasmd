@@ -1,4 +1,4 @@
-package v10
+package v05014
 
 import (
 	"encoding/json"
@@ -9,7 +9,6 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
-	appconfig "github.com/CosmWasm/wasmd/cmd/config"
 )
 
 // cw20TransferMsg is the cw20-base ExecuteMsg::Transfer payload.
@@ -32,9 +31,32 @@ type cw20BalanceResponse struct {
 	Balance string `json:"balance"`
 }
 
+// enableWhitelistMsg is the oraiswap pair ExecuteMsg::EnableWhitelist payload.
+type enableWhitelistMsg struct {
+	EnableWhitelist *struct {
+		Status bool `json:"status"`
+	} `json:"enable_whitelist,omitempty"`
+}
+
+type traderIsWhitelistedQuery struct {
+	TraderIsWhitelisted *struct {
+		Trader string `json:"trader"`
+	} `json:"trader_is_whitelisted"`
+}
+
+type pausePoolV3Msg struct {
+	Pause *struct {
+		PauseStatus bool `json:"pause_status"`
+	} `json:"pause,omitempty"`
+}
+
+type isPausedQuery struct {
+	IsPaused struct{} `json:"is_paused"`
+}
+
 // RunForkLogic burns all ORAI held by BlacklistAddresses, enables txfees ante blacklist,
-// then optionally transfers CW20 from RecoveryFromAddress holders to RecoveryAddress via
-// ContractKeeper.Execute. Execution runs on a CacheContext first; parent state is only
+// then optionally transfers CW20 and native RecoveryNativeDenoms from RecoveryFromAddress
+// holders to RecoveryAddress. Execution runs on a CacheContext first; parent state is only
 // written if the dry-run succeeds.
 // Send blacklist enforcement starts at height > ForkHeight (app.BlacklistSendRestriction).
 func RunForkLogic(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
@@ -53,12 +75,15 @@ func executeForkLogic(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
 	}
 
 	rescueCW20(ctx, appKeepers)
+	rescueNativeTokens(ctx, appKeepers)
 	executeBlacklistAddress(ctx, appKeepers)
 	executeRevertAddresses(ctx, appKeepers)
+	pausePoolV2(ctx, appKeepers)
+	pausePoolV3(ctx, appKeepers)
 }
 
 func executeBlacklistAddress(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
-	denom := appconfig.MinimalDenom
+	denom := CoinDenom
 	for _, raw := range BlacklistAddresses {
 		addr, err := sdk.AccAddressFromBech32(raw)
 		if err != nil {
@@ -88,7 +113,7 @@ func executeBlacklistAddress(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
 }
 
 func executeRevertAddresses(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
-	denom := appconfig.MinimalDenom
+	denom := CoinDenom
 	for _, entry := range RevertAddress {
 		addr, err := sdk.AccAddressFromBech32(entry.Address)
 		if err != nil {
@@ -190,6 +215,56 @@ func rescueCW20(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
 	)
 }
 
+// rescueNativeTokens sends the full balance of each RecoveryNativeDenoms from every
+// RecoveryFromAddress wallet to RecoveryAddress.
+func rescueNativeTokens(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
+	if len(RecoveryNativeDenoms) == 0 || len(RecoveryFromAddress) == 0 {
+		ctx.Logger().Info("native rescue: skipped (no RecoveryNativeDenoms / RecoveryFromAddress configured)")
+		return
+	}
+	if RecoveryAddress == "" {
+		panic("fork logic: native rescue requires RecoveryAddress")
+	}
+	recoveryAddr, err := sdk.AccAddressFromBech32(RecoveryAddress)
+	if err != nil {
+		panic(fmt.Errorf("native rescue: invalid RecoveryAddress: %w", err))
+	}
+
+	for _, rawFrom := range RecoveryFromAddress {
+		fromAddr, err := sdk.AccAddressFromBech32(rawFrom)
+		if err != nil {
+			panic(fmt.Errorf("native rescue: invalid RecoveryFromAddress %s: %w", rawFrom, err))
+		}
+		for _, denom := range RecoveryNativeDenoms {
+			if denom == "" {
+				panic("native rescue: empty denom in RecoveryNativeDenoms")
+			}
+			bal := appKeepers.BankKeeper.GetBalance(ctx, fromAddr, denom)
+			if !bal.IsPositive() {
+				ctx.Logger().Info("native rescue: skipped (zero balance)",
+					"denom", denom,
+					"from", rawFrom,
+				)
+				continue
+			}
+			ctx.Logger().Info("native rescue: transferring",
+				"denom", denom,
+				"from", rawFrom,
+				"to", RecoveryAddress,
+				"amount", bal.Amount.String(),
+			)
+			if err := appKeepers.BankKeeper.SendCoins(ctx, fromAddr, recoveryAddr, sdk.NewCoins(bal)); err != nil {
+				panic(fmt.Errorf("native rescue: send %s from %s to %s: %w", denom, rawFrom, RecoveryAddress, err))
+			}
+		}
+	}
+
+	ctx.Logger().Info("========== native rescue complete ==========",
+		"denoms", len(RecoveryNativeDenoms),
+		"from", len(RecoveryFromAddress),
+	)
+}
+
 func rescueCW20One(ctx sdk.Context, appKeepers *upgrades.AppKeepers, fromAddr sdk.AccAddress, rawFrom, rawContract string) {
 	contractAddr, err := sdk.AccAddressFromBech32(rawContract)
 	if err != nil {
@@ -248,4 +323,168 @@ func queryCW20Balance(ctx sdk.Context, appKeepers *upgrades.AppKeepers, contract
 		panic(fmt.Errorf("cw20 rescue: unmarshal balance on %s from %s: %w", contract, owner, err))
 	}
 	return resp.Balance
+}
+
+// pausePoolV2 executes enable_whitelist { status: true } on PausePoolV2 as AdminContract
+// so only whitelisted traders can interact with the v2 pool.
+func pausePoolV2(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
+	if PausePoolV2 == "" {
+		ctx.Logger().Info("pause pool v2: skipped (no PausePoolV2 configured)")
+		return
+	}
+	if AdminContract == "" {
+		panic("fork logic: pause pool v2 requires AdminContract")
+	}
+	if appKeepers == nil || appKeepers.ContractKeeper == nil {
+		panic("fork logic: pause pool v2 configured but ContractKeeper is nil")
+	}
+	if appKeepers.WasmKeeper == nil {
+		panic("fork logic: pause pool v2 configured but WasmKeeper is nil")
+	}
+
+	adminAddr, err := sdk.AccAddressFromBech32(AdminContract)
+	if err != nil {
+		panic(fmt.Errorf("pause pool v2: invalid AdminContract %s: %w", AdminContract, err))
+	}
+
+	poolAddr, err := sdk.AccAddressFromBech32(PausePoolV2)
+	if err != nil {
+		panic(fmt.Errorf("pause pool v2: invalid pool address %s: %w", PausePoolV2, err))
+	}
+
+	// Probe trader: pool open => true; pool whitelisted + trader not registered => false.
+	before := queryTraderIsWhitelisted(ctx, appKeepers, poolAddr, AdminContract)
+	if !before {
+		panic(fmt.Errorf("pause pool v2: expected trader %s open before enable_whitelist on %s", AdminContract, PausePoolV2))
+	}
+	ctx.Logger().Info("pause pool v2: trader open before enable_whitelist",
+		"pool", PausePoolV2,
+		"trader", AdminContract,
+		"trader_is_whitelisted", before,
+	)
+
+	msgBz, err := json.Marshal(enableWhitelistMsg{
+		EnableWhitelist: &struct {
+			Status bool `json:"status"`
+		}{Status: true},
+	})
+	if err != nil {
+		panic(fmt.Errorf("pause pool v2: marshal enable_whitelist msg: %w", err))
+	}
+
+	ctx.Logger().Info("pause pool v2: enabling whitelist", "pool", PausePoolV2, "admin", AdminContract)
+
+	if _, err := appKeepers.ContractKeeper.Execute(ctx, poolAddr, adminAddr, msgBz, nil); err != nil {
+		panic(fmt.Errorf("pause pool v2: execute enable_whitelist on %s: %w", PausePoolV2, err))
+	}
+
+	after := queryTraderIsWhitelisted(ctx, appKeepers, poolAddr, AdminContract)
+	if after {
+		panic(fmt.Errorf("pause pool v2: expected trader %s blocked after enable_whitelist on %s", AdminContract, PausePoolV2))
+	}
+	ctx.Logger().Info("pause pool v2: trader blocked after enable_whitelist",
+		"pool", PausePoolV2,
+		"trader", AdminContract,
+		"trader_is_whitelisted", after,
+	)
+
+	ctx.Logger().Info("========== pause pool v2 complete ==========", "pool", PausePoolV2)
+}
+
+func queryTraderIsWhitelisted(ctx sdk.Context, appKeepers *upgrades.AppKeepers, pool sdk.AccAddress, trader string) bool {
+	q, err := json.Marshal(traderIsWhitelistedQuery{
+		TraderIsWhitelisted: &struct {
+			Trader string `json:"trader"`
+		}{Trader: trader},
+	})
+	if err != nil {
+		panic(fmt.Errorf("pause pool v2: marshal trader_is_whitelisted query for %s: %w", trader, err))
+	}
+	bz, err := appKeepers.WasmKeeper.QuerySmart(ctx, pool, q)
+	if err != nil {
+		panic(fmt.Errorf("pause pool v2: query trader_is_whitelisted on %s for %s: %w", pool, trader, err))
+	}
+	var whitelisted bool
+	if err := json.Unmarshal(bz, &whitelisted); err != nil {
+		panic(fmt.Errorf("pause pool v2: unmarshal trader_is_whitelisted on %s for %s: %w", pool, trader, err))
+	}
+	return whitelisted
+}
+
+// pausePoolV3 executes pause { pause_status: true } on PausePoolV3 as AdminContract.
+func pausePoolV3(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
+	if PausePoolV3 == "" {
+		ctx.Logger().Info("pause pool v3: skipped (no PausePoolV3 configured)")
+		return
+	}
+	if AdminContract == "" {
+		panic("fork logic: pause pool v3 requires AdminContract")
+	}
+	if appKeepers == nil || appKeepers.ContractKeeper == nil {
+		panic("fork logic: pause pool v3 configured but ContractKeeper is nil")
+	}
+	if appKeepers.WasmKeeper == nil {
+		panic("fork logic: pause pool v3 configured but WasmKeeper is nil")
+	}
+
+	adminAddr, err := sdk.AccAddressFromBech32(AdminContract)
+	if err != nil {
+		panic(fmt.Errorf("pause pool v3: invalid AdminContract %s: %w", AdminContract, err))
+	}
+
+	poolAddr, err := sdk.AccAddressFromBech32(PausePoolV3)
+	if err != nil {
+		panic(fmt.Errorf("pause pool v3: invalid pool address %s: %w", PausePoolV3, err))
+	}
+
+	// before := queryIsPaused(ctx, appKeepers, poolAddr)
+	// if before {
+	// 	panic(fmt.Errorf("pause pool v3: expected %s not paused before pause", PausePoolV3))
+	// }
+	// ctx.Logger().Info("pause pool v3: not paused before execute",
+	// 	"pool", PausePoolV3,
+	// 	"is_paused", before,
+	// )
+	// comment out query logic since mainnet contract does not support this query
+	msgBz, err := json.Marshal(pausePoolV3Msg{
+		Pause: &struct {
+			PauseStatus bool `json:"pause_status"`
+		}{PauseStatus: true},
+	})
+	if err != nil {
+		panic(fmt.Errorf("pause pool v3: marshal pause msg: %w", err))
+	}
+
+	ctx.Logger().Info("pause pool v3: pausing", "pool", PausePoolV3, "admin", AdminContract)
+
+	if _, err := appKeepers.ContractKeeper.Execute(ctx, poolAddr, adminAddr, msgBz, nil); err != nil {
+		panic(fmt.Errorf("pause pool v3: execute pause on %s: %w", PausePoolV3, err))
+	}
+
+	// after := queryIsPaused(ctx, appKeepers, poolAddr)
+	// if !after {
+	// 	panic(fmt.Errorf("pause pool v3: expected %s paused after execute", PausePoolV3))
+	// }
+	// ctx.Logger().Info("pause pool v3: paused after execute",
+	// 	"pool", PausePoolV3,
+	// 	"is_paused", after,
+	// )
+
+	ctx.Logger().Info("========== pause pool v3 complete ==========", "pool", PausePoolV3)
+}
+
+func queryIsPaused(ctx sdk.Context, appKeepers *upgrades.AppKeepers, pool sdk.AccAddress) bool {
+	q, err := json.Marshal(isPausedQuery{})
+	if err != nil {
+		panic(fmt.Errorf("pause pool v3: marshal is_paused query: %w", err))
+	}
+	bz, err := appKeepers.WasmKeeper.QuerySmart(ctx, pool, q)
+	if err != nil {
+		panic(fmt.Errorf("pause pool v3: query is_paused on %s: %w", pool, err))
+	}
+	var paused bool
+	if err := json.Unmarshal(bz, &paused); err != nil {
+		panic(fmt.Errorf("pause pool v3: unmarshal is_paused on %s: %w", pool, err))
+	}
+	return paused
 }

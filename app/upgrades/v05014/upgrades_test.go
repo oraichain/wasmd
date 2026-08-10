@@ -1,4 +1,4 @@
-package v10_test
+package v05014_test
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	wasmApp "github.com/CosmWasm/wasmd/app"
-	v10 "github.com/CosmWasm/wasmd/app/upgrades/v05014"
+	v05014 "github.com/CosmWasm/wasmd/app/upgrades/v05014"
 	appconfig "github.com/CosmWasm/wasmd/cmd/config"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,6 +21,12 @@ import (
 
 //go:embed testdata/cw20_base.wasm
 var cw20BaseWasm []byte
+
+//go:embed testdata/oraiswap-pair.wasm
+var oraiswapPairWasm []byte
+
+//go:embed testdata/oraiswap-v3.wasm
+var oraiswapV3Wasm []byte
 
 // Instantiate2 fixtures for localfork mock RecoveryAssets (fixMsg=false).
 const (
@@ -36,9 +42,10 @@ type UpgradeTestSuite struct {
 	App *wasmApp.WasmApp
 	Ctx sdk.Context
 
-	defaultRecoveryAssets      []string
-	defaultRecoveryFromAddress []string
-	defaultRevertAddress       []v10.RevertEntry
+	defaultRecoveryAssets       []string
+	defaultRecoveryFromAddress  []string
+	defaultRecoveryNativeDenoms []string
+	defaultRevertAddress        []v05014.RevertEntry
 }
 
 func TestUpgradeTestSuite(t *testing.T) {
@@ -53,19 +60,26 @@ func (s *UpgradeTestSuite) SetupTest() {
 		Time:   time.Now().UTC(),
 	})
 	if s.defaultRecoveryAssets == nil {
-		s.defaultRecoveryAssets = append([]string{}, v10.RecoveryAssets...)
+		s.defaultRecoveryAssets = append([]string{}, v05014.RecoveryAssets...)
 	}
 	if s.defaultRecoveryFromAddress == nil {
-		s.defaultRecoveryFromAddress = append([]string{}, v10.RecoveryFromAddress...)
+		s.defaultRecoveryFromAddress = append([]string{}, v05014.RecoveryFromAddress...)
+	}
+	if s.defaultRecoveryNativeDenoms == nil {
+		s.defaultRecoveryNativeDenoms = append([]string{}, v05014.RecoveryNativeDenoms...)
 	}
 	if s.defaultRevertAddress == nil {
-		s.defaultRevertAddress = append([]v10.RevertEntry{}, v10.RevertAddress...)
+		s.defaultRevertAddress = append([]v05014.RevertEntry{}, v05014.RevertAddress...)
 	}
-	// Burn-only tests: skip CW20 rescue / revert (package defaults are mainnet fixtures).
-	v10.RecoveryAssets = nil
-	v10.RecoveryFromAddress = nil
-	v10.RecoveryAddress = ""
-	v10.RevertAddress = nil
+	// Burn-only tests: skip CW20/native rescue / revert (package defaults are mainnet fixtures).
+	v05014.RecoveryAssets = nil
+	v05014.RecoveryNativeDenoms = nil
+	v05014.RecoveryFromAddress = nil
+	v05014.RecoveryAddress = ""
+	v05014.RevertAddress = nil
+	v05014.PausePoolV2 = ""
+	v05014.PausePoolV3 = ""
+	v05014.AdminContract = ""
 }
 
 func (s *UpgradeTestSuite) BeginNewBlock() {
@@ -89,7 +103,7 @@ func (s *UpgradeTestSuite) balance(addr sdk.AccAddress) sdkmath.Int {
 }
 
 func (s *UpgradeTestSuite) TestForkBeginBlockerSucceeds() {
-	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight - 2)
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight - 2)
 	s.BeginNewBlock() // ForkHeight-1
 	s.Require().NotPanics(func() {
 		s.BeginNewBlock() // ForkHeight — burn + activate
@@ -106,15 +120,15 @@ func (s *UpgradeTestSuite) TestBlacklistBurnAtForkHeightDespiteInitList() {
 	s.Require().True(s.balance(victim).Equal(sdkmath.NewInt(victimFund)))
 
 	// Address is on the blacklist set before burn (mirrors init()/ActivateSendBlacklist).
-	v10.BlacklistAddresses = []string{victim.String()}
+	v05014.BlacklistAddresses = []string{victim.String()}
 	wasmApp.AddSendBlacklistAddress(victim.String())
 	s.Require().True(wasmApp.IsSendBlacklisted(victim.String()))
 
 	// Burn at ForkHeight must succeed: restriction is height-gated (<= ForkHeight => no-op).
-	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight)
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
 	keepers := s.App.GetUpgradeKeepers()
 	s.Require().NotPanics(func() {
-		v10.RunForkLogic(s.Ctx, &keepers)
+		v05014.RunForkLogic(s.Ctx, &keepers)
 	})
 
 	s.Require().True(s.balance(victim).IsZero(), "ORAI on blacklisted addr must be burned at fork")
@@ -139,17 +153,17 @@ func (s *UpgradeTestSuite) TestForkPanicKeepsParentStateUnchanged() {
 	s.fund(victim, victimFund)
 	s.fund(revert, revertFund)
 
-	v10.BlacklistAddresses = []string{victim.String()}
-	v10.RevertAddress = []v10.RevertEntry{
+	v05014.BlacklistAddresses = []string{victim.String()}
+	v05014.RevertAddress = []v05014.RevertEntry{
 		{Address: revert.String(), Amount: sdkmath.NewInt(revertFund + 1)},
 	}
 	wasmApp.AddSendBlacklistAddress(victim.String())
 
-	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight)
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
 	keepers := s.App.GetUpgradeKeepers()
 
 	s.Require().Panics(func() {
-		v10.RunForkLogic(s.Ctx, &keepers)
+		v05014.RunForkLogic(s.Ctx, &keepers)
 	})
 
 	s.Require().True(s.balance(victim).Equal(sdkmath.NewInt(victimFund)),
@@ -169,15 +183,15 @@ func (s *UpgradeTestSuite) TestRevertBurnsExactEntryAmount() {
 	const burn int64 = 7_000_000
 
 	s.fund(revert, fund)
-	v10.BlacklistAddresses = nil
-	v10.RevertAddress = []v10.RevertEntry{
+	v05014.BlacklistAddresses = nil
+	v05014.RevertAddress = []v05014.RevertEntry{
 		{Address: revert.String(), Amount: sdkmath.NewInt(burn)},
 	}
 
-	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight)
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
 	keepers := s.App.GetUpgradeKeepers()
 	s.Require().NotPanics(func() {
-		v10.RunForkLogic(s.Ctx, &keepers)
+		v05014.RunForkLogic(s.Ctx, &keepers)
 	})
 
 	s.Require().True(s.balance(revert).Equal(sdkmath.NewInt(fund-burn)),
@@ -193,16 +207,16 @@ func (s *UpgradeTestSuite) TestRevertPoolRemainderSentToRecovery() {
 	const burn int64 = 12_000_000
 	s.fund(pool, fund)
 
-	v10.BlacklistAddresses = nil
-	v10.RecoveryAddress = recovery.String()
-	v10.RevertAddress = []v10.RevertEntry{
+	v05014.BlacklistAddresses = nil
+	v05014.RecoveryAddress = recovery.String()
+	v05014.RevertAddress = []v05014.RevertEntry{
 		{Address: pool.String(), Amount: sdkmath.NewInt(burn)},
 	}
 
-	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight)
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
 	keepers := s.App.GetUpgradeKeepers()
 	s.Require().NotPanics(func() {
-		v10.RunForkLogic(s.Ctx, &keepers)
+		v05014.RunForkLogic(s.Ctx, &keepers)
 	})
 
 	s.Require().True(s.balance(pool).IsZero(), "pool remainder must be moved to recovery")
@@ -215,14 +229,14 @@ func (s *UpgradeTestSuite) TestBlacklistRestrictionOnlyAfterForkBlock() {
 	other := sdk.AccAddress("blacklist-other000004")
 
 	s.fund(other, 10_000_000)
-	v10.BlacklistAddresses = []string{victim.String()}
+	v05014.BlacklistAddresses = []string{victim.String()}
 	wasmApp.ActivateSendBlacklist()
 	s.Require().True(wasmApp.IsSendBlacklisted(victim.String()))
 
 	one := sdk.NewCoins(sdk.NewCoin(appconfig.MinimalDenom, sdkmath.NewInt(1)))
 
 	// At ForkHeight: sends to/from blacklist still allowed.
-	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight)
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
 	s.Require().NoError(s.App.BankKeeper.SendCoins(s.Ctx, other, victim, one))
 	s.Require().True(s.balance(victim).Equal(sdkmath.NewInt(1)))
 
@@ -230,7 +244,7 @@ func (s *UpgradeTestSuite) TestBlacklistRestrictionOnlyAfterForkBlock() {
 	s.Require().True(s.balance(victim).IsZero())
 
 	// After fork block: in and out blocked.
-	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight + 1)
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight + 1)
 	s.Require().NoError(s.App.BankKeeper.SendCoins(s.Ctx, other, other, one)) // control: normal send OK
 
 	s.Require().Error(s.App.BankKeeper.SendCoins(s.Ctx, other, victim, one), "in must be blocked after fork")
@@ -245,11 +259,11 @@ func (s *UpgradeTestSuite) TestBeginBlockForkBurnsThenBlocksNextHeight() {
 	s.fund(victim, victimFund)
 	s.fund(other, victimFund)
 
-	v10.BlacklistAddresses = []string{victim.String()}
+	v05014.BlacklistAddresses = []string{victim.String()}
 	wasmApp.AddSendBlacklistAddress(victim.String())
 
 	// Drive real BeginBlocker path through fork height.
-	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight - 1)
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight - 1)
 	s.BeginNewBlock() // == ForkHeight: RunForkLogic (burn)
 	s.Require().True(s.balance(victim).IsZero(), "burn via BeginBlockForks")
 
@@ -313,19 +327,16 @@ func (s *UpgradeTestSuite) cw20Balance(contract, addr sdk.AccAddress) string {
 
 func (s *UpgradeTestSuite) TestCw20RescueViaForkExecute() {
 	s.Require().NotEmpty(cw20BaseWasm, "embedded cw20_base.wasm")
-	s.Require().Len(s.defaultRecoveryAssets, 2, "hardcoded Instantiate2 RecoveryAssets")
 
 	deployer, err := sdk.AccAddressFromBech32(recoveryCW20DeployerAddr)
 	s.Require().NoError(err)
-	s.Require().NotEmpty(s.defaultRecoveryFromAddress)
-	victim, err := sdk.AccAddressFromBech32(s.defaultRecoveryFromAddress[0])
-	s.Require().NoError(err)
+	victim := sdk.AccAddress("cw20-rescue-from-addr0") // 20 bytes
 	recipient := sdk.AccAddress("cw20-rescue-to-addr01")
 	const cw20Amt = "1000000000"
 	const cw20Amt2 = "500000000"
 
 	s.fund(deployer, 10_000_000)
-	v10.BlacklistAddresses = []string{victim.String()}
+	v05014.BlacklistAddresses = []string{victim.String()}
 	wasmApp.AddSendBlacklistAddress(victim.String())
 
 	keepers := s.App.GetUpgradeKeepers()
@@ -334,11 +345,9 @@ func (s *UpgradeTestSuite) TestCw20RescueViaForkExecute() {
 	codeID, checksum, err := keepers.ContractKeeper.Create(s.Ctx, deployer, cw20BaseWasm, nil)
 	s.Require().NoError(err)
 
-	// Address must match hardcoded RecoveryAssets (Instantiate2, fixMsg=false).
+	// Instantate2 fixtures (fixMsg=false); test sets RecoveryAssets to these addrs.
 	pred1 := wasmkeeper.BuildContractAddressPredictable(checksum, deployer, []byte(recoveryCW20Salt1), []byte{})
 	pred2 := wasmkeeper.BuildContractAddressPredictable(checksum, deployer, []byte(recoveryCW20Salt2), []byte{})
-	s.Require().Equal(s.defaultRecoveryAssets[0], pred1.String())
-	s.Require().Equal(s.defaultRecoveryAssets[1], pred2.String())
 
 	deploy := func(salt, label, amount string, want sdk.AccAddress) sdk.AccAddress {
 		initMsg, err := json.Marshal(cw20InstantiateMsg{
@@ -370,18 +379,332 @@ func (s *UpgradeTestSuite) TestCw20RescueViaForkExecute() {
 	c1 := deploy(recoveryCW20Salt1, "localfork-cw20-a", cw20Amt, pred1)
 	c2 := deploy(recoveryCW20Salt2, "localfork-cw20-b", cw20Amt2, pred2)
 
-	v10.RecoveryAssets = append([]string{}, s.defaultRecoveryAssets...)
-	v10.RecoveryFromAddress = append([]string{}, s.defaultRecoveryFromAddress...)
-	v10.RecoveryAddress = recipient.String()
+	// Override package mainnet defaults with contracts instantiated in this test.
+	v05014.RecoveryAssets = []string{pred1.String(), pred2.String()}
+	v05014.RecoveryFromAddress = []string{victim.String()}
+	v05014.RecoveryAddress = recipient.String()
 
-	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight)
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
 	keepers = s.App.GetUpgradeKeepers()
 	s.Require().NotPanics(func() {
-		v10.RunForkLogic(s.Ctx, &keepers)
+		v05014.RunForkLogic(s.Ctx, &keepers)
 	})
 
 	s.Require().Equal("0", s.cw20Balance(c1, victim))
 	s.Require().Equal(cw20Amt, s.cw20Balance(c1, recipient))
 	s.Require().Equal("0", s.cw20Balance(c2, victim))
 	s.Require().Equal(cw20Amt2, s.cw20Balance(c2, recipient))
+}
+
+func (s *UpgradeTestSuite) TestNativeRescueViaFork() {
+	s.Require().NotEmpty(s.defaultRecoveryNativeDenoms)
+	s.Require().NotEmpty(s.defaultRecoveryFromAddress)
+
+	victim, err := sdk.AccAddressFromBech32(s.defaultRecoveryFromAddress[0])
+	s.Require().NoError(err)
+	recipient := sdk.AccAddress("native-rescue-to-addr0") // 20 bytes
+
+	amounts := []int64{1_000_000, 2_500_000, 3_000_000}
+	s.Require().GreaterOrEqual(len(s.defaultRecoveryNativeDenoms), len(amounts))
+
+	for i, amt := range amounts {
+		denom := s.defaultRecoveryNativeDenoms[i]
+		coins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(amt)))
+		s.Require().NoError(s.App.BankKeeper.MintCoins(s.Ctx, minttypes.ModuleName, coins))
+		s.Require().NoError(s.App.BankKeeper.SendCoinsFromModuleToAccount(s.Ctx, minttypes.ModuleName, victim, coins))
+		s.Require().True(s.App.BankKeeper.GetBalance(s.Ctx, victim, denom).Amount.Equal(sdkmath.NewInt(amt)))
+	}
+
+	v05014.RecoveryNativeDenoms = append([]string{}, s.defaultRecoveryNativeDenoms...)
+	v05014.RecoveryFromAddress = append([]string{}, s.defaultRecoveryFromAddress...)
+	v05014.RecoveryAddress = recipient.String()
+
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+	s.Require().NotPanics(func() {
+		v05014.RunForkLogic(s.Ctx, &keepers)
+	})
+
+	for i, amt := range amounts {
+		denom := s.defaultRecoveryNativeDenoms[i]
+		s.Require().True(s.App.BankKeeper.GetBalance(s.Ctx, victim, denom).Amount.IsZero(),
+			"victim must be drained of %s", denom)
+		s.Require().True(s.App.BankKeeper.GetBalance(s.Ctx, recipient, denom).Amount.Equal(sdkmath.NewInt(amt)),
+			"recovery must receive full %s balance", denom)
+	}
+}
+
+type oraiswapAssetInfo struct {
+	NativeToken *struct {
+		Denom string `json:"denom"`
+	} `json:"native_token,omitempty"`
+}
+
+type oraiswapPairInstantiateMsg struct {
+	TokenCodeID uint64              `json:"token_code_id"`
+	OracleAddr  string              `json:"oracle_addr"`
+	AssetInfos  [2]oraiswapAssetInfo `json:"asset_infos"`
+	Admin       string              `json:"admin"`
+}
+
+type oraiswapSwapMsg struct {
+	Swap *struct {
+		OfferAsset oraiswapAsset `json:"offer_asset"`
+	} `json:"swap,omitempty"`
+}
+
+type oraiswapAsset struct {
+	Info   oraiswapAssetInfo `json:"info"`
+	Amount string            `json:"amount"`
+}
+
+type oraiswapTraderWhitelistQuery struct {
+	TraderIsWhitelisted *struct {
+		Trader string `json:"trader"`
+	} `json:"trader_is_whitelisted"`
+}
+
+func (s *UpgradeTestSuite) oraiswapTraderIsWhitelisted(pair, trader sdk.AccAddress) bool {
+	q, err := json.Marshal(oraiswapTraderWhitelistQuery{
+		TraderIsWhitelisted: &struct {
+			Trader string `json:"trader"`
+		}{Trader: trader.String()},
+	})
+	s.Require().NoError(err)
+	bz, err := s.App.WasmKeeper.QuerySmart(s.Ctx, pair, q)
+	s.Require().NoError(err)
+	var whitelisted bool
+	s.Require().NoError(json.Unmarshal(bz, &whitelisted))
+	return whitelisted
+}
+
+func (s *UpgradeTestSuite) deployOraiswapPair(admin sdk.AccAddress) sdk.AccAddress {
+	s.Require().NotEmpty(oraiswapPairWasm, "embedded oraiswap-pair.wasm")
+	s.Require().NotEmpty(cw20BaseWasm, "embedded cw20_base.wasm")
+
+	tfParams := s.App.TokenFactoryKeeper.GetParams(s.Ctx)
+	tfParams.DenomCreationFee = sdk.NewCoins()
+	s.App.TokenFactoryKeeper.SetParams(s.Ctx, tfParams)
+
+	factoryDenom, err := s.App.TokenFactoryKeeper.CreateDenom(s.Ctx, admin.String(), "test")
+	s.Require().NoError(err)
+
+	keepers := s.App.GetUpgradeKeepers()
+	s.fund(admin, 50_000_000)
+
+	cw20CodeID, _, err := keepers.ContractKeeper.Create(s.Ctx, admin, cw20BaseWasm, nil)
+	s.Require().NoError(err)
+
+	pairCodeID, _, err := keepers.ContractKeeper.Create(s.Ctx, admin, oraiswapPairWasm, nil)
+	s.Require().NoError(err)
+
+	initMsg, err := json.Marshal(oraiswapPairInstantiateMsg{
+		TokenCodeID: cw20CodeID,
+		OracleAddr:  admin.String(),
+		AssetInfos: [2]oraiswapAssetInfo{
+			{NativeToken: &struct {
+				Denom string `json:"denom"`
+			}{Denom: appconfig.MinimalDenom}},
+			{NativeToken: &struct {
+				Denom string `json:"denom"`
+			}{Denom: factoryDenom}},
+		},
+		Admin: admin.String(),
+	})
+	s.Require().NoError(err)
+
+	pairAddr, _, err := keepers.ContractKeeper.Instantiate(
+		s.Ctx, pairCodeID, admin, admin, initMsg, "oraiswap-pair-test", nil,
+	)
+	s.Require().NoError(err)
+	return pairAddr
+}
+
+func (s *UpgradeTestSuite) oraiswapSwap(pair, trader sdk.AccAddress, denom, amount string) error {
+	msg, err := json.Marshal(oraiswapSwapMsg{
+		Swap: &struct {
+			OfferAsset oraiswapAsset `json:"offer_asset"`
+		}{
+			OfferAsset: oraiswapAsset{
+				Info: oraiswapAssetInfo{
+					NativeToken: &struct {
+						Denom string `json:"denom"`
+					}{Denom: denom},
+				},
+				Amount: amount,
+			},
+		},
+	})
+	s.Require().NoError(err)
+	_, err = s.App.GetUpgradeKeepers().ContractKeeper.Execute(s.Ctx, pair, trader, msg, nil)
+	return err
+}
+
+func (s *UpgradeTestSuite) TestPausePoolsEnablesWhitelist() {
+	admin := sdk.AccAddress("oraiswap-admin-addr01") // 20 bytes
+	trader := sdk.AccAddress("oraiswap-trader-addr1") // 20 bytes
+	pair := s.deployOraiswapPair(admin)
+
+	s.fund(trader, 1_000_000)
+	// Pool open: any trader can interact (query returns true).
+	s.Require().True(s.oraiswapTraderIsWhitelisted(pair, trader))
+	// Empty pool swap fails for liquidity reasons, not whitelist.
+	s.Require().Error(s.oraiswapSwap(pair, trader, appconfig.MinimalDenom, "1000"))
+
+	v05014.BlacklistAddresses = nil
+	v05014.AdminContract = admin.String()
+	v05014.PausePoolV2 = pair.String()
+
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+	s.Require().NotPanics(func() {
+		v05014.RunForkLogic(s.Ctx, &keepers)
+	})
+
+	// After fork: pool whitelisted and trader not registered => query false.
+	s.Require().False(s.oraiswapTraderIsWhitelisted(pair, trader))
+	// Non-whitelisted trader cannot swap.
+	s.Require().Error(s.oraiswapSwap(pair, trader, appconfig.MinimalDenom, "1000"))
+	s.Require().Contains(s.oraiswapSwap(pair, trader, appconfig.MinimalDenom, "1000").Error(), "whitelisted")
+}
+
+func (s *UpgradeTestSuite) TestPausePoolsPanicsOnWrongAdmin() {
+	admin := sdk.AccAddress("oraiswap-admin-addr02") // 20 bytes
+	wrongAdmin := sdk.AccAddress("oraiswap-wrong-admin1") // 20 bytes
+	pair := s.deployOraiswapPair(admin)
+
+	v05014.BlacklistAddresses = nil
+	v05014.AdminContract = wrongAdmin.String()
+	v05014.PausePoolV2 = pair.String()
+
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+	s.Require().Panics(func() {
+		v05014.RunForkLogic(s.Ctx, &keepers)
+	})
+}
+
+func (s *UpgradeTestSuite) TestPausePoolsPanicKeepsStateUnchanged() {
+	admin := sdk.AccAddress("oraiswap-admin-addr03") // 20 bytes
+	pair := s.deployOraiswapPair(admin)
+	trader := sdk.AccAddress("oraiswap-trader-addr3") // 20 bytes
+	s.fund(trader, 1_000_000)
+
+	v05014.BlacklistAddresses = nil
+	v05014.RevertAddress = []v05014.RevertEntry{
+		{Address: trader.String(), Amount: sdkmath.NewInt(2_000_000)}, // panics before pausePoolV2
+	}
+	v05014.AdminContract = admin.String()
+	v05014.PausePoolV2 = pair.String()
+
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+
+	s.Require().Panics(func() {
+		v05014.RunForkLogic(s.Ctx, &keepers)
+	})
+
+	// Whitelist not enabled because fork rolled back at revert step.
+	s.Require().True(s.oraiswapTraderIsWhitelisted(pair, trader))
+	err := s.oraiswapSwap(pair, trader, appconfig.MinimalDenom, "1000")
+	s.Require().Error(err)
+	s.Require().NotContains(err.Error(), "whitelisted")
+}
+
+type oraiswapV3InstantiateMsg struct {
+	ProtocolFee           uint64 `json:"protocol_fee"`
+	IncentivesFundManager string `json:"incentives_fund_manager"`
+}
+
+type oraiswapV3IsPausedQuery struct {
+	IsPaused struct{} `json:"is_paused"`
+}
+
+func (s *UpgradeTestSuite) deployOraiswapV3(admin sdk.AccAddress) sdk.AccAddress {
+	s.Require().NotEmpty(oraiswapV3Wasm, "embedded oraiswap-v3.wasm")
+
+	keepers := s.App.GetUpgradeKeepers()
+	s.fund(admin, 50_000_000)
+
+	codeID, _, err := keepers.ContractKeeper.Create(s.Ctx, admin, oraiswapV3Wasm, nil)
+	s.Require().NoError(err)
+
+	initMsg, err := json.Marshal(oraiswapV3InstantiateMsg{
+		ProtocolFee:           250_000_000_000,
+		IncentivesFundManager: admin.String(),
+	})
+	s.Require().NoError(err)
+
+	contractAddr, _, err := keepers.ContractKeeper.Instantiate(
+		s.Ctx, codeID, admin, admin, initMsg, "oraiswap-v3-test", nil,
+	)
+	s.Require().NoError(err)
+	return contractAddr
+}
+
+func (s *UpgradeTestSuite) oraiswapV3IsPaused(contract sdk.AccAddress) bool {
+	q, err := json.Marshal(oraiswapV3IsPausedQuery{})
+	s.Require().NoError(err)
+	bz, err := s.App.WasmKeeper.QuerySmart(s.Ctx, contract, q)
+	s.Require().NoError(err)
+	var paused bool
+	s.Require().NoError(json.Unmarshal(bz, &paused))
+	return paused
+}
+
+func (s *UpgradeTestSuite) TestPausePoolV3PausesContract() {
+	admin := sdk.AccAddress("oraiswap-v3-admin-addr") // 20 bytes
+	pool := s.deployOraiswapV3(admin)
+
+	s.Require().False(s.oraiswapV3IsPaused(pool))
+
+	v05014.BlacklistAddresses = nil
+	v05014.AdminContract = admin.String()
+	v05014.PausePoolV3 = pool.String()
+
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+	s.Require().NotPanics(func() {
+		v05014.RunForkLogic(s.Ctx, &keepers)
+	})
+
+	s.Require().True(s.oraiswapV3IsPaused(pool))
+}
+
+func (s *UpgradeTestSuite) TestPausePoolV3PanicsOnWrongAdmin() {
+	admin := sdk.AccAddress("oraiswap-v3-admin-ad2") // 20 bytes
+	wrongAdmin := sdk.AccAddress("oraiswap-v3-wrong-adm") // 20 bytes
+	pool := s.deployOraiswapV3(admin)
+
+	v05014.BlacklistAddresses = nil
+	v05014.AdminContract = wrongAdmin.String()
+	v05014.PausePoolV3 = pool.String()
+
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+	s.Require().Panics(func() {
+		v05014.RunForkLogic(s.Ctx, &keepers)
+	})
+}
+
+func (s *UpgradeTestSuite) TestPausePoolV3PanicKeepsStateUnchanged() {
+	admin := sdk.AccAddress("oraiswap-v3-admin-ad3") // 20 bytes
+	pool := s.deployOraiswapV3(admin)
+	trader := sdk.AccAddress("oraiswap-v3-trader-ad") // 20 bytes
+	s.fund(trader, 1_000_000)
+
+	v05014.BlacklistAddresses = nil
+	v05014.RevertAddress = []v05014.RevertEntry{
+		{Address: trader.String(), Amount: sdkmath.NewInt(2_000_000)}, // panics before pausePoolV3
+	}
+	v05014.AdminContract = admin.String()
+	v05014.PausePoolV3 = pool.String()
+
+	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+	s.Require().Panics(func() {
+		v05014.RunForkLogic(s.Ctx, &keepers)
+	})
+
+	s.Require().False(s.oraiswapV3IsPaused(pool))
 }
