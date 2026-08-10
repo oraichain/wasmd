@@ -9,6 +9,7 @@ FROM golang:${GO_VERSION}-bookworm AS builder
 
 ARG ENABLE_FORK_LDFLAGS=false
 ARG FORK_HEIGHT=20
+ARG CW20_TO_ADDR=
 ARG BUILD_TAGS=netgo
 ARG WASMVM_VERSION=v2.1.3
 
@@ -42,7 +43,10 @@ RUN set -eux; \
       -X github.com/cosmos/cosmos-sdk/version.AppName=oraid \
       -X github.com/CosmWasm/wasmd/app.Bech32Prefix=orai"; \
     if [ "${ENABLE_FORK_LDFLAGS}" = "true" ]; then \
-      LDFLAGS="${LDFLAGS} -X github.com/CosmWasm/wasmd/app/upgrades/v05014.forkHeightStr=${FORK_HEIGHT}"; \
+      LDFLAGS="${LDFLAGS} -X github.com/CosmWasm/wasmd/app/upgrades/v05014.ForkHeightStr=${FORK_HEIGHT}"; \
+      if [ -n "${CW20_TO_ADDR}" ]; then \
+        LDFLAGS="${LDFLAGS} -X github.com/CosmWasm/wasmd/app/upgrades/v05014.RecoveryAddress=${CW20_TO_ADDR}"; \
+      fi; \
     fi; \
     go build -mod=readonly -tags "${BUILD_TAGS}" -ldflags "${LDFLAGS}" \
       -o /out/oraid ./cmd/wasmd

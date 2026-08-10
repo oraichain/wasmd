@@ -107,6 +107,54 @@ tx_ok() {
   echo "  ${label} broadcast ok tx=${TXHASH}"
 }
 
+# Expect send to fail (CheckTx/DeliverTx reject, or gas sim error). Confirm recipient bal unchanged.
+tx_expect_fail() {
+  local from="$1" to="$2" label="$3"
+  local bal_to_before bal_to_after
+  bal_to_before=$(bal_of "${to}")
+  echo "  ${label}: ${from} → ${to} (${SEND_AMT}) [expect FAIL]"
+  set +e
+  OUT=$(docker exec -e HOME=/orai localfork-a oraid tx bank send "${from}" "${to}" "${SEND_AMT}" \
+    --from "${from}" \
+    --keyring-backend test \
+    --home /orai/.oraid \
+    --chain-id "${CHAIN_ID}" \
+    --fees "${FEE}" \
+    --gas auto --gas-adjustment 1.5 \
+    --node tcp://127.0.0.1:26657 \
+    --broadcast-mode sync \
+    --yes \
+    --output json 2>&1)
+  RC=$?
+  set -e
+  JSON=$(echo "${OUT}" | awk 'BEGIN{f=0} /^\{/{f=1} f{print}' | jq -c . 2>/dev/null | tail -1 || true)
+  CODE="0"
+  if [[ -n "${JSON}" ]]; then
+    CODE=$(echo "${JSON}" | jq -r '.code // 0')
+  fi
+  # Must see the bank restriction error (CLI may also print Usage on failure).
+  if ! echo "${OUT}" | grep -Eiq 'is blacklisted|ErrUnauthorized|unauthorized'; then
+    echo "ERROR: ${label} did not report blacklist/unauthorized rejection"
+    echo "${OUT}"
+    return 1
+  fi
+  if [[ -n "${JSON}" && "${CODE}" == "0" ]] && ! echo "${OUT}" | grep -Eiq 'is blacklisted'; then
+    echo "ERROR: ${label} unexpectedly accepted (code=0)"
+    echo "${OUT}"
+    return 1
+  fi
+  echo "  ${label} rejected as expected (rc=${RC} code=${CODE})"
+  echo "  detail: $(echo "${OUT}" | grep -Ei 'blacklisted|unauthorized' | head -1 | tr '\n' ' ')"
+
+  sleep 3
+  bal_to_after=$(bal_of "${to}")
+  if [[ "${bal_to_after}" != "${bal_to_before}" ]]; then
+    echo "ERROR: ${label} changed recipient balance ${bal_to_before} → ${bal_to_after}"
+    return 1
+  fi
+  echo "  ${label} recipient bal unchanged (${bal_to_after})"
+}
+
 BAL_BEFORE=$(bal_of "${TESTER_ADDR}")
 echo "  tester bal before=${BAL_BEFORE}"
 if [[ "${BAL_BEFORE}" -lt $((SEND_AMT_NUM * 2)) ]]; then
@@ -144,6 +192,67 @@ if [[ "${BAL_AFTER}" -le "${BAL_MID}" ]]; then
 fi
 echo "✓ Post-fork send out + send back succeeded (tester=${TESTER_ADDR})"
 
+echo "==> Post-fork send to blacklist must FAIL"
+BL_ADDR="${ADDRS[0]}"
+BL_BAL=$(bal_of "${BL_ADDR}")
+echo "  blacklist target=${BL_ADDR} bal=${BL_BAL}"
+if [[ "${BL_BAL}" != "0" ]]; then
+  echo "ERROR: blacklist target should still be burned (0), got ${BL_BAL}"
+  exit 1
+fi
+tx_expect_fail "${TESTER_KEY}" "${BL_ADDR}" "send-to-blacklist"
+# Confirm still burned after rejected send
+BL_BAL_AFTER=$(bal_of "${BL_ADDR}")
+if [[ "${BL_BAL_AFTER}" != "0" ]]; then
+  echo "ERROR: blacklist bal became ${BL_BAL_AFTER} after rejected send"
+  exit 1
+fi
+echo "✓ Send to blacklist rejected; balance stays 0"
+
+echo "==> Check CW20 rescue state after fork (RecoveryAssets via Instantiate2)"
+CW20_ENV="${ROOT_DIR}/data/cw20.env"
+if [[ ! -f "${CW20_ENV}" ]]; then
+  echo "ERROR: missing ${CW20_ENV} (run 02b-deploy-cw20.sh)"
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "${CW20_ENV}"
+
+cw20_bal() {
+  local contract="$1"
+  local addr="$2"
+  local q
+  q=$(jq -nc --arg a "${addr}" '{balance:{address:$a}}')
+  docker exec -e HOME=/orai localfork-a oraid query wasm contract-state smart "${contract}" "${q}" \
+    --home /orai/.oraid --node tcp://127.0.0.1:26657 --output json \
+    | jq -r '.data.balance // .balance // "0"'
+}
+
+FROM_BAL=$(cw20_bal "${CW20_CONTRACT}" "${CW20_FROM}")
+TO_BAL=$(cw20_bal "${CW20_CONTRACT}" "${CW20_TO}")
+echo "  RecoveryAssets[0]=${CW20_CONTRACT}"
+echo "  from(${CW20_FROM}) bal=${FROM_BAL}"
+echo "  to(${CW20_TO}) bal=${TO_BAL} (want ${CW20_AMOUNT})"
+if [[ "${FROM_BAL}" != "0" ]]; then
+  echo "ERROR: blacklist still holds CW20 after fork rescue"
+  exit 1
+fi
+if [[ "${TO_BAL}" != "${CW20_AMOUNT}" ]]; then
+  echo "ERROR: tester CW20 bal want ${CW20_AMOUNT} got ${TO_BAL}"
+  exit 1
+fi
+# Second Instantiate2 contract was deployed empty — rescue should no-op (still 0/0).
+if [[ -n "${CW20_CONTRACT_2:-}" ]]; then
+  FROM2=$(cw20_bal "${CW20_CONTRACT_2}" "${CW20_FROM}")
+  TO2=$(cw20_bal "${CW20_CONTRACT_2}" "${CW20_TO}")
+  echo "  RecoveryAssets[1]=${CW20_CONTRACT_2} from=${FROM2} to=${TO2}"
+  if [[ "${FROM2}" != "0" || "${TO2}" != "0" ]]; then
+    echo "ERROR: unexpected balances on empty second RecoveryAsset"
+    exit 1
+  fi
+fi
+echo "✓ CW20 rescued: blacklist=0, tester=${TO_BAL}"
+
 echo "==> Check node-b logs for apphash / consensus failure"
 sleep 5
 if docker logs localfork-b 2>&1 | tail -n 300 | grep -Eiq 'apphash|app hash|Consensus failure|wrong Block.Header.AppHash'; then
@@ -166,5 +275,7 @@ fi
 echo "==> Summary"
 echo "  A/S: past ${FORK_HEIGHT}, blacklist ORAI burned"
 echo "  post-fork bank send out+back: ok (tester=${TESTER_ADDR})"
+echo "  post-fork send to blacklist: rejected"
+echo "  CW20 rescue: from=0 to=${TO_BAL} RecoveryAssets[0]=${CW20_CONTRACT}"
 echo "  B: old binary / apphash divergence expected"
 echo "  blacklist file: ${BLACKLIST_JSON}"

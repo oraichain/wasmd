@@ -24,12 +24,33 @@ NODES=(node-a node-b node-s)
 IPS=(192.168.10.2 192.168.10.3 192.168.10.4)
 POWERS=("$TOKENS_A" "$TOKENS_B" "$TOKENS_S")
 
+# Stop any running localfork containers first — Docker Desktop cannot recreate
+# bind-mount dirs that are still mounted by active containers.
+if [[ -f "${ROOT_DIR}/docker-compose.yml" ]]; then
+  (cd "${ROOT_DIR}" && docker compose down --remove-orphans 2>/dev/null) || true
+fi
+
 rm -rf "${DATA_DIR}"
 mkdir -p "${DATA_DIR}/gentxs"
+# Ensure host paths exist before docker bind-mount (Docker Desktop host_mnt quirk).
+for n in "${NODES[@]}"; do
+  mkdir -p "${DATA_DIR}/${n}"
+done
 
 run() {
   local home_host="$1"; shift
+  mkdir -p "${home_host}"
   docker run --rm \
+    -v "${home_host}:/orai/.oraid" \
+    -e HOME=/orai \
+    "${IMAGE}" "$@" --home /orai/.oraid
+}
+
+# Like run(), but attach stdin (needed for keys add --recover).
+run_i() {
+  local home_host="$1"; shift
+  mkdir -p "${home_host}"
+  docker run --rm -i \
     -v "${home_host}:/orai/.oraid" \
     -e HOME=/orai \
     "${IMAGE}" "$@" --home /orai/.oraid
@@ -54,6 +75,24 @@ echo "${TESTER_ADDR}" > "${DATA_DIR}/tester.address"
 jq -n --arg address "${TESTER_ADDR}" '{address:$address,key:"tester"}' \
   > "${ROOT_DIR}/test-address.json"
 
+# Fixed deployer for Instantiate2 CW20 (must match upgrades_test.go recoveryCW20*).
+CW20_DEPLOYER_KEY=cw20-deployer
+CW20_DEPLOYER_MNEMONIC="${CW20_DEPLOYER_MNEMONIC:-abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about}"
+CW20_DEPLOYER_FUND=50000000000
+# mnemonic + empty BIP39 passphrase
+printf '%s\n\n' "${CW20_DEPLOYER_MNEMONIC}" | run_i "${DATA_DIR}/node-a" keys add "${CW20_DEPLOYER_KEY}" \
+  --recover --keyring-backend "${KEYRING}" --output json \
+  > "${DATA_DIR}/node-a/${CW20_DEPLOYER_KEY}_key.json"
+CW20_DEPLOYER_ADDR=$(jq -r .address "${DATA_DIR}/node-a/${CW20_DEPLOYER_KEY}_key.json")
+EXPECTED_CW20_DEPLOYER="${EXPECTED_CW20_DEPLOYER:-orai19rl4cm2hmr8afy4kldpxz3fka4jguq0a0nm77x}"
+if [[ "${CW20_DEPLOYER_ADDR}" != "${EXPECTED_CW20_DEPLOYER}" ]]; then
+  echo "ERROR: recovered cw20-deployer ${CW20_DEPLOYER_ADDR} != ${EXPECTED_CW20_DEPLOYER}"
+  echo "  (must match upgrades_test.go recoveryCW20DeployerAddr for Instantiate2)"
+  exit 1
+fi
+echo "${CW20_DEPLOYER_ADDR}" > "${DATA_DIR}/cw20-deployer.address"
+echo "  cw20-deployer=${CW20_DEPLOYER_ADDR}"
+
 BALANCES_JSON="${BALANCES_JSON:-${ROOT_DIR}/genesis-balances.json}"
 
 echo "==> Build shared genesis accounts on node-a"
@@ -71,6 +110,9 @@ done
 
 echo "  add-genesis-account ${TESTER_KEY} ${TESTER_ADDR} ${TESTER_FUND}${DENOM}"
 run "${DATA_DIR}/node-a" genesis add-genesis-account "${TESTER_ADDR}" "${TESTER_FUND}${DENOM}"
+
+echo "  add-genesis-account ${CW20_DEPLOYER_KEY} ${CW20_DEPLOYER_ADDR} ${CW20_DEPLOYER_FUND}${DENOM}"
+run "${DATA_DIR}/node-a" genesis add-genesis-account "${CW20_DEPLOYER_ADDR}" "${CW20_DEPLOYER_FUND}${DENOM}"
 
 if [[ ! -f "${BALANCES_JSON}" ]]; then
   echo "ERROR: genesis balances file not found: ${BALANCES_JSON}"
