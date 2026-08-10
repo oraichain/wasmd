@@ -17,7 +17,7 @@ Halt sequence: stop **S** first (A+B=60% < 2/3 → chain halt) → stop **A** �
 2. Rescue **native** `RecoveryNativeDenoms` balances from `RecoveryFromAddress` → `RecoveryAddress`
 3. Burn all `orai` on `BlacklistAddresses`
 4. Burn illicit ORAI on `RevertAddress` (Amount = burn); remaining keep asserted via `revert-addresses.json`
-5. After fork block (`height > FORK_HEIGHT`): bank `SendRestriction` blocks in/out for blacklist addresses
+5. After fork block (`height > FORK_HEIGHT`): bank `SendRestriction` blocks **outbound** sends from blacklist addresses (inbound allowed; funds freeze)
 
 Localfork new binary is built with `-tags localfork` (`constants_localfork.go`: Instantiate2 CW20 addrs, native factory denoms, scaled revert, no pause pools). Only `RecoveryAddress` (tester) is additionally baked via ldflags.
 

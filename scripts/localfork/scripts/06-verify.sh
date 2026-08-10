@@ -341,7 +341,7 @@ if [[ "${BAL_AFTER}" -le "${BAL_MID}" ]]; then
 fi
 echo "✓ Post-fork send out + send back succeeded (tester=${TESTER_ADDR})"
 
-echo "==> Post-fork send to blacklist must FAIL"
+echo "==> Post-fork send to blacklist must SUCCEED (inbound allowed; funds freeze)"
 BL_ADDR="${ADDRS[0]}"
 BL_BAL=$(bal_of "${BL_ADDR}")
 echo "  blacklist target=${BL_ADDR} bal=${BL_BAL}"
@@ -349,14 +349,21 @@ if [[ "${BL_BAL}" != "0" ]]; then
   echo "ERROR: blacklist target should still be burned (0), got ${BL_BAL}"
   exit 1
 fi
-tx_expect_fail "${TESTER_KEY}" "${BL_ADDR}" "send-to-blacklist"
-# Confirm still burned after rejected send
+tx_ok "${TESTER_KEY}" "${BL_ADDR}" "send-to-blacklist"
+for _ in $(seq 1 20); do
+  sleep 1
+  BL_BAL_AFTER=$(bal_of "${BL_ADDR}")
+  if [[ "${BL_BAL_AFTER}" == "${SEND_AMT_NUM}" ]]; then
+    break
+  fi
+done
 BL_BAL_AFTER=$(bal_of "${BL_ADDR}")
-if [[ "${BL_BAL_AFTER}" != "0" ]]; then
-  echo "ERROR: blacklist bal became ${BL_BAL_AFTER} after rejected send"
+if [[ "${BL_BAL_AFTER}" != "${SEND_AMT_NUM}" ]]; then
+  echo "ERROR: expected blacklist bal=${SEND_AMT_NUM} after inbound send, got ${BL_BAL_AFTER}"
   exit 1
 fi
-echo "✓ Send to blacklist rejected; balance stays 0"
+echo "✓ Send to blacklist accepted; balance frozen at ${BL_BAL_AFTER}"
+# Outbound-from-blacklist is covered by unit tests + txfees ante (no blacklist keys in e2e).
 
 echo "==> Check RecoveryFrom drained (CW20 + native) after fork"
 FROM_BAL=$(cw20_bal "${CW20_CONTRACT}" "${CW20_FROM}")
@@ -413,7 +420,7 @@ echo "  A/S: past ${FORK_HEIGHT}, blacklist ORAI burned"
 echo "  revert addresses: trimmed to keep amounts (${REVERT_JSON})"
 echo "  RecoveryAddress pre→post: ${ROOT_DIR}/data/recovery-balances.json"
 echo "  post-fork bank send out+back: ok (tester=${TESTER_ADDR})"
-echo "  post-fork send to blacklist: rejected"
+echo "  post-fork send to blacklist: allowed (funds freeze); outbound blocked by bank+ante"
 echo "  CW20 rescue: from=0 to_v1=${TO_BAL} to_v2=${TO2:-n/a}"
 echo "  native rescue: RecoveryFrom→RecoveryAddress"
 echo "  B: old binary / apphash divergence expected"

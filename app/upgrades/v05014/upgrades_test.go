@@ -247,12 +247,18 @@ func (s *UpgradeTestSuite) TestBlacklistRestrictionOnlyAfterForkBlock() {
 	s.Require().NoError(s.App.BankKeeper.SendCoins(s.Ctx, victim, other, one))
 	s.Require().True(s.balance(victim).IsZero())
 
-	// After fork block: in and out blocked.
+	// After fork block: only outbound from blacklist blocked; inbound allowed (frozen).
 	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight + 1)
 	s.Require().NoError(s.App.BankKeeper.SendCoins(s.Ctx, other, other, one)) // control: normal send OK
 
-	s.Require().Error(s.App.BankKeeper.SendCoins(s.Ctx, other, victim, one), "in must be blocked after fork")
-	s.Require().Error(s.App.BankKeeper.SendCoins(s.Ctx, victim, other, one), "out must be blocked after fork")
+	s.Require().NoError(s.App.BankKeeper.SendCoins(s.Ctx, other, victim, one), "in must remain allowed after fork")
+	s.Require().True(s.balance(victim).Equal(sdkmath.NewInt(1)))
+
+	// SDK applies send restriction after subUnlockedCoins; use CacheContext so a
+	// rejected outbound does not permanently debit the parent context.
+	cacheCtx, _ := s.Ctx.CacheContext()
+	s.Require().Error(s.App.BankKeeper.SendCoins(cacheCtx, victim, other, one), "out must be blocked after fork")
+	s.Require().True(s.balance(victim).Equal(sdkmath.NewInt(1)), "inbound funds stay frozen on blacklist")
 }
 
 func (s *UpgradeTestSuite) TestBeginBlockForkBurnsThenBlocksNextHeight() {
@@ -274,11 +280,16 @@ func (s *UpgradeTestSuite) TestBeginBlockForkBurnsThenBlocksNextHeight() {
 	// Same fork height: restriction still inactive.
 	one := sdk.NewCoins(sdk.NewCoin(appconfig.MinimalDenom, sdkmath.NewInt(1)))
 	s.Require().NoError(s.App.BankKeeper.SendCoins(s.Ctx, other, victim, one))
+	s.Require().True(s.balance(victim).Equal(sdkmath.NewInt(1)))
 
-	// Next block: restriction active.
+	// Next block: outbound blocked; inbound still allowed (funds freeze on blacklist).
 	s.BeginNewBlock() // ForkHeight+1
-	s.Require().Error(s.App.BankKeeper.SendCoins(s.Ctx, other, victim, one))
-	s.Require().Error(s.App.BankKeeper.SendCoins(s.Ctx, victim, other, one))
+	s.Require().NoError(s.App.BankKeeper.SendCoins(s.Ctx, other, victim, one))
+	s.Require().True(s.balance(victim).Equal(sdkmath.NewInt(2)))
+
+	cacheCtx, _ := s.Ctx.CacheContext()
+	s.Require().Error(s.App.BankKeeper.SendCoins(cacheCtx, victim, other, one))
+	s.Require().True(s.balance(victim).Equal(sdkmath.NewInt(2)))
 }
 
 type cw20InstantiateMsg struct {

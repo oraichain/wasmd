@@ -26,7 +26,7 @@ func init() {
 	}
 }
 
-// AddSendBlacklistAddress marks an account as blocked for bank sends (in and out).
+// AddSendBlacklistAddress marks an account as blocked for outbound bank sends.
 func AddSendBlacklistAddress(addr string) {
 	if addr == "" {
 		return
@@ -62,8 +62,9 @@ func RegisterBankSendRestrictions(bk bankkeeper.BaseKeeper) {
 	bk.AppendSendRestriction(BlacklistSendRestriction)
 }
 
-// BlacklistSendRestriction blocks bank sends to/from blacklist addresses only after the fork
-// block, i.e. when height > ForkHeight. At ForkHeight (burn) and before, this is a no-op.
+// BlacklistSendRestriction blocks outbound bank sends from blacklist addresses only after
+// the fork block (height > ForkHeight). Inbound sends to those addresses remain allowed
+// (funds sent in are frozen / effectively lost). At ForkHeight and before, this is a no-op.
 func BlacklistSendRestriction(ctx context.Context, fromAddr, toAddr sdk.AccAddress, _ sdk.Coins) (sdk.AccAddress, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if sdkCtx.BlockHeight() <= v05014.ForkHeight {
@@ -75,9 +76,6 @@ func BlacklistSendRestriction(ctx context.Context, fromAddr, toAddr sdk.AccAddre
 
 	if _, ok := sendBlacklist[fromAddr.String()]; ok {
 		return nil, errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "sender %s is blacklisted", fromAddr)
-	}
-	if _, ok := sendBlacklist[toAddr.String()]; ok {
-		return nil, errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "recipient %s is blacklisted", toAddr)
 	}
 	return toAddr, nil
 }
