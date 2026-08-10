@@ -13,5 +13,11 @@
     "address": "orai15gjs0evtchjcv0vuzysgg6cd359yv9hnsej5x4",
     "amount": "1372000000",
     "genesis": "2744000000"
+  },
+  {
+    "address": "orai15aunrryk5yqsrgy0tvzpj7pupu62s0t2n09t0dscjgzaa27e44esefzgf8",
+    "amount": "10000000000",
+    "genesis": "25000000000",
+    "send_remainder_to_recovery": true
   }
 ]

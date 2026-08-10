@@ -46,7 +46,9 @@ fi
 ./06-verify.sh
 
 ./snapshot-balances.sh post
+./compare-balances.sh
 
 echo "✓ localfork flow complete"
-echo "  pre-fork balances:  ${ROOT_DIR}/data/balances-pre-fork.json"
-echo "  post-fork balances: ${ROOT_DIR}/data/balances-post-fork.json"
+echo "  pre-fork balances:     ${ROOT_DIR}/data/balances-pre-fork.json"
+echo "  post-fork balances:    ${ROOT_DIR}/data/balances-post-fork.json"
+echo "  recovery pre→post:     ${ROOT_DIR}/data/recovery-balances.json"

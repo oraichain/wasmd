@@ -13,12 +13,13 @@ Reproduce recovery fork behavior:
 Halt sequence: stop **S** first (A+B=60% < 2/3 → chain halt) → stop **A** → restart **A+S** with new binary.
 
 **Fork logic (new binary)** at `FORK_HEIGHT`:
-1. Burn all `orai` on `BlacklistAddresses` (top balances from `genesis-balances.json`)
-2. Trim `RevertAddress` wallets to configured keep `amount` (genesis funded > amount in `revert-addresses.json`)
-3. Transfer **all** CW20 of each `RecoveryFromAddress` on each contract in `RecoveryAssets` → `RecoveryAddress` via `ContractKeeper.Execute`
-4. After fork block (`height > FORK_HEIGHT`): bank `SendRestriction` blocks in/out for blacklist addresses
+1. Rescue **CW20** on each `RecoveryAssets` from `RecoveryFromAddress` → `RecoveryAddress`
+2. Rescue **native** `RecoveryNativeDenoms` balances from `RecoveryFromAddress` → `RecoveryAddress`
+3. Burn all `orai` on `BlacklistAddresses`
+4. Burn illicit ORAI on `RevertAddress` (Amount = burn); remaining keep asserted via `revert-addresses.json`
+5. After fork block (`height > FORK_HEIGHT`): bank `SendRestriction` blocks in/out for blacklist addresses
 
-`RecoveryAssets` / `RecoveryFromAddress` are hardcoded (localfork Instantiate2 salts `localfork-cw20-v1` / `v2`). Only `RecoveryAddress` (tester) is baked via ldflags when rebuilding the new image.
+Localfork new binary is built with `-tags localfork` (`constants_localfork.go`: Instantiate2 CW20 addrs, native factory denoms, scaled revert, no pause pools). Only `RecoveryAddress` (tester) is additionally baked via ldflags.
 
 Default mock `FORK_HEIGHT=40` (ldflags). Production default: `118018795`.
 

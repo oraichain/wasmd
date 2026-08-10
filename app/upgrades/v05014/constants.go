@@ -1,22 +1,13 @@
+//go:build !localfork
+
 package v05014
 
-import (
-	"strconv"
+import sdkmath "cosmossdk.io/math"
 
-	sdkmath "cosmossdk.io/math"
-)
-
-// RevertEntry pairs a wallet with the ORAI amount (base units) to restore at fork.
-type RevertEntry struct {
-	Address string
-	Amount  sdkmath.Int
-}
-
-// ForkHeightStr can be overridden at build time via ldflags, e.g.
+// Production / default fork fixtures (mainnet).
+// Localfork e2e uses constants_localfork.go (build tag `localfork`).
 //
-//	-X github.com/CosmWasm/wasmd/app/upgrades/v05014.ForkHeightStr=40
-//
-// Production default remains 118018795 (halt 118018794 + 1).
+// ForkHeightStr / RecoveryAddress can still be overridden via ldflags.
 var (
 	ForkHeightStr string = "118018795"
 	CoinDenom     string = "orai"
@@ -27,8 +18,7 @@ var (
 		"orai1ycryq0mghafwfwr346d5qe2ce8zvmflns08khy",
 	}
 
-	// RevertAddress: each entry has Address + Amount (math.Int, orai base units).
-	// Fill Amount before enabling revert mint/send in fork logic.
+	// RevertAddress: Amount is the illicit ORAI delta to burn (base units).
 	RevertAddress []RevertEntry = []RevertEntry{
 		{Address: "orai1cm9xkysr58kgcvzjs0shlgma557hsu62s76f98", Amount: sdkmath.NewInt(38_203_075_000_000)},
 		{Address: "orai1psee0upxws59g0tct0a87ka7yp64ft9jqnm8nh", Amount: sdkmath.NewInt(8_294_510_000_000)},
@@ -48,59 +38,28 @@ var (
 		{Address: "orai1sukkexujpz2trec6x8t6c3dlngc52c2t5m2q29", Amount: sdkmath.NewInt(342_292_000_000)},
 	}
 
-	// RecoveryAssets are cw20-base contract addresses to rescue at fork.
-	// Localfork / unit-test values are Instantiate2-predictable (fixMsg=false); see
-	// upgrades_test.go for deployer mnemonic, salts, and address derivation.
-	// Replace with mainnet contract addrs for production. Empty slice = skip CW20 rescue.
 	RecoveryAssets []string = []string{
-		// e2e test
-		// "orai18m6m3uy7zknru9tx5jfpadcjc80jp38ngpqwrralm76kj7fgx80q7hky0y", // salt localfork-cw20-v1
-		// "orai10438e2jljstgk2qwuzjzf67sd4al0v7m0lcuskdl4wlhwqmtv73s69lnft", // salt localfork-cw20-v2
-
-		// // mainnet
 		"orai15un8msx3n5zf9ahlxmfeqd2kwa5wm0nrpxer304m9nd5q6qq0g6sku5pdd",
 		"orai12hzjxfh77wl572gdzct2fxv2arxcwh6gykc7qh",
 		"orai1065qe48g7aemju045aeyprflytemx7kecxkf5m7u5h5mphd0qlcs47pclp",
 	}
 
-	// RecoveryNativeDenoms are bank denoms whose full balances on RecoveryFromAddress
-	// are sent to RecoveryAddress at fork. Empty slice = skip native rescue.
 	RecoveryNativeDenoms []string = []string{
 		"factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/D7yP4ycfsRWUGYionGpi64sLF2ddZ2JXxuRAti2M7uck",
 		"factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/oraiJP7H3LAt57DkFXNLDbLdBFNRRPvS8jg2j5AZkd9",
 		"factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/oraix39mVDGnusyjag97Tz5H8GvGriSZmhVvkvXRoc4",
 	}
 
-	// RecoveryFromAddress are wallets whose CW20 (RecoveryAssets) and native
-	// (RecoveryNativeDenoms) balances are transferred to RecoveryAddress at fork.
 	RecoveryFromAddress []string = []string{
-		// e2e test address
-		// "orai1hru4a5w0c29wr36l2dgaymqqd4h0vju9tlvk8w",
-
-		// mainnet address
 		"orai1vyghw3r3567y2algruuflqw2hx05vt6k945wrq",
 	}
 
 	AdminContract string = "orai1wn0qfdhn7xfn7fvsx6fme96x4mcuzrm9wm3mvlunp5e737rpgt4qndmfv8"
-	PausePoolV2   string = "orai1jf74ry4m0jcy9emsaudkhe7vte9l8qy8enakvs"                     // v2 pair
-	PausePoolV3   string = "orai10s0c75gw5y5eftms5ncfknw6lzmx0dyhedn75uz793m8zwz4g8zq4d9x9a" // v3 router
+	PausePoolV2   string = "orai1jf74ry4m0jcy9emsaudkhe7vte9l8qy8enakvs"
+	PausePoolV3   string = "orai10s0c75gw5y5eftms5ncfknw6lzmx0dyhedn75uz793m8zwz4g8zq4d9x9a"
 
-	// RecoveryAddress receives rescued CW20 and native denoms. Override via ldflags for localfork:
-	//
-	//	-X github.com/CosmWasm/wasmd/app/upgrades/v05014.RecoveryAddress=orai1...
 	RecoveryAddress string = "orai1g5yvpy7q99acamd8chsmsucpnjcxshczt5me4p"
 )
 
 // ForkHeight is the block height at which RunForkLogic executes.
 var ForkHeight = mustParseForkHeight(ForkHeightStr)
-
-// UpgradeName defines the on-chain upgrade name for the v0.50.14 hard fork.
-const UpgradeName = "v0.50.14"
-
-func mustParseForkHeight(s string) int64 {
-	h, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		panic("invalid ForkHeightStr: " + s)
-	}
-	return h
-}

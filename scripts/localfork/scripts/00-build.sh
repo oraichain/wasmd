@@ -33,18 +33,20 @@ build_old() {
 }
 
 build_new() {
-  echo "==> Building localfork-new from current workspace (fork ON, FORK_HEIGHT=${FORK_HEIGHT})"
+  echo "==> Building localfork-new from current workspace (fork ON, FORK_HEIGHT=${FORK_HEIGHT}, tag localfork)"
   local args=(
     -f "${DOCKERFILE}"
     --build-arg ENABLE_FORK_LDFLAGS=true
     --build-arg FORK_HEIGHT="${FORK_HEIGHT}"
+    --build-arg EXTRA_BUILD_TAGS=localfork
     -t localfork-new:local
   )
   if [[ -n "${CW20_TO:-}" ]]; then
     args+=(
       --build-arg "CW20_TO_ADDR=${CW20_TO}"
     )
-    echo "  recovery ldflags: RecoveryAddress=${CW20_TO} (RecoveryAssets hardcoded via Instantiate2)"
+    echo "  recovery ldflags: RecoveryAddress=${CW20_TO}"
+    echo "  fixtures: constants_localfork.go (Instantiate2 CW20 + native denoms + scaled revert)"
   fi
   docker build "${args[@]}" "${REPO_ROOT}"
 }

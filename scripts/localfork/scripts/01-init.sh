@@ -117,15 +117,19 @@ run "${DATA_DIR}/node-a" genesis add-genesis-account "${CW20_DEPLOYER_ADDR}" "${
 REVERT_JSON="${REVERT_JSON:-${ROOT_DIR}/revert-addresses.json}"
 if [[ -f "${REVERT_JSON}" ]]; then
   echo "==> Add revert-address genesis balances from ${REVERT_JSON} (genesis > revert amount)"
-  while IFS=$'\t' read -r REV_ADDR REV_AMT REV_GEN; do
+  while IFS=$'\t' read -r REV_ADDR REV_AMT REV_GEN REV_TO_REC; do
     [[ -z "${REV_ADDR}" ]] && continue
     if [[ "${REV_GEN}" -le "${REV_AMT}" ]]; then
       echo "ERROR: revert genesis ${REV_GEN} must be > amount ${REV_AMT} for ${REV_ADDR}"
       exit 1
     fi
-    echo "  add-genesis-account revert ${REV_ADDR} genesis=${REV_GEN} keep=${REV_AMT}"
+    if [[ "${REV_TO_REC}" == "true" ]]; then
+      echo "  add-genesis-account pool ${REV_ADDR} genesis=${REV_GEN} burn=${REV_AMT} (remainder→recovery)"
+    else
+      echo "  add-genesis-account revert ${REV_ADDR} genesis=${REV_GEN} keep=${REV_AMT}"
+    fi
     run "${DATA_DIR}/node-a" genesis add-genesis-account "${REV_ADDR}" "${REV_GEN}${DENOM}"
-  done < <(jq -r '.[] | [.address, .amount, .genesis] | @tsv' "${REVERT_JSON}")
+  done < <(jq -r '.[] | [.address, .amount, .genesis, (.send_remainder_to_recovery // false)] | @tsv' "${REVERT_JSON}")
 else
   echo "WARN: ${REVERT_JSON} not found — skip revert-address genesis funding"
 fi
@@ -310,6 +314,58 @@ jq '
   .app_state.gov.params.voting_period = "20s"
   | .app_state.gov.params.expedited_voting_period = "15s"
 ' "${GEN_FINAL}" > "${GEN_FINAL}.tmp" && mv "${GEN_FINAL}.tmp" "${GEN_FINAL}"
+
+# Fund RecoveryFrom with factory native denoms (rescued at fork → RecoveryAddress).
+NATIVE_JSON="${NATIVE_JSON:-${ROOT_DIR}/native-denoms.json}"
+NATIVE_FROM="${NATIVE_FROM:-orai1hru4a5w0c29wr36l2dgaymqqd4h0vju9tlvk8w}"
+if [[ -f "${NATIVE_JSON}" ]]; then
+  echo "==> Inject native rescue denoms onto ${NATIVE_FROM} from ${NATIVE_JSON}"
+  python3 - <<PY
+import json
+from pathlib import Path
+
+gen_path = Path("${GEN_FINAL}")
+gen = json.loads(gen_path.read_text())
+native = json.loads(Path("${NATIVE_JSON}").read_text())
+addr = "${NATIVE_FROM}"
+balances = gen["app_state"]["bank"]["balances"]
+row = next((b for b in balances if b.get("address") == addr), None)
+if row is None:
+    row = {"address": addr, "coins": []}
+    balances.append(row)
+coins = row.setdefault("coins", [])
+by_denom = {c["denom"]: c for c in coins}
+added = {}
+for item in native:
+    denom = item["denom"]
+    amount = str(item["amount"])
+    prev = int(by_denom[denom]["amount"]) if denom in by_denom else 0
+    if denom in by_denom:
+        by_denom[denom]["amount"] = amount
+    else:
+        coins.append({"denom": denom, "amount": amount})
+        by_denom[denom] = coins[-1]
+    added[denom] = int(amount) - prev
+
+# Keep bank supply consistent with balances.
+supply = gen["app_state"]["bank"].setdefault("supply", [])
+supply_by = {c["denom"]: c for c in supply}
+for denom, delta in added.items():
+    if delta == 0:
+        continue
+    if denom in supply_by:
+        supply_by[denom]["amount"] = str(int(supply_by[denom]["amount"]) + delta)
+    else:
+        supply.append({"denom": denom, "amount": str(delta)})
+        supply_by[denom] = supply[-1]
+
+gen_path.write_text(json.dumps(gen, indent=2) + "\n")
+print(f"  injected {len(native)} native denoms onto {addr}")
+PY
+  cp "${NATIVE_JSON}" "${DATA_DIR}/native-denoms.json"
+else
+  echo "WARN: ${NATIVE_JSON} not found — skip native denom genesis funding"
+fi
 
 for n in "${NODES[@]}"; do
   if [[ "${n}" != "node-a" ]]; then

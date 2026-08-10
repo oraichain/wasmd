@@ -11,6 +11,8 @@ ARG ENABLE_FORK_LDFLAGS=false
 ARG FORK_HEIGHT=20
 ARG CW20_TO_ADDR=
 ARG BUILD_TAGS=netgo
+# When building localfork-new, append ",localfork" so constants_localfork.go is used.
+ARG EXTRA_BUILD_TAGS=
 ARG WASMVM_VERSION=v2.1.3
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -39,6 +41,10 @@ RUN set -eux; \
 ENV LD_LIBRARY_PATH=/usr/lib
 
 RUN set -eux; \
+    TAGS="${BUILD_TAGS}"; \
+    if [ -n "${EXTRA_BUILD_TAGS}" ]; then \
+      TAGS="${TAGS},${EXTRA_BUILD_TAGS}"; \
+    fi; \
     LDFLAGS="-X github.com/cosmos/cosmos-sdk/version.Name=orai \
       -X github.com/cosmos/cosmos-sdk/version.AppName=oraid \
       -X github.com/CosmWasm/wasmd/app.Bech32Prefix=orai"; \
@@ -48,7 +54,8 @@ RUN set -eux; \
         LDFLAGS="${LDFLAGS} -X github.com/CosmWasm/wasmd/app/upgrades/v05014.RecoveryAddress=${CW20_TO_ADDR}"; \
       fi; \
     fi; \
-    go build -mod=readonly -tags "${BUILD_TAGS}" -ldflags "${LDFLAGS}" \
+    echo "building oraid tags=${TAGS}"; \
+    go build -mod=readonly -tags "${TAGS}" -ldflags "${LDFLAGS}" \
       -o /out/oraid ./cmd/wasmd
 
 FROM debian:bookworm-slim

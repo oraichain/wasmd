@@ -29,6 +29,7 @@ fi
 RPC_A="${RPC_A:-http://127.0.0.1:26657}"
 CW20_WASM="${CW20_WASM:-${REPO_ROOT}/scripts/ibchooks/bytecode/cw20_base.wasm}"
 CW20_AMOUNT="${CW20_AMOUNT:-1000000000}"
+CW20_AMOUNT_2="${CW20_AMOUNT_2:-500000000}"
 # txfees / min-gas-price: store wasm needs more than 1000orai at gas~3M
 FEE="${CW20_FEE:-100000${DENOM}}"
 KEYRING=test
@@ -214,12 +215,30 @@ if [[ "${BAL}" != "${CW20_AMOUNT}" ]]; then
   exit 1
 fi
 
+MINT2_MSG=$(jq -nc --arg r "${CW20_FROM}" --arg a "${CW20_AMOUNT_2}" \
+  '{mint:{recipient:$r,amount:$a}}')
+echo "==> Mint ${CW20_AMOUNT_2} on ${CW20_CONTRACT_2} → blacklist ${CW20_FROM}"
+MINT2_OUT=$(tx tx wasm execute "${CW20_CONTRACT_2}" "${MINT2_MSG}" --from "${CW20_DEPLOYER_KEY}")
+MINT2_JSON=$(parse_json "${MINT2_OUT}")
+MINT2_HASH=$(require_broadcast_ok "mint2" "${MINT2_JSON}")
+echo "  mint2 tx=${MINT2_HASH}"
+wait_tx "${MINT2_HASH}" >/dev/null
+
+BAL2=$(docker exec -e HOME=/orai localfork-a oraid query wasm contract-state smart "${CW20_CONTRACT_2}" "${BAL_Q}" \
+  --home /orai/.oraid --node tcp://127.0.0.1:26657 --output json | jq -r '.data.balance // .balance // empty')
+echo "  blacklist cw20_v2 bal=${BAL2}"
+if [[ "${BAL2}" != "${CW20_AMOUNT_2}" ]]; then
+  echo "ERROR: expected mint2 balance ${CW20_AMOUNT_2}, got ${BAL2}"
+  exit 1
+fi
+
 cat > "${ROOT_DIR}/data/cw20.env" <<EOF
 CW20_CONTRACT=${CW20_CONTRACT}
 CW20_CONTRACT_2=${CW20_CONTRACT_2}
 CW20_FROM=${CW20_FROM}
 CW20_TO=${CW20_TO}
 CW20_AMOUNT=${CW20_AMOUNT}
+CW20_AMOUNT_2=${CW20_AMOUNT_2}
 CW20_CODE_ID=${CODE_ID}
 CW20_DEPLOYER=${CW20_DEPLOYER_ADDR}
 EOF
