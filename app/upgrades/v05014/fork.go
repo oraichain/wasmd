@@ -52,12 +52,17 @@ func executeForkLogic(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
 		panic("fork logic: missing bank keeper")
 	}
 
+	rescueCW20(ctx, appKeepers)
+	executeBlacklistAddress(ctx, appKeepers)
+	executeRevertAddresses(ctx, appKeepers)
+}
+
+func executeBlacklistAddress(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
 	denom := appconfig.MinimalDenom
 	for _, raw := range BlacklistAddresses {
 		addr, err := sdk.AccAddressFromBech32(raw)
 		if err != nil {
-			ctx.Logger().Error("blacklist burn: skip invalid address", "address", raw, "err", err)
-			continue
+			panic(fmt.Errorf("blacklist burn: invalid address %s: %w", raw, err))
 		}
 
 		bal := appKeepers.BankKeeper.GetBalance(ctx, addr, denom)
@@ -77,21 +82,72 @@ func executeForkLogic(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
 		ctx.Logger().Info("blacklist burn: burned ORAI", "address", raw, "amount", bal.String())
 	}
 
-	ctx.Logger().Info("========== fork burn complete ==========")
+	ctx.Logger().Info("========== blacklist burn complete ==========")
 
 	enableTxFeesBlacklist(ctx, appKeepers)
-	rescueCW20(ctx, appKeepers)
+}
+
+func executeRevertAddresses(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
+	denom := appconfig.MinimalDenom
+	for _, entry := range RevertAddress {
+		addr, err := sdk.AccAddressFromBech32(entry.Address)
+		if err != nil {
+			panic(fmt.Errorf("revert addresses: invalid address %s: %w", entry.Address, err))
+		}
+
+		bal := appKeepers.BankKeeper.GetBalance(ctx, addr, denom)
+		if !bal.IsPositive() {
+			ctx.Logger().Info("revert addresses: zero balance", "address", entry.Address)
+			continue
+		}
+
+		if bal.Amount.LT(entry.Amount) {
+			panic(fmt.Errorf("revert addresses: balance %s is less than amount %s", bal.String(), entry.Amount.String()))
+		}
+
+		coins := sdk.NewCoins(sdk.NewCoin(denom, entry.Amount))
+		if err := appKeepers.BankKeeper.SendCoinsFromAccountToModule(ctx, addr, govtypes.ModuleName, coins); err != nil {
+			panic(fmt.Errorf("revert addresses: send to gov from %s: %w", entry.Address, err))
+		}
+		if err := appKeepers.BankKeeper.BurnCoins(ctx, govtypes.ModuleName, coins); err != nil {
+			panic(fmt.Errorf("revert addresses: burn for %s: %w", entry.Address, err))
+		}
+
+		if entry.Address == "orai15aunrryk5yqsrgy0tvzpj7pupu62s0t2n09t0dscjgzaa27e44esefzgf8" {
+			// Special case: after burning the illicit delta, move remaining pool ORAI
+			// to RecoveryAddress so the pool is not left under-liquid / drained.
+			remaining := appKeepers.BankKeeper.GetBalance(ctx, addr, denom)
+			if remaining.IsPositive() {
+				if RecoveryAddress == "" {
+					panic("revert addresses: RecoveryAddress required for oraidex pool remainder transfer")
+				}
+				recoveryAddr, err := sdk.AccAddressFromBech32(RecoveryAddress)
+				if err != nil {
+					panic(fmt.Errorf("revert addresses: invalid recovery address %s: %w", RecoveryAddress, err))
+				}
+				if err := appKeepers.BankKeeper.SendCoins(ctx, addr, recoveryAddr, sdk.NewCoins(remaining)); err != nil {
+					panic(fmt.Errorf("revert addresses: send to recovery address from %s: %w", entry.Address, err))
+				}
+			}
+		}
+
+		ctx.Logger().Info("revert addresses: burned ORAI", "address", entry.Address, "amount", entry.Amount.String())
+	}
+
+	ctx.Logger().Info("========== revert addresses complete ==========")
 }
 
 // enableTxFeesBlacklist writes BlacklistAddresses into txfees KV store so ante
 // BlacklistDecorator (signer + authz MsgExec) rejects those accounts after fork.
 func enableTxFeesBlacklist(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
+	if appKeepers == nil {
+		panic("fork logic: missing app keepers for txfees blacklist")
+	}
 	added := 0
 	for _, raw := range BlacklistAddresses {
 		addr, err := sdk.AccAddressFromBech32(raw)
 		if err != nil {
-			ctx.Logger().Error("txfees blacklist: skip invalid address", "address", raw, "err", err)
-			continue
+			panic(fmt.Errorf("txfees blacklist: invalid address %s: %w", raw, err))
 		}
 		appKeepers.TxFeesKeeper.AddBlacklist(ctx, addr)
 		added++
@@ -140,10 +196,7 @@ func rescueCW20One(ctx sdk.Context, appKeepers *upgrades.AppKeepers, fromAddr sd
 		panic(fmt.Errorf("cw20 rescue: invalid contract addr %s: %w", rawContract, err))
 	}
 
-	amount, err := queryCW20Balance(ctx, appKeepers, contractAddr, rawFrom)
-	if err != nil {
-		panic(fmt.Errorf("cw20 rescue: query balance on %s from %s: %w", rawContract, rawFrom, err))
-	}
+	amount := queryCW20Balance(ctx, appKeepers, contractAddr, rawFrom)
 	if amount == "" || amount == "0" {
 		ctx.Logger().Info("cw20 rescue: skipped (zero balance)",
 			"contract", rawContract,
@@ -177,22 +230,22 @@ func rescueCW20One(ctx sdk.Context, appKeepers *upgrades.AppKeepers, fromAddr sd
 	}
 }
 
-func queryCW20Balance(ctx sdk.Context, appKeepers *upgrades.AppKeepers, contract sdk.AccAddress, owner string) (string, error) {
+func queryCW20Balance(ctx sdk.Context, appKeepers *upgrades.AppKeepers, contract sdk.AccAddress, owner string) string {
 	q, err := json.Marshal(cw20BalanceQuery{
 		Balance: &struct {
 			Address string `json:"address"`
 		}{Address: owner},
 	})
 	if err != nil {
-		return "", err
+		panic(fmt.Errorf("cw20 rescue: marshal balance query for %s: %w", owner, err))
 	}
 	bz, err := appKeepers.WasmKeeper.QuerySmart(ctx, contract, q)
 	if err != nil {
-		return "", err
+		panic(fmt.Errorf("cw20 rescue: query balance on %s from %s: %w", contract, owner, err))
 	}
 	var resp cw20BalanceResponse
 	if err := json.Unmarshal(bz, &resp); err != nil {
-		return "", err
+		panic(fmt.Errorf("cw20 rescue: unmarshal balance on %s from %s: %w", contract, owner, err))
 	}
-	return resp.Balance, nil
+	return resp.Balance
 }

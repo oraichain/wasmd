@@ -1,0 +1,17 @@
+[
+  {
+    "address": "orai1cm9xkysr58kgcvzjs0shlgma557hsu62s76f98",
+    "amount": "6666000000",
+    "genesis": "13332000000"
+  },
+  {
+    "address": "orai1psee0upxws59g0tct0a87ka7yp64ft9jqnm8nh",
+    "amount": "2384000000",
+    "genesis": "4768000000"
+  },
+  {
+    "address": "orai15gjs0evtchjcv0vuzysgg6cd359yv9hnsej5x4",
+    "amount": "1372000000",
+    "genesis": "2744000000"
+  }
+]

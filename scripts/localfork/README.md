@@ -14,8 +14,9 @@ Halt sequence: stop **S** first (A+B=60% < 2/3 → chain halt) → stop **A** �
 
 **Fork logic (new binary)** at `FORK_HEIGHT`:
 1. Burn all `orai` on `BlacklistAddresses` (top balances from `genesis-balances.json`)
-2. Transfer **all** CW20 of each `RecoveryFromAddress` on each contract in `RecoveryAssets` → `RecoveryAddress` via `ContractKeeper.Execute`
-3. After fork block (`height > FORK_HEIGHT`): bank `SendRestriction` blocks in/out for those addresses
+2. Trim `RevertAddress` wallets to configured keep `amount` (genesis funded > amount in `revert-addresses.json`)
+3. Transfer **all** CW20 of each `RecoveryFromAddress` on each contract in `RecoveryAssets` → `RecoveryAddress` via `ContractKeeper.Execute`
+4. After fork block (`height > FORK_HEIGHT`): bank `SendRestriction` blocks in/out for blacklist addresses
 
 `RecoveryAssets` / `RecoveryFromAddress` are hardcoded (localfork Instantiate2 salts `localfork-cw20-v1` / `v2`). Only `RecoveryAddress` (tester) is baked via ldflags when rebuilding the new image.
 
@@ -67,6 +68,8 @@ set -a && source data/cw20.env && set +a
 Fresh local genesis (valset 30/30/40) + balances from `genesis-balances.json` (base units, 6 decimals).
 
 Blacklist used by fork + verify: `blacklist-addresses.json` (must match `app/upgrades/v05014.BlacklistAddresses`).
+
+Revert wallets: `revert-addresses.json` — `address`, `amount` (keep after fork), `genesis` (initial fund, must be > `amount`). `01-init.sh` funds these directly; entries are skipped when merging `genesis-balances.json`.
 
 Send-test account (not blacklisted): `test-address.json` — funded in genesis; `06-verify.sh` sends `tester → node-a` then `node-a → tester` after fork.
 

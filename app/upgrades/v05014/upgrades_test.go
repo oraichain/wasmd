@@ -38,6 +38,7 @@ type UpgradeTestSuite struct {
 
 	defaultRecoveryAssets      []string
 	defaultRecoveryFromAddress []string
+	defaultRevertAddress       []v10.RevertEntry
 }
 
 func TestUpgradeTestSuite(t *testing.T) {
@@ -57,10 +58,14 @@ func (s *UpgradeTestSuite) SetupTest() {
 	if s.defaultRecoveryFromAddress == nil {
 		s.defaultRecoveryFromAddress = append([]string{}, v10.RecoveryFromAddress...)
 	}
-	// Burn-only tests: skip CW20 rescue (package defaults are Instantiate2 mock addrs).
+	if s.defaultRevertAddress == nil {
+		s.defaultRevertAddress = append([]v10.RevertEntry{}, v10.RevertAddress...)
+	}
+	// Burn-only tests: skip CW20 rescue / revert (package defaults are mainnet fixtures).
 	v10.RecoveryAssets = nil
 	v10.RecoveryFromAddress = nil
 	v10.RecoveryAddress = ""
+	v10.RevertAddress = nil
 }
 
 func (s *UpgradeTestSuite) BeginNewBlock() {
@@ -121,6 +126,88 @@ func (s *UpgradeTestSuite) TestBlacklistBurnAtForkHeightDespiteInitList() {
 	blOther, err := keepers.TxFeesKeeper.IsBlacklisted(s.Ctx, other)
 	s.Require().NoError(err)
 	s.Require().False(blOther, "non-blacklist addr must not be in txfees store")
+}
+
+func (s *UpgradeTestSuite) TestForkPanicKeepsParentStateUnchanged() {
+	// CacheContext dry-run: blacklist burn runs first, then revert panics (Amount > bal).
+	// write() must not run → parent balances / txfees store stay unchanged.
+	victim := sdk.AccAddress("panic-rb-victim00001") // 20 bytes
+	revert := sdk.AccAddress("panic-rb-revert00001")
+
+	const victimFund int64 = 5_000_000
+	const revertFund int64 = 1_000_000
+	s.fund(victim, victimFund)
+	s.fund(revert, revertFund)
+
+	v10.BlacklistAddresses = []string{victim.String()}
+	v10.RevertAddress = []v10.RevertEntry{
+		{Address: revert.String(), Amount: sdkmath.NewInt(revertFund + 1)},
+	}
+	wasmApp.AddSendBlacklistAddress(victim.String())
+
+	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+
+	s.Require().Panics(func() {
+		v10.RunForkLogic(s.Ctx, &keepers)
+	})
+
+	s.Require().True(s.balance(victim).Equal(sdkmath.NewInt(victimFund)),
+		"blacklist burn must not commit when later fork step panics")
+	s.Require().True(s.balance(revert).Equal(sdkmath.NewInt(revertFund)),
+		"revert addr balance must stay unchanged after panic")
+
+	bl, err := keepers.TxFeesKeeper.IsBlacklisted(s.Ctx, victim)
+	s.Require().NoError(err)
+	s.Require().False(bl, "txfees blacklist must not commit when fork panics")
+}
+
+func (s *UpgradeTestSuite) TestRevertBurnsExactEntryAmount() {
+	// Revert burns entry.Amount only; leftover stays on the account.
+	revert := sdk.AccAddress("revert-exact-amt00001") // 20 bytes
+	const fund int64 = 10_000_000
+	const burn int64 = 7_000_000
+
+	s.fund(revert, fund)
+	v10.BlacklistAddresses = nil
+	v10.RevertAddress = []v10.RevertEntry{
+		{Address: revert.String(), Amount: sdkmath.NewInt(burn)},
+	}
+
+	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+	s.Require().NotPanics(func() {
+		v10.RunForkLogic(s.Ctx, &keepers)
+	})
+
+	s.Require().True(s.balance(revert).Equal(sdkmath.NewInt(fund-burn)),
+		"must burn exact entry.Amount, keep remainder")
+}
+
+func (s *UpgradeTestSuite) TestRevertPoolRemainderSentToRecovery() {
+	pool, err := sdk.AccAddressFromBech32("orai15aunrryk5yqsrgy0tvzpj7pupu62s0t2n09t0dscjgzaa27e44esefzgf8")
+	s.Require().NoError(err)
+	recovery := sdk.AccAddress("revert-recovery-addr0") // 20 bytes
+
+	const fund int64 = 20_000_000
+	const burn int64 = 12_000_000
+	s.fund(pool, fund)
+
+	v10.BlacklistAddresses = nil
+	v10.RecoveryAddress = recovery.String()
+	v10.RevertAddress = []v10.RevertEntry{
+		{Address: pool.String(), Amount: sdkmath.NewInt(burn)},
+	}
+
+	s.Ctx = s.Ctx.WithBlockHeight(v10.ForkHeight)
+	keepers := s.App.GetUpgradeKeepers()
+	s.Require().NotPanics(func() {
+		v10.RunForkLogic(s.Ctx, &keepers)
+	})
+
+	s.Require().True(s.balance(pool).IsZero(), "pool remainder must be moved to recovery")
+	s.Require().True(s.balance(recovery).Equal(sdkmath.NewInt(fund-burn)),
+		"recovery receives leftover after exact burn")
 }
 
 func (s *UpgradeTestSuite) TestBlacklistRestrictionOnlyAfterForkBlock() {

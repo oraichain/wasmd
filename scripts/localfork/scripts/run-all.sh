@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${ROOT_DIR}/scripts"
 chmod +x ./*.sh
 
-export FORK_HEIGHT="${FORK_HEIGHT:-40}"
+export FORK_HEIGHT="${FORK_HEIGHT:-60}"
 export OLD_TAG="${OLD_TAG:-v0.50.13b}"
 
 # 1) old binary only — new image rebuilt after CW20 deploy (needs RecoveryAddress = tester)
@@ -24,12 +24,24 @@ if [[ -z "${CW20_TO}" ]]; then
 fi
 
 ./03-wait-height.sh
-./snapshot-balances.sh pre
 
+# Freeze consensus (stop S) while A stays up for balance queries, then halt A.
+# Do NOT snapshot after A is stopped — LCD/RPC would be down.
+cd "${ROOT_DIR}"
+docker compose stop node-s
+sleep 4
+H=$(curl -sf http://127.0.0.1:26657/status | jq -r '.result.sync_info.latest_block_height')
+echo "  frozen height=${H} after stop S"
+cd "${ROOT_DIR}/scripts"
+./snapshot-balances.sh pre
 ./04-halt.sh
 
 # 2) rebuild new with fork height + RecoveryAddress ldflag (RecoveryAssets hardcoded)
 ./00-build.sh new
+if ! docker image inspect localfork-new:local >/dev/null 2>&1; then
+  echo "ERROR: localfork-new:local image missing after build — A/S cannot restart with fork binary"
+  exit 1
+fi
 ./05-restart-new.sh
 ./06-verify.sh
 

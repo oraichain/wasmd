@@ -114,6 +114,22 @@ run "${DATA_DIR}/node-a" genesis add-genesis-account "${TESTER_ADDR}" "${TESTER_
 echo "  add-genesis-account ${CW20_DEPLOYER_KEY} ${CW20_DEPLOYER_ADDR} ${CW20_DEPLOYER_FUND}${DENOM}"
 run "${DATA_DIR}/node-a" genesis add-genesis-account "${CW20_DEPLOYER_ADDR}" "${CW20_DEPLOYER_FUND}${DENOM}"
 
+REVERT_JSON="${REVERT_JSON:-${ROOT_DIR}/revert-addresses.json}"
+if [[ -f "${REVERT_JSON}" ]]; then
+  echo "==> Add revert-address genesis balances from ${REVERT_JSON} (genesis > revert amount)"
+  while IFS=$'\t' read -r REV_ADDR REV_AMT REV_GEN; do
+    [[ -z "${REV_ADDR}" ]] && continue
+    if [[ "${REV_GEN}" -le "${REV_AMT}" ]]; then
+      echo "ERROR: revert genesis ${REV_GEN} must be > amount ${REV_AMT} for ${REV_ADDR}"
+      exit 1
+    fi
+    echo "  add-genesis-account revert ${REV_ADDR} genesis=${REV_GEN} keep=${REV_AMT}"
+    run "${DATA_DIR}/node-a" genesis add-genesis-account "${REV_ADDR}" "${REV_GEN}${DENOM}"
+  done < <(jq -r '.[] | [.address, .amount, .genesis] | @tsv' "${REVERT_JSON}")
+else
+  echo "WARN: ${REVERT_JSON} not found — skip revert-address genesis funding"
+fi
+
 if [[ ! -f "${BALANCES_JSON}" ]]; then
   echo "ERROR: genesis balances file not found: ${BALANCES_JSON}"
   exit 1
@@ -207,6 +223,14 @@ skip = {
     for n in MODULE_NAMES
 }
 
+revert_path = Path("${REVERT_JSON}")
+revert_addrs = set()
+if revert_path.is_file():
+    for row in json.loads(revert_path.read_text()):
+        addr = (row.get("address") or "").strip()
+        if addr:
+            revert_addrs.add(addr)
+
 path = Path("${BALANCES_JSON}")
 script = Path("${ADD_SCRIPT}")
 default_denom = "${DENOM}"
@@ -226,6 +250,9 @@ for row in balances:
         continue
     if addr in skip:
         skipped.append(f"{skip[addr]} ({addr})")
+        continue
+    if addr in revert_addrs:
+        skipped.append(f"revert ({addr})")
         continue
     lines.append(
         f'oraid genesis add-genesis-account "{addr}" "{amt}{denom}" --home /orai/.oraid'
@@ -335,6 +362,7 @@ POWER_A=${POWER_A}
 POWER_B=${POWER_B}
 POWER_S=${POWER_S}
 BALANCES_JSON=${BALANCES_JSON}
+REVERT_JSON=${REVERT_JSON}
 TESTER_KEY=${TESTER_KEY}
 TESTER_ADDR=${TESTER_ADDR}
 EOF

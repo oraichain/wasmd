@@ -67,6 +67,16 @@ while IFS= read -r addr; do
     "$(cw20_bal "${CW20_CONTRACT_2}" "${addr}")"
 done < <(jq -r '.[]' "${BLACKLIST_JSON}")
 
+REVERT_JSON="${REVERT_JSON:-${ROOT_DIR}/revert-addresses.json}"
+if [[ -f "${REVERT_JSON}" ]]; then
+  while IFS=$'\t' read -r addr keep; do
+    [[ -z "${addr}" ]] && continue
+    add_row "revert(keep=${keep})" "${addr}" "$(orai_bal "${addr}")" \
+      "$(cw20_bal "${CW20_CONTRACT}" "${addr}")" \
+      "$(cw20_bal "${CW20_CONTRACT_2}" "${addr}")"
+  done < <(jq -r '.[] | [.address, .amount] | @tsv' "${REVERT_JSON}")
+fi
+
 if [[ -n "${TESTER}" ]]; then
   add_row "tester/recovery_to" "${TESTER}" "$(orai_bal "${TESTER}")" \
     "$(cw20_bal "${CW20_CONTRACT}" "${TESTER}")" \

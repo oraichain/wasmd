@@ -56,6 +56,26 @@ if [[ "${FAIL}" -ne 0 ]]; then
 fi
 echo "✓ All ${#ADDRS[@]} blacklist balances burned on A"
 
+REVERT_JSON="${REVERT_JSON:-${ROOT_DIR}/revert-addresses.json}"
+if [[ -f "${REVERT_JSON}" ]]; then
+  echo "==> Check revert addresses trimmed to keep amount on A"
+  REV_FAIL=0
+  while IFS=$'\t' read -r REV_ADDR REV_AMT; do
+    [[ -z "${REV_ADDR}" ]] && continue
+    BAL=$(curl -sf "${LCD_A}/cosmos/bank/v1beta1/balances/${REV_ADDR}/by_denom?denom=${DENOM}" \
+      | jq -r '.balance.amount // "0"')
+    echo "  ${REV_ADDR} bal=${BAL} (want keep=${REV_AMT})"
+    if [[ "${BAL}" != "${REV_AMT}" ]]; then
+      echo "ERROR: revert address expected ${REV_AMT}, got ${BAL}"
+      REV_FAIL=1
+    fi
+  done < <(jq -r '.[] | [.address, .amount] | @tsv' "${REVERT_JSON}")
+  if [[ "${REV_FAIL}" -ne 0 ]]; then
+    exit 1
+  fi
+  echo "✓ All revert addresses trimmed to configured keep amounts"
+fi
+
 echo "==> Post-fork bank send (tester → node-a → tester)"
 TESTER_KEY="${TESTER_KEY:-tester}"
 TESTER_ADDR="${TESTER_ADDR:-$(cat "${ROOT_DIR}/data/tester.address" 2>/dev/null || true)}"
@@ -274,6 +294,7 @@ fi
 
 echo "==> Summary"
 echo "  A/S: past ${FORK_HEIGHT}, blacklist ORAI burned"
+echo "  revert addresses: trimmed to keep amounts (${REVERT_JSON})"
 echo "  post-fork bank send out+back: ok (tester=${TESTER_ADDR})"
 echo "  post-fork send to blacklist: rejected"
 echo "  CW20 rescue: from=0 to=${TO_BAL} RecoveryAssets[0]=${CW20_CONTRACT}"
