@@ -8,6 +8,8 @@ import sdkmath "cosmossdk.io/math"
 // Localfork e2e uses constants_localfork.go (build tag `localfork`).
 //
 // ForkHeightStr / RecoveryAddress can still be overridden via ldflags.
+const IsLocalForkBuild = false
+
 var (
 	ForkHeightStr string = "118018795"
 	CoinDenom     string = "orai"

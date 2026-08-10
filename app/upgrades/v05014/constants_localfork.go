@@ -11,6 +11,10 @@ import sdkmath "cosmossdk.io/math"
 // RevertAddress.Amount is the burn amount; genesis funds 2x so remaining == keep
 // in revert-addresses.json.
 // Pause pools disabled (no oraidex contracts on mock chain).
+//
+// IsLocalForkBuild=true so RunForkLogic refuses Oraichain at mainnet-scale heights.
+const IsLocalForkBuild = true
+
 var (
 	ForkHeightStr string = "60"
 	CoinDenom     string = "orai"

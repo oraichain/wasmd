@@ -110,6 +110,10 @@ func (s *UpgradeTestSuite) TestForkBeginBlockerSucceeds() {
 	})
 }
 
+func (s *UpgradeTestSuite) TestProductionBuildIsNotLocalFork() {
+	s.Require().False(v05014.IsLocalForkBuild, "default test binary must use constants.go (!localfork)")
+}
+
 func (s *UpgradeTestSuite) TestBlacklistBurnAtForkHeightDespiteInitList() {
 	victim := sdk.AccAddress("blacklist-victim0001") // 20 bytes
 	other := sdk.AccAddress("blacklist-other000002")

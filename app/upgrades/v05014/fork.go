@@ -60,7 +60,12 @@ type isPausedQuery struct {
 // written if the dry-run succeeds.
 // Send blacklist enforcement starts at height > ForkHeight (app.BlacklistSendRestriction).
 func RunForkLogic(ctx sdk.Context, appKeepers *upgrades.AppKeepers) {
-	ctx.Logger().Info("========== running v0.50.14 fork logic ==========", "height", ctx.BlockHeight())
+	ctx.Logger().Info("========== running v0.50.14 fork logic ==========",
+		"height", ctx.BlockHeight(),
+		"chain_id", ctx.ChainID(),
+		"localfork_build", IsLocalForkBuild,
+	)
+	assertNotLocalForkOnMainnet(ctx)
 
 	cacheCtx, write := ctx.CacheContext()
 	executeForkLogic(cacheCtx, appKeepers)
