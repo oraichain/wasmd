@@ -5,8 +5,8 @@ import (
 )
 
 // BeginBlockForks runs any hard-fork BeginForkLogic scheduled for the current height.
-// Blacklist set is activated at app startup; outbound-only enforcement is height-gated
-// (height > ForkHeight) in BlacklistSendRestriction.
+// The fork writes the blacklist into the txfees store; outbound-only enforcement is
+// height-gated (height > ForkHeight) in RegisterBankSendRestrictions.
 func BeginBlockForks(ctx sdk.Context, app *WasmApp) {
 	keepers := app.GetUpgradeKeepers()
 	for _, fork := range Forks {

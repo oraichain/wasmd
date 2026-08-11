@@ -55,9 +55,11 @@ func TestUpgradeTestSuite(t *testing.T) {
 func (s *UpgradeTestSuite) SetupTest() {
 	wasmApp.SetSDKConfig()
 	s.App = wasmApp.Setup(s.T())
+	// Production fork fixtures only run on the mainnet chain-id (see isForkChain).
 	s.Ctx = s.App.NewContextLegacy(false, cmtproto.Header{
-		Height: 1,
-		Time:   time.Now().UTC(),
+		Height:  1,
+		Time:    time.Now().UTC(),
+		ChainID: v05014.MainnetChainID,
 	})
 	if s.defaultRecoveryAssets == nil {
 		s.defaultRecoveryAssets = append([]string{}, v05014.RecoveryAssets...)
@@ -89,7 +91,7 @@ func (s *UpgradeTestSuite) BeginNewBlock() {
 	s.Ctx = s.Ctx.WithBlockHeight(newHeight).WithBlockTime(newTime)
 	_, err := s.App.BeginBlocker(s.Ctx)
 	s.Require().NoError(err)
-	s.Ctx = s.Ctx.WithBlockHeader(cmtproto.Header{Height: newHeight, Time: newTime})
+	s.Ctx = s.Ctx.WithBlockHeader(cmtproto.Header{Height: newHeight, Time: newTime, ChainID: v05014.MainnetChainID})
 }
 
 func (s *UpgradeTestSuite) fund(addr sdk.AccAddress, amount int64) {
@@ -100,6 +102,12 @@ func (s *UpgradeTestSuite) fund(addr sdk.AccAddress, amount int64) {
 
 func (s *UpgradeTestSuite) balance(addr sdk.AccAddress) sdkmath.Int {
 	return s.App.BankKeeper.GetBalance(s.Ctx, addr, appconfig.MinimalDenom).Amount
+}
+
+func (s *UpgradeTestSuite) blacklisted(addr sdk.AccAddress) bool {
+	ok, err := s.App.TxFeesKeeper.IsBlacklisted(s.Ctx, addr)
+	s.Require().NoError(err)
+	return ok
 }
 
 func (s *UpgradeTestSuite) TestForkBeginBlockerSucceeds() {
@@ -125,8 +133,8 @@ func (s *UpgradeTestSuite) TestBlacklistBurnAtForkHeightDespiteInitList() {
 
 	// Address is on the blacklist set before burn (mirrors init()/ActivateSendBlacklist).
 	v05014.BlacklistAddresses = []string{victim.String()}
-	wasmApp.AddSendBlacklistAddress(victim.String())
-	s.Require().True(wasmApp.IsSendBlacklisted(victim.String()))
+	s.App.TxFeesKeeper.AddBlacklist(s.Ctx, victim)
+	s.Require().True(s.blacklisted(victim))
 
 	// Burn at ForkHeight must succeed: restriction is height-gated (<= ForkHeight => no-op).
 	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
@@ -161,7 +169,6 @@ func (s *UpgradeTestSuite) TestForkPanicKeepsParentStateUnchanged() {
 	v05014.RevertAddress = []v05014.RevertEntry{
 		{Address: revert.String(), Amount: sdkmath.NewInt(revertFund + 1)},
 	}
-	wasmApp.AddSendBlacklistAddress(victim.String())
 
 	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight)
 	keepers := s.App.GetUpgradeKeepers()
@@ -234,8 +241,8 @@ func (s *UpgradeTestSuite) TestBlacklistRestrictionOnlyAfterForkBlock() {
 
 	s.fund(other, 10_000_000)
 	v05014.BlacklistAddresses = []string{victim.String()}
-	wasmApp.ActivateSendBlacklist()
-	s.Require().True(wasmApp.IsSendBlacklisted(victim.String()))
+	s.App.TxFeesKeeper.AddBlacklist(s.Ctx, victim)
+	s.Require().True(s.blacklisted(victim))
 
 	one := sdk.NewCoins(sdk.NewCoin(appconfig.MinimalDenom, sdkmath.NewInt(1)))
 
@@ -270,7 +277,7 @@ func (s *UpgradeTestSuite) TestBeginBlockForkBurnsThenBlocksNextHeight() {
 	s.fund(other, victimFund)
 
 	v05014.BlacklistAddresses = []string{victim.String()}
-	wasmApp.AddSendBlacklistAddress(victim.String())
+	s.App.TxFeesKeeper.AddBlacklist(s.Ctx, victim)
 
 	// Drive real BeginBlocker path through fork height.
 	s.Ctx = s.Ctx.WithBlockHeight(v05014.ForkHeight - 1)
@@ -352,7 +359,7 @@ func (s *UpgradeTestSuite) TestCw20RescueViaForkExecute() {
 
 	s.fund(deployer, 10_000_000)
 	v05014.BlacklistAddresses = []string{victim.String()}
-	wasmApp.AddSendBlacklistAddress(victim.String())
+	s.App.TxFeesKeeper.AddBlacklist(s.Ctx, victim)
 
 	keepers := s.App.GetUpgradeKeepers()
 	s.Require().NotNil(keepers.ContractKeeper)

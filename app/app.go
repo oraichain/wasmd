@@ -481,8 +481,8 @@ func NewWasmApp(
 		AuthorityAddr,
 		logger,
 	)
-	RegisterBankSendRestrictions(app.BankKeeper)
-	ActivateSendBlacklist()
+	// NOTE: bank send restrictions are registered after TxFeesKeeper is built (below),
+	// since the blacklist is read from the txfees store.
 
 	// optional: enable sign mode textual by overwriting the default tx config (after setting the bank keeper)
 	enabledSignModes := append(authtx.DefaultSignModes, signingtypes.SignMode_SIGN_MODE_TEXTUAL)
@@ -789,6 +789,7 @@ func NewWasmApp(
 		&app.WasmKeeper,
 		AuthorityAddr,
 	)
+	RegisterBankSendRestrictions(app.BankKeeper, app.TxFeesKeeper)
 
 	app.TokenFactoryKeeper = tokenfactorykeeper.NewKeeper(
 		keys[tokenfactorytypes.StoreKey],
