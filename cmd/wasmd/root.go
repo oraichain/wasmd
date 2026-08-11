@@ -36,7 +36,7 @@ func NewRootCmd() *cobra.Command {
 	cfg.Seal()
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
-	tempApp := app.NewWasmApp(log.NewNopLogger(), dbm.NewMemDB(), nil, false, simtestutil.NewAppOptionsWithFlagHome(tempDir()), []wasmkeeper.Option{}, app.NoOpEVMOptions)
+	tempApp := app.NewWasmApp(log.NewNopLogger(), dbm.NewMemDB(), nil, false, simtestutil.NewAppOptionsWithFlagHome(tempDir()), []wasmkeeper.Option{})
 	encodingConfig := params.EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),
@@ -101,7 +101,12 @@ func NewRootCmd() *cobra.Command {
 			customAppTemplate, customAppConfig := initAppConfig("orai")
 			customCMTConfig := initCometBFTConfig()
 
-			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
+			if err := server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig); err != nil {
+				return err
+			}
+
+			disableEVMJSONRPC(cmd)
+			return nil
 		},
 	}
 

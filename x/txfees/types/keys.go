@@ -1,5 +1,7 @@
 package types
 
+import sdk "github.com/cosmos/cosmos-sdk/types"
+
 const (
 	// ModuleName defines the module name
 	ModuleName = "txfees"
@@ -24,6 +26,7 @@ var (
 	TokenConfigurationKeyPrefix = []byte("token_config")   // Key for the token info
 	TokenExchangeRateKeyPrefix  = []byte("token_exchange") // Key for token exchange rate
 	EpochKeyPrefix              = []byte("epoch")          // KeyPrefixEpoch defines prefix key for storing epochs.
+	BlacklistKeyPrefix          = []byte("blacklist")      // KeyPrefixBlacklist defines prefix key for storing blacklist.
 )
 
 func GetAllowedTokenKey(denom string) []byte {
@@ -40,4 +43,8 @@ func GetTokenExchangeRateKey(denom string) []byte {
 
 func GetEpochKey(identifier string) []byte {
 	return append(EpochKeyPrefix, []byte(identifier)...)
+}
+
+func GetBlacklistKey(address sdk.AccAddress) []byte {
+	return append(BlacklistKeyPrefix, address...)
 }

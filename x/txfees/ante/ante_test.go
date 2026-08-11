@@ -5,10 +5,13 @@ import (
 
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/feegrant"
+	txfeesante "github.com/CosmWasm/wasmd/x/txfees/ante"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	authz "github.com/cosmos/cosmos-sdk/x/authz"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 var testGasLimit uint64 = 200_000
@@ -303,6 +306,203 @@ func (s *AnteTestSuite) TestDeductFeeAnteHandle() {
 				}
 			} else {
 				s.Require().Error(err)
+			}
+		})
+	}
+}
+
+func (s *AnteTestSuite) TestBlacklistDecorator() {
+	type tc struct {
+		name      string
+		malleate  func() signing.Tx
+		expErr    bool
+		errSubstr string
+	}
+
+	cases := []tc{
+		{
+			name: "non-blacklisted signer allowed",
+			malleate: func() signing.Tx {
+				s.FundAccount(s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
+				msg := testdata.NewTestMsg(s.TestAccount.acc.GetAddress())
+				s.Require().NoError(s.txBuilder.SetMsgs(msg))
+				s.txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1000))))
+				s.txBuilder.SetGasLimit(testGasLimit)
+				tx, err := s.CreateTestTx(
+					[]cryptotypes.PrivKey{s.TestAccount.priv},
+					[]uint64{s.TestAccount.acc.GetAccountNumber()},
+					[]uint64{s.TestAccount.acc.GetSequence()},
+					s.ctx.ChainID(),
+				)
+				s.Require().NoError(err)
+				return tx
+			},
+			expErr: false,
+		},
+		{
+			name: "blacklisted signer rejected",
+			malleate: func() signing.Tx {
+				s.tfk.AddBlacklist(s.ctx, s.TestAccount.acc.GetAddress())
+				s.FundAccount(s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
+				msg := testdata.NewTestMsg(s.TestAccount.acc.GetAddress())
+				s.Require().NoError(s.txBuilder.SetMsgs(msg))
+				s.txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1000))))
+				s.txBuilder.SetGasLimit(testGasLimit)
+				tx, err := s.CreateTestTx(
+					[]cryptotypes.PrivKey{s.TestAccount.priv},
+					[]uint64{s.TestAccount.acc.GetAccountNumber()},
+					[]uint64{s.TestAccount.acc.GetSequence()},
+					s.ctx.ChainID(),
+				)
+				s.Require().NoError(err)
+				return tx
+			},
+			expErr:    true,
+			errSubstr: "blacklisted",
+		},
+		{
+			name: "authz MsgExec with non-blacklisted granter allowed",
+			malleate: func() signing.Tx {
+				grantee := s.TestAccounts[0]
+				granter := s.TestAccounts[1]
+				s.FundAccount(grantee.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
+				s.FundAccount(granter.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
+
+				inner := banktypes.NewMsgSend(
+					granter.acc.GetAddress(),
+					grantee.acc.GetAddress(),
+					sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1))),
+				)
+				exec := authz.NewMsgExec(grantee.acc.GetAddress(), []sdk.Msg{inner})
+				s.Require().NoError(s.txBuilder.SetMsgs(&exec))
+				s.txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1000))))
+				s.txBuilder.SetGasLimit(testGasLimit)
+				tx, err := s.CreateTestTx(
+					[]cryptotypes.PrivKey{grantee.priv},
+					[]uint64{grantee.acc.GetAccountNumber()},
+					[]uint64{grantee.acc.GetSequence()},
+					s.ctx.ChainID(),
+				)
+				s.Require().NoError(err)
+				return tx
+			},
+			expErr: false,
+		},
+		{
+			name: "authz MsgExec with blacklisted granter rejected",
+			malleate: func() signing.Tx {
+				grantee := s.TestAccounts[0]
+				granter := s.TestAccounts[1]
+				s.tfk.AddBlacklist(s.ctx, granter.acc.GetAddress())
+				s.FundAccount(grantee.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
+
+				inner := banktypes.NewMsgSend(
+					granter.acc.GetAddress(),
+					grantee.acc.GetAddress(),
+					sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1))),
+				)
+				exec := authz.NewMsgExec(grantee.acc.GetAddress(), []sdk.Msg{inner})
+				s.Require().NoError(s.txBuilder.SetMsgs(&exec))
+				s.txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1000))))
+				s.txBuilder.SetGasLimit(testGasLimit)
+				tx, err := s.CreateTestTx(
+					[]cryptotypes.PrivKey{grantee.priv},
+					[]uint64{grantee.acc.GetAccountNumber()},
+					[]uint64{grantee.acc.GetSequence()},
+					s.ctx.ChainID(),
+				)
+				s.Require().NoError(err)
+				return tx
+			},
+			expErr:    true,
+			errSubstr: "blacklisted",
+		},
+		{
+			name: "nested authz MsgExec with blacklisted granter rejected",
+			malleate: func() signing.Tx {
+				outerGrantee := s.TestAccounts[0]
+				midGrantee := s.TestAccounts[1]
+				priv, _, addr := testdata.KeyTestPubAddr()
+				granterAcc := s.ak.NewAccountWithAddress(s.ctx, addr)
+				granterAcc.SetAccountNumber(2000)
+				s.ak.SetAccount(s.ctx, granterAcc)
+				granter := TestAccount{acc: granterAcc, priv: priv}
+
+				s.tfk.AddBlacklist(s.ctx, granter.acc.GetAddress())
+				s.FundAccount(outerGrantee.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
+
+				inner := banktypes.NewMsgSend(
+					granter.acc.GetAddress(),
+					outerGrantee.acc.GetAddress(),
+					sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1))),
+				)
+				midExec := authz.NewMsgExec(midGrantee.acc.GetAddress(), []sdk.Msg{inner})
+				outerExec := authz.NewMsgExec(outerGrantee.acc.GetAddress(), []sdk.Msg{&midExec})
+				s.Require().NoError(s.txBuilder.SetMsgs(&outerExec))
+				s.txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1000))))
+				s.txBuilder.SetGasLimit(testGasLimit)
+				tx, err := s.CreateTestTx(
+					[]cryptotypes.PrivKey{outerGrantee.priv},
+					[]uint64{outerGrantee.acc.GetAccountNumber()},
+					[]uint64{outerGrantee.acc.GetSequence()},
+					s.ctx.ChainID(),
+				)
+				s.Require().NoError(err)
+				return tx
+			},
+			expErr:    true,
+			errSubstr: "blacklisted",
+		},
+		{
+			name: "authz MsgExec nesting beyond max depth rejected",
+			malleate: func() signing.Tx {
+				outer := s.TestAccounts[0]
+				mid := s.TestAccounts[1]
+				s.FundAccount(outer.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
+
+				leaf := banktypes.NewMsgSend(
+					mid.acc.GetAddress(),
+					outer.acc.GetAddress(),
+					sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1))),
+				)
+				// 4 nested MsgExec layers (> maxAuthzExecDepth=3)
+				exec4 := authz.NewMsgExec(mid.acc.GetAddress(), []sdk.Msg{leaf})
+				exec3 := authz.NewMsgExec(mid.acc.GetAddress(), []sdk.Msg{&exec4})
+				exec2 := authz.NewMsgExec(mid.acc.GetAddress(), []sdk.Msg{&exec3})
+				exec1 := authz.NewMsgExec(outer.acc.GetAddress(), []sdk.Msg{&exec2})
+
+				s.Require().NoError(s.txBuilder.SetMsgs(&exec1))
+				s.txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(1000))))
+				s.txBuilder.SetGasLimit(testGasLimit)
+				tx, err := s.CreateTestTx(
+					[]cryptotypes.PrivKey{outer.priv},
+					[]uint64{outer.acc.GetAccountNumber()},
+					[]uint64{outer.acc.GetSequence()},
+					s.ctx.ChainID(),
+				)
+				s.Require().NoError(err)
+				return tx
+			},
+			expErr:    true,
+			errSubstr: "nesting exceeds max depth",
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			s.SetupTest()
+			handler := sdk.ChainAnteDecorators(
+				txfeesante.NewBlacklistDecorator(s.tfk, s.app.AppCodec()),
+			)
+			tx := tc.malleate()
+			_, err := handler(s.ctx, tx, false)
+			if !tc.expErr {
+				s.Require().NoError(err)
+				return
+			}
+			s.Require().Error(err)
+			if tc.errSubstr != "" {
+				s.Require().Contains(err.Error(), tc.errSubstr)
 			}
 		})
 	}

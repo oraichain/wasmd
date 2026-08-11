@@ -9,10 +9,105 @@ import (
 	txfeeskeeper "github.com/CosmWasm/wasmd/x/txfees/keeper"
 	txfeestypes "github.com/CosmWasm/wasmd/x/txfees/types"
 	tmstrings "github.com/cometbft/cometbft/libs/strings"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errorstypes "github.com/cosmos/cosmos-sdk/types/errors"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	authz "github.com/cosmos/cosmos-sdk/x/authz"
 )
+
+// maxAuthzExecDepth caps nested MsgExec walks to avoid unbounded recursion DoS.
+const maxAuthzExecDepth = 3
+
+type BlacklistDecorator struct {
+	tfk txfeeskeeper.Keeper
+	cdc codec.Codec
+}
+
+func NewBlacklistDecorator(tfk txfeeskeeper.Keeper, cdc codec.Codec) BlacklistDecorator {
+	return BlacklistDecorator{
+		tfk: tfk,
+		cdc: cdc,
+	}
+}
+
+func (bd BlacklistDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	sigTx, ok := tx.(authsigning.SigVerifiableTx)
+	if !ok {
+		return ctx, errors.Wrap(errorstypes.ErrTxDecode, "invalid transaction type")
+	}
+
+	signers, err := sigTx.GetSigners()
+	if err != nil {
+		return ctx, err
+	}
+	if err := bd.rejectBlacklistedAddrs(ctx, signers); err != nil {
+		return ctx, err
+	}
+
+	// Also reject authz MsgExec whose inner msgs act as a blacklisted granter.
+	if err := bd.rejectBlacklistedAuthz(ctx, tx.GetMsgs(), 0); err != nil {
+		return ctx, err
+	}
+
+	return next(ctx, tx, simulate)
+}
+
+func (bd BlacklistDecorator) rejectBlacklistedAddrs(ctx sdk.Context, addrs [][]byte) error {
+	for _, raw := range addrs {
+		addr := sdk.AccAddress(raw)
+		blacklisted, err := bd.tfk.IsBlacklisted(ctx, addr)
+		if err != nil {
+			return err
+		}
+		if blacklisted {
+			return errors.Wrapf(errorstypes.ErrUnauthorized, "address %s is blacklisted", addr.String())
+		}
+	}
+	return nil
+}
+
+// rejectBlacklistedAuthz walks MsgExec (nested, max maxAuthzExecDepth) and rejects if any
+// inner msg signer (authz granter) is blacklisted — so a grantee cannot execute on their behalf.
+// Nesting deeper than maxAuthzExecDepth is rejected to prevent recursion DoS.
+func (bd BlacklistDecorator) rejectBlacklistedAuthz(ctx sdk.Context, msgs []sdk.Msg, depth int) error {
+	for _, msg := range msgs {
+		exec, ok := msg.(*authz.MsgExec)
+		if !ok {
+			continue
+		}
+
+		nextDepth := depth + 1
+		if nextDepth > maxAuthzExecDepth {
+			return errors.Wrapf(
+				errorstypes.ErrUnauthorized,
+				"authz MsgExec nesting exceeds max depth %d",
+				maxAuthzExecDepth,
+			)
+		}
+
+		innerMsgs, err := exec.GetMessages()
+		if err != nil {
+			return err
+		}
+
+		for _, inner := range innerMsgs {
+			signers, _, err := bd.cdc.GetMsgV1Signers(inner)
+			if err != nil {
+				return err
+			}
+			if err := bd.rejectBlacklistedAddrs(ctx, signers); err != nil {
+				return errors.Wrap(err, "authz MsgExec granter blacklisted")
+			}
+		}
+
+		if err := bd.rejectBlacklistedAuthz(ctx, innerMsgs, nextDepth); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 type DeductFeeDecorator struct {
 	ak  AccountKeeper

@@ -36,6 +36,7 @@ import (
 	"github.com/cosmos/evm/client/debug"
 	"github.com/cosmos/evm/cmd/config"
 	cosmosevmserver "github.com/cosmos/evm/server"
+	srvflags "github.com/cosmos/evm/server/flags"
 
 	"github.com/CosmWasm/wasmd/app"
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -127,7 +128,10 @@ func initRootCmd(
 		DBOpener:        config.OpenDB,
 		PostSetup:       indexerserver.StartIndexerService,
 	}
-	// ethermintserver adds additional flags to start the JSON-RPC server for evm support
+	// cosmos/evm's start command is kept only so existing operator app.toml sections and
+	// --json-rpc.*/--evm.* flags still parse; the JSON-RPC server itself is forced off in
+	// disableEVMJSONRPC. Removing AddCommands outright would reject those flags and break
+	// validator systemd units on restart.
 	cosmosevmserver.AddCommands(
 		rootCmd,
 		startOpts,
@@ -143,6 +147,16 @@ func initRootCmd(
 		txCommand(),
 		cmd.KeyCommands(app.DefaultNodeHome),
 	)
+}
+
+// disableEVMJSONRPC forces the EVM JSON-RPC server and its tx indexer off, overriding
+// whatever app.toml or --json-rpc.* flags say. The EVM modules are removed from the app,
+// so the eth_* endpoints have no query routes to serve; leaving the listener up would
+// advertise an EVM surface this chain no longer has. viper.Set outranks flags and config.
+func disableEVMJSONRPC(cmd *cobra.Command) {
+	v := server.GetServerContextFromCmd(cmd).Viper
+	v.Set(srvflags.JSONRPCEnable, false)
+	v.Set(srvflags.JSONRPCEnableIndexer, false)
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
@@ -224,7 +238,6 @@ func newApp(
 		logger, db, traceStore, true,
 		appOpts,
 		wasmOpts,
-		app.EvmAppOptions,
 		baseappOptions...,
 	)
 }
@@ -265,7 +278,6 @@ func appExport(
 		height == -1,
 		appOpts,
 		emptyWasmOpts,
-		app.EvmAppOptions,
 	)
 
 	if height != -1 {

@@ -11,6 +11,7 @@ import (
 	v05011 "github.com/CosmWasm/wasmd/app/upgrades/v05011"
 	v05012 "github.com/CosmWasm/wasmd/app/upgrades/v05012"
 	v05013 "github.com/CosmWasm/wasmd/app/upgrades/v05013"
+	v05014 "github.com/CosmWasm/wasmd/app/upgrades/v05014"
 	v0502 "github.com/CosmWasm/wasmd/app/upgrades/v0502"
 	v0503 "github.com/CosmWasm/wasmd/app/upgrades/v0503"
 	v0504 "github.com/CosmWasm/wasmd/app/upgrades/v0504"
@@ -42,6 +43,7 @@ import (
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	"github.com/CosmWasm/wasmd/app/upgrades/noop"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 )
 
@@ -63,6 +65,35 @@ var Upgrades = []upgrades.Upgrade{
 	v05013.Upgrade,
 }
 
+// Forks list of chain hard forks executed at a fixed height via BeginBlocker.
+var Forks = []upgrades.Fork{
+	v05014.Fork,
+}
+
+// GetUpgradeKeepers returns the keepers bundle used by upgrade/fork handlers.
+func (app *WasmApp) GetUpgradeKeepers() upgrades.AppKeepers {
+	return upgrades.AppKeepers{
+		AccountKeeper:             &app.AccountKeeper,
+		BankKeeper:                app.BankKeeper,
+		ParamsKeeper:              &app.ParamsKeeper,
+		ConsensusParamsKeeper:     &app.ConsensusParamsKeeper,
+		CapabilityKeeper:          app.CapabilityKeeper,
+		ScopedICAControllerKeeper: &app.ScopedICAControllerKeeper,
+		ScopedIBCKeeper:           &app.ScopedIBCKeeper,
+		IBCKeeper:                 app.IBCKeeper,
+		MintKeeper:                &app.MintKeeper,
+		GovKeeper:                 &app.GovKeeper,
+		TxFeesKeeper:              app.TxFeesKeeper,
+		ICAControllerKeeper:       app.ICAControllerKeeper,
+		IBCFeeKeeper:              app.IBCFeeKeeper,
+		ContractKeeper:            wasmkeeper.NewDefaultPermissionKeeper(app.WasmKeeper),
+		WasmKeeper:                &app.WasmKeeper,
+		EvmKeeper:                 nil,
+		Codec:                     app.appCodec,
+		GetStoreKey:               app.GetKey,
+	}
+}
+
 // RegisterUpgradeHandlers registers the chain upgrade handlers
 func (app *WasmApp) RegisterUpgradeHandlers() {
 	setupLegacyKeyTables(&app.ParamsKeeper)
@@ -80,23 +111,7 @@ func (app *WasmApp) RegisterUpgradeHandlers() {
 		return
 	}
 
-	keepers := upgrades.AppKeepers{
-		AccountKeeper:             &app.AccountKeeper,
-		ParamsKeeper:              &app.ParamsKeeper,
-		ConsensusParamsKeeper:     &app.ConsensusParamsKeeper,
-		CapabilityKeeper:          app.CapabilityKeeper,
-		ScopedICAControllerKeeper: &app.ScopedICAControllerKeeper,
-		ScopedIBCKeeper:           &app.ScopedIBCKeeper,
-		IBCKeeper:                 app.IBCKeeper,
-		MintKeeper:                &app.MintKeeper,
-		GovKeeper:                 &app.GovKeeper,
-		TxFeesKeeper:              app.TxFeesKeeper,
-		ICAControllerKeeper:       app.ICAControllerKeeper,
-		IBCFeeKeeper:              app.IBCFeeKeeper,
-		EvmKeeper:                 app.EvmKeeper,
-		Codec:                     app.appCodec,
-		GetStoreKey:               app.GetKey,
-	}
+	keepers := app.GetUpgradeKeepers()
 
 	// register all upgrade handlers
 	for _, upgrade := range Upgrades {

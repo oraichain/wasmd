@@ -43,3 +43,20 @@ func (k Keeper) IterateAllowedTokenList(ctx sdk.Context, cb func(denom string) (
 		}
 	}
 }
+
+// Blacklist store
+func (k Keeper) AddBlacklist(ctx sdk.Context, address sdk.AccAddress) {
+	store := k.storeService.OpenKVStore(ctx)
+	key := types.GetBlacklistKey(address)
+	store.Set(key, []byte(address))
+}
+
+func (k Keeper) IsBlacklisted(ctx sdk.Context, address sdk.AccAddress) (bool, error) {
+	store := k.storeService.OpenKVStore(ctx)
+	key := types.GetBlacklistKey(address)
+	has, err := store.Has(key)
+	if err != nil {
+		return false, err
+	}
+	return has, nil
+}

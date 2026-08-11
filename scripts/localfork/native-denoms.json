@@ -1,0 +1,14 @@
+[
+  {
+    "denom": "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/D7yP4ycfsRWUGYionGpi64sLF2ddZ2JXxuRAti2M7uck",
+    "amount": "1000000000"
+  },
+  {
+    "denom": "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/oraiJP7H3LAt57DkFXNLDbLdBFNRRPvS8jg2j5AZkd9",
+    "amount": "2500000000"
+  },
+  {
+    "denom": "factory/orai1wuvhex9xqs3r539mvc6mtm7n20fcj3qr2m0y9khx6n5vtlngfzes3k0rq9/oraix39mVDGnusyjag97Tz5H8GvGriSZmhVvkvXRoc4",
+    "amount": "3000000000"
+  }
+]

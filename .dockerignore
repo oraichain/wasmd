@@ -1,2 +1,15 @@
-# Folders we don't want to copy to Docker daemon in `docker build . -t cosmwasm/wasmd:latest`
+# Folders we don't want to copy to Docker daemon in `docker build`
 build/
+
+# localfork / node data (large; not needed to compile oraid)
+scripts/localfork/data/
+
+# partial downloads / snapshots (can be 10GB+)
+*.crdownload
+*.lz4
+*.tar
+*.tar.gz
+*.tar.lz4
+
+# large local artifacts
+*.csv

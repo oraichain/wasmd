@@ -53,7 +53,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/mempool"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -108,7 +107,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	srvflags "github.com/cosmos/evm/server/flags"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
@@ -125,6 +123,7 @@ import (
 	ibcfeekeeper "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/keeper"
 	ibcfeetypes "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types"
 	ibctransfer "github.com/cosmos/ibc-go/v8/modules/apps/transfer"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -159,19 +158,10 @@ import (
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 
 	ethermintlegacytypes "github.com/CosmWasm/wasmd/app/upgrades/v05011/types"
-	evmante "github.com/cosmos/evm/ante/evm"
-	"github.com/cosmos/evm/ethereum/eip712"
-	etherminttypes "github.com/cosmos/evm/types"
-	"github.com/cosmos/evm/x/feemarket"
-	feemarketkeeper "github.com/cosmos/evm/x/feemarket/keeper"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
-	evm "github.com/cosmos/evm/x/vm"
-	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 
 	enccodec "github.com/cosmos/evm/encoding/codec"
-	"github.com/cosmos/evm/x/erc20"
-	erc20keeper "github.com/cosmos/evm/x/erc20/keeper"
 	erc20types "github.com/cosmos/evm/x/erc20/types"
 
 	"github.com/CosmWasm/wasmd/x/txfees"
@@ -184,13 +174,7 @@ import (
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 
-	"github.com/CosmWasm/wasmd/x/precisebank"
-	precisebankkeeper "github.com/CosmWasm/wasmd/x/precisebank/keeper"
 	precisebanktypes "github.com/CosmWasm/wasmd/x/precisebank/types"
-
-	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
-	"github.com/cosmos/evm/x/ibc/transfer"
-	transferkeeper "github.com/cosmos/evm/x/ibc/transfer/keeper"
 )
 
 const appName = "WasmApp"
@@ -199,8 +183,6 @@ const appName = "WasmApp"
 var (
 	NodeDir      = ".oraid"
 	Bech32Prefix = "orai"
-	CosmosDenom  = Bech32Prefix
-	EvmDenom     = "aorai" // atto orai. This will be converted automatically by evmutil of kava
 
 	EnabledCapabilities = []string{
 		tokenfactorytypes.EnableBurnFrom,
@@ -292,7 +274,7 @@ type WasmApp struct {
 	IBCFeeKeeper        ibcfeekeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
-	TransferKeeper      transferkeeper.Keeper
+	TransferKeeper      ibctransferkeeper.Keeper
 	WasmKeeper          wasmkeeper.Keeper
 
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -308,13 +290,8 @@ type WasmApp struct {
 	PacketForwardKeeper *packetforwardkeeper.Keeper
 	TokenFactoryKeeper  tokenfactorykeeper.Keeper
 
-	EvmKeeper       *evmkeeper.Keeper
-	Erc20Keeper     erc20keeper.Keeper
-	FeeMarketKeeper feemarketkeeper.Keeper
 	GlobalFeeKeeper globalfeekeeper.Keeper
 	TxFeesKeeper    txfeeskeeper.Keeper
-
-	PrecisebankKeeper precisebankkeeper.Keeper
 
 	// Middleware wrapper
 	Ics20WasmHooks   *ibchooks.WasmHooks
@@ -344,7 +321,6 @@ func NewWasmApp(
 	loadLatest bool,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
-	evmOpts EVMOptionsFn,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *WasmApp {
 
@@ -360,10 +336,6 @@ func NewWasmApp(
 		},
 	}
 
-	// evm/MsgEthereumTx
-	signingOptions.DefineCustomGetSigners(evmtypes.MsgEthereumTxCustomGetSigner.MsgType, evmtypes.MsgEthereumTxCustomGetSigner.Fn)
-	signingOptions.DefineCustomGetSigners(erc20types.MsgConvertERC20CustomGetSigner.MsgType, erc20types.MsgConvertERC20CustomGetSigner.Fn)
-
 	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles:     proto.HybridResolver,
 		SigningOptions: signingOptions,
@@ -374,8 +346,6 @@ func NewWasmApp(
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
 	legacyAmino := codec.NewLegacyAmino()
 	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
-
-	eip712.SetEncodingConfig(legacyAmino, interfaceRegistry)
 
 	// register legacy types for migration. We can remove this in the futures
 	ethermintlegacytypes.RegisterInterfaces(interfaceRegistry)
@@ -418,20 +388,11 @@ func NewWasmApp(
 	baseAppOptions = append(baseAppOptions, baseapp.SetOptimisticExecution())
 	bApp := baseapp.NewBaseApp(appName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 
-	// we force to using no-op mempool because
-	// currently evm tx can only execute with NoOpMempool.
-	bApp.SetMempool(mempool.NoOpMempool{})
-
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 	overrideWasmVariables()
-
-	// initialize the Cosmos EVM application configuration
-	if err := evmOpts(bApp.ChainID()); err != nil {
-		panic(err)
-	}
 
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,
@@ -444,10 +405,14 @@ func NewWasmApp(
 		capabilitytypes.StoreKey, ibcexported.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		wasmtypes.StoreKey, icahosttypes.StoreKey,
 		icacontrollertypes.StoreKey, clocktypes.StoreKey, globalfeetypes.StoreKey, ibchookstypes.StoreKey, packetforwardtypes.StoreKey, tokenfactorytypes.StoreKey,
-		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, precisebanktypes.StoreKey, txfeestypes.StoreKey,
+		// Soft-removed EVM modules (evm, feemarket, erc20, precisebank): AppModules/keepers
+		// removed; StoreKeys stay mounted for Multistore compatibility with existing state.
+		// Do not delete without coordinated StoreUpgrades.Deleted.
+		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, precisebanktypes.StoreKey,
+		txfeestypes.StoreKey,
 	)
 
-	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
+	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	// register streaming services
@@ -516,6 +481,8 @@ func NewWasmApp(
 		AuthorityAddr,
 		logger,
 	)
+	// NOTE: bank send restrictions are registered after TxFeesKeeper is built (below),
+	// since the blacklist is read from the txfees store.
 
 	// optional: enable sign mode textual by overwriting the default tx config (after setting the bank keeper)
 	enabledSignModes := append(authtx.DefaultSignModes, signingtypes.SignMode_SIGN_MODE_TEXTUAL)
@@ -643,33 +610,6 @@ func NewWasmApp(
 		AuthorityAddr,
 	)
 
-	feeMarketSs := app.GetSubspace(feemarkettypes.ModuleName)
-	// Create Ethermint keepers
-	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
-		appCodec, Authority, runtime.NewKVStoreService(keys[feemarkettypes.StoreKey]), tkeys[feemarkettypes.TransientKey], feeMarketSs,
-	)
-
-	app.PrecisebankKeeper = precisebankkeeper.NewKeeper(
-		app.appCodec,
-		keys[precisebanktypes.StoreKey],
-		app.BankKeeper,
-		app.AccountKeeper,
-	)
-
-	evmSs := app.GetSubspace(evmtypes.ModuleName)
-	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
-	app.EvmKeeper = evmkeeper.NewKeeper(
-		appCodec, runtime.NewKVStoreService(keys[evmtypes.StoreKey]), tkeys[evmtypes.TransientKey], Authority,
-		app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.FeeMarketKeeper,
-		&app.Erc20Keeper, tracer, evmSs,
-	)
-
-	app.Erc20Keeper = erc20keeper.NewKeeper(
-		runtime.NewKVStoreService(keys[erc20types.StoreKey]), appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
-		app.AuthzKeeper, &app.TransferKeeper,
-	)
-
 	// Register the proposal types
 	// Deprecated: Avoid adding new handlers, instead use the new proposal flow
 	// by granting the governance module the right to execute the message.
@@ -754,8 +694,8 @@ func NewWasmApp(
 		AuthorityAddr,
 	)
 
-	// Create Transfer Keepers
-	app.TransferKeeper = transferkeeper.NewKeeper(
+	// Create Transfer Keepers (vanilla ibc-go transfer; no ERC20 wiring)
+	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
 		keys[ibctransfertypes.StoreKey],
 		app.GetSubspace(ibctransfertypes.ModuleName),
@@ -765,7 +705,6 @@ func NewWasmApp(
 		app.AccountKeeper,
 		app.BankKeeper,
 		scopedTransferKeeper,
-		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
 		AuthorityAddr,
 	)
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
@@ -850,6 +789,7 @@ func NewWasmApp(
 		&app.WasmKeeper,
 		AuthorityAddr,
 	)
+	RegisterBankSendRestrictions(app.BankKeeper, app.TxFeesKeeper)
 
 	app.TokenFactoryKeeper = tokenfactorykeeper.NewKeeper(
 		keys[tokenfactorytypes.StoreKey],
@@ -881,7 +821,7 @@ func NewWasmApp(
 
 	// Create Transfer Stack
 	var transferStack porttypes.IBCModule
-	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = ibctransfer.NewIBCModule(app.TransferKeeper)
 
 	transferStack = packetforward.NewIBCMiddleware(
 		transferStack,
@@ -901,26 +841,6 @@ func NewWasmApp(
 		AddRoute(icacontrollertypes.SubModuleName, icaControllerStack).
 		AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
-
-	// NOTE: we are adding all available Cosmos EVM EVM extensions.
-	// Not all of them need to be enabled, which can be configured on a per-chain basis.
-	app.EvmKeeper.WithStaticPrecompiles(
-		NewAvailableStaticPrecompiles(
-			*app.StakingKeeper,
-			app.DistrKeeper,
-			app.BankKeeper,
-			app.Erc20Keeper,
-			app.AuthzKeeper,
-			app.TransferKeeper,
-			app.IBCKeeper.ChannelKeeper,
-			app.EvmKeeper,
-			app.ContractKeeper,
-			app.WasmKeeper,
-			app.GovKeeper,
-			app.SlashingKeeper,
-			app.EvidenceKeeper,
-		),
-	)
 
 	/****  Module Options ****/
 
@@ -958,7 +878,7 @@ func NewWasmApp(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
 		ibc.NewAppModule(app.IBCKeeper),
-		transfer.NewAppModule(app.TransferKeeper),
+		ibctransfer.NewAppModule(app.TransferKeeper),
 		ibcfee.NewAppModule(app.IBCFeeKeeper),
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
 		ibctm.AppModule{},
@@ -969,10 +889,6 @@ func NewWasmApp(
 		ibchooks.NewAppModule(app.AccountKeeper),
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		tokenfactory.NewAppModule(app.TokenFactoryKeeper, app.AccountKeeper, app.BankKeeper),
-		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, evmSs),
-		feemarket.NewAppModule(app.FeeMarketKeeper, feeMarketSs),
-		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
-		precisebank.NewAppModule(app.PrecisebankKeeper, app.BankKeeper, app.AccountKeeper),
 		txfees.NewAppModule(app.TxFeesKeeper),
 	)
 
@@ -994,13 +910,9 @@ func NewWasmApp(
 			ibchookstypes.ModuleName:      ibchooks.AppModuleBasic{},
 			packetforwardtypes.ModuleName: packetforward.AppModuleBasic{},
 			tokenfactorytypes.ModuleName:  tokenfactory.AppModuleBasic{},
-			evmtypes.ModuleName:           evm.AppModuleBasic{},
-			feemarkettypes.ModuleName:     feemarket.AppModuleBasic{},
-			erc20types.ModuleName:         erc20.AppModuleBasic{},
 			globalfee.ModuleName:          globalfee.AppModuleBasic{},
-			precisebanktypes.ModuleName:   precisebank.AppModuleBasic{},
 			txfeestypes.ModuleName:        txfees.AppModuleBasic{},
-			ibctransfertypes.ModuleName:   transfer.AppModuleBasic{AppModuleBasic: &ibctransfer.AppModuleBasic{}},
+			ibctransfertypes.ModuleName:   ibctransfer.AppModuleBasic{},
 		})
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
@@ -1037,10 +949,6 @@ func NewWasmApp(
 		packetforwardtypes.ModuleName,
 		globalfee.ModuleName,
 		tokenfactorytypes.ModuleName,
-		feemarkettypes.ModuleName,
-		evmtypes.ModuleName,
-		erc20types.ModuleName,
-		precisebanktypes.ModuleName,
 		txfeestypes.ModuleName,
 	)
 
@@ -1063,10 +971,6 @@ func NewWasmApp(
 		packetforwardtypes.ModuleName,
 		globalfee.ModuleName,
 		tokenfactorytypes.ModuleName,
-		feemarkettypes.ModuleName,
-		evmtypes.ModuleName,
-		erc20types.ModuleName,
-		precisebanktypes.ModuleName,
 		txfeestypes.ModuleName,
 	)
 
@@ -1101,10 +1005,6 @@ func NewWasmApp(
 		packetforwardtypes.ModuleName,
 		globalfee.ModuleName,
 		tokenfactorytypes.ModuleName,
-		feemarkettypes.ModuleName,
-		evmtypes.ModuleName,
-		erc20types.ModuleName,
-		precisebanktypes.ModuleName,
 		txfeestypes.ModuleName,
 		crisistypes.ModuleName,
 	}
@@ -1221,30 +1121,28 @@ func NewWasmApp(
 }
 
 func (app *WasmApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtypes.WasmConfig, txCounterStoreKey *storetypes.KVStoreKey) {
+	// Ante has no EVM decorators: rejecting eth txs here does not unmount stores or
+	// skip module Begin/EndBlock (those remain for Multistore / appHash compatibility).
 	options := HandlerOptions{
 		HandlerOptions: ante.HandlerOptions{
-			SignModeHandler:        txConfig.SignModeHandler(),
-			FeegrantKeeper:         app.FeeGrantKeeper,
-			SigGasConsumer:         DefaultSigGasConsumer,
-			ExtensionOptionChecker: etherminttypes.HasDynamicFeeExtensionOption,
-			TxFeeChecker:           evmante.NewDynamicFeeChecker(app.FeeMarketKeeper),
+			SignModeHandler: txConfig.SignModeHandler(),
+			FeegrantKeeper:  app.FeeGrantKeeper,
+			SigGasConsumer:  DefaultSigGasConsumer,
 		},
 		AccountKeeper:         app.AccountKeeper,
 		AuthzKeeper:           &app.AuthzKeeper,
 		BankKeeper:            &app.BankKeeper,
 		IBCKeeper:             app.IBCKeeper,
-		EvmKeeper:             app.EvmKeeper,
 		StakingKeeper:         *app.StakingKeeper,
 		GlobalFeeKeeper:       app.GlobalFeeKeeper,
-		FeeMarketKeeper:       app.FeeMarketKeeper,
 		WasmConfig:            &wasmConfig,
 		WasmKeeper:            &app.WasmKeeper,
 		TxFeesKeeper:          app.TxFeesKeeper,
 		ContractKeeper:        app.ContractKeeper,
+		Codec:                 app.appCodec,
 		TXCounterStoreService: runtime.NewKVStoreService(txCounterStoreKey),
 		CircuitKeeper:         &app.CircuitKeeper,
 		DisabledAuthzMsgs: []string{
-			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&vestingtypes.MsgCreateVestingAccount{}),
 			sdk.MsgTypeURL(&vestingtypes.MsgCreatePermanentLockedAccount{}),
 			sdk.MsgTypeURL(&vestingtypes.MsgCreatePeriodicVestingAccount{}),
@@ -1254,10 +1152,7 @@ func (app *WasmApp) setAnteHandler(txConfig client.TxConfig, wasmConfig wasmtype
 	if err := options.Validate(); err != nil {
 		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
 	}
-	anteHandler := NewAnteHandler(options)
-	// Set the AnteHandler for the app
-	app.SetAnteHandler(anteHandler)
-
+	app.SetAnteHandler(NewAnteHandler(options))
 }
 
 func (app *WasmApp) setPostHandler() {
@@ -1281,6 +1176,7 @@ func (app *WasmApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*
 
 // BeginBlocker application updates every begin block
 func (app *WasmApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	BeginBlockForks(ctx, app)
 	return app.ModuleManager.BeginBlock(ctx)
 }
 

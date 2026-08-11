@@ -9,7 +9,6 @@ import (
 
 	"github.com/CosmWasm/wasmd/app/upgrades"
 	evmostypes "github.com/CosmWasm/wasmd/app/upgrades/v05011/types"
-	cmn "github.com/CosmWasm/wasmd/precompile/common"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -110,17 +109,26 @@ func MigrateEthAccountsToBaseAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 	})
 }
 
+// Historical precompile addresses, kept as literals so the precompile packages themselves
+// can stay deleted. The EVM modules are removed from the app, so this handler is dead
+// history: it only ever runs if an upgrade named v0.50.11 is replayed.
+const (
+	wasmdContractAddress = "0x9000000000000000000000000000000000000001"
+	jsonContractAddress  = "0x9000000000000000000000000000000000000002"
+	addrContractAddress  = "0x9000000000000000000000000000000000000003"
+	bankContractAddress  = "0x9000000000000000000000000000000000000004"
+	authzContractAddress = "0x9000000000000000000000000000000000000005"
+)
+
 // ReactivateStaticPrecompiles sets ActiveStaticPrecompiles param on the evm
 func ActivateStaticPrecompiles(ctx sdk.Context, evmKeeper *evmkeeper.Keeper) error {
 	params := evmKeeper.GetParams(ctx)
 	params.ActiveStaticPrecompiles = []string{
-		cmn.WasmdContractAddress,
-		cmn.JsonContractAddress,
-		cmn.AddrContractAddress,
-		cmn.BankContractAddress,
-		cmn.AuthzContractAddress,
-
-		// TODO: Cosmos Evm precompiles?
+		wasmdContractAddress,
+		jsonContractAddress,
+		addrContractAddress,
+		bankContractAddress,
+		authzContractAddress,
 	}
 	return evmKeeper.SetParams(ctx, params)
 }

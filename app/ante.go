@@ -14,55 +14,25 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/evm/crypto/ethsecp256k1"
 )
 
 const maxBypassMinFeeMsgGasUsage = 1_000_000
 
-// NewAnteHandler constructor
-// NewAnteHandler returns an ante handler responsible for attempting to route an
-// Ethereum or SDK transaction to an internal ante handler for performing
-// transaction-level processing (e.g. fee payment, signature verification) before
-// being passed onto it's respective handler.
+// NewAnteHandler returns the Cosmos ante handler.
+// EVM txs are unsupported; any tx extension options are rejected by
+// ExtensionOptionsDecorator (checker is nil).
 func NewAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	return func(
 		ctx sdk.Context, tx sdk.Tx, sim bool,
 	) (newCtx sdk.Context, err error) {
-		var anteHandler sdk.AnteHandler
-
-		txWithExtensions, ok := tx.(authante.HasExtensionOptionsTx)
-		if ok {
-			opts := txWithExtensions.GetExtensionOptions()
-			if len(opts) > 0 {
-				switch typeURL := opts[0].GetTypeUrl(); typeURL {
-				case "/cosmos.evm.vm.v1.ExtensionOptionsEthereumTx":
-					// handle as *evmtypes.MsgEthereumTx
-					anteHandler = newEthAnteHandler(options)
-				case "/cosmos.evm.types.v1.ExtensionOptionDynamicFeeTx":
-					// cosmos-sdk tx with dynamic fee extension
-					anteHandler = newCosmosAnteHandler(options)
-				default:
-					return ctx, errorsmod.Wrapf(
-						errortypes.ErrUnknownExtensionOptions,
-						"rejecting tx with unsupported extension option: %s", typeURL,
-					)
-				}
-
-				return anteHandler(ctx, tx, sim)
-			}
-		}
-
-		// handle as totally normal Cosmos SDK tx
 		switch tx.(type) {
 		case sdk.Tx:
-			anteHandler = newCosmosAnteHandler(options)
+			return newCosmosAnteHandler(options)(ctx, tx, sim)
 		default:
 			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid transaction type: %T", tx)
 		}
-
-		return anteHandler(ctx, tx, sim)
 	}
 }
 
@@ -73,7 +43,7 @@ const (
 func DefaultSigGasConsumer(
 	meter storetypes.GasMeter, sig signing.SignatureV2, params authtypes.Params,
 ) error {
-	// support for ethereum ECDSA secp256k1 keys
+	// Keep eth_secp256k1 support for existing Cosmos accounts that use that pubkey type.
 	_, ok := sig.PubKey.(*ethsecp256k1.PubKey)
 	if ok {
 		meter.ConsumeGas(secp256k1VerifyCost, "ante verify: eth_secp256k1")
