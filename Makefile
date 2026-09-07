@@ -65,13 +65,18 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=orai \
 ifeq ($(WITH_CLEVELDB),yes)
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
 endif
+# Build the chain binary as a position-independent executable (PIE) by default so the
+# kernel can fully randomize its load address (ASLR). Override with `make build BUILD_MODE=exe`.
+BUILD_MODE ?= pie
+
 ifeq ($(LINK_STATICALLY),true)
-	ldflags += -linkmode=external -extldflags "-Wl,-z,muldefs -static -lm"
+	# -static-pie (not -static) so a statically linked binary is still a PIE.
+	ldflags += -linkmode=external -extldflags "-Wl,-z,muldefs -static-pie -lm"
 endif
 ldflags += $(LDFLAGS)
 ldflags := $(strip $(ldflags))
 
-BUILD_FLAGS := -tags "$(build_tags_comma_sep)" -ldflags '$(ldflags)' -trimpath
+BUILD_FLAGS := -tags "$(build_tags_comma_sep)" -ldflags '$(ldflags)' -trimpath -buildmode=$(BUILD_MODE)
 
 # The below include contains the tools and runsim targets.
 include scripts/contrib/devtools/Makefile

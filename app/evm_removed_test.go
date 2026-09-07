@@ -13,8 +13,8 @@ import (
 	"github.com/CosmWasm/wasmd/app"
 )
 
-// EVM messages that must be unreachable after the modules were removed. Type URLs are
-// derived from the real types so the assertions cannot pass on a typo'd string.
+// EVM messages that must stay unreachable for tx execution after soft-removal.
+// Type URLs are derived from the real types so assertions cannot pass on a typo.
 func removedEVMMsgs() []proto.Message {
 	return []proto.Message{
 		&evmtypes.MsgEthereumTx{},
@@ -31,9 +31,9 @@ func removedEVMMsgs() []proto.Message {
 var mountedEVMStoreKeys = []string{"evm", "feemarket", "erc20", "precisebank"}
 
 // TestEVMMsgsUnreachable is the regression guard for the 0x802 ICS-20 precompile mint
-// exploit. With the EVM AppModuleBasics gone, nothing registers these messages in the
-// interface registry, so a tx carrying one fails at decode ("unable to resolve type URL")
-// — before ante, before routing. The router check is the second layer.
+// exploit. Soft-removed EVM msgs must have no msg service route. MsgUpdateParams is
+// registered as a decode-only stub (historical gov proposals); other EVM msgs must not
+// resolve in the interface registry at all.
 func TestEVMMsgsUnreachable(t *testing.T) {
 	wasmApp := app.Setup(t)
 	router := wasmApp.MsgServiceRouter()
@@ -42,12 +42,17 @@ func TestEVMMsgsUnreachable(t *testing.T) {
 	for _, msg := range removedEVMMsgs() {
 		typeURL := "/" + proto.MessageName(msg)
 
-		_, err := registry.Resolve(typeURL)
-		require.Error(t, err,
-			"%s must not be registered in the interface registry: a tx carrying it should fail to decode", typeURL)
-
 		require.Nil(t, router.HandlerByTypeURL(typeURL),
 			"%s must have no msg service route after EVM removal", typeURL)
+
+		_, err := registry.Resolve(typeURL)
+		if typeURL == "/cosmos.evm.vm.v1.MsgUpdateParams" {
+			// Decode-only stub for historical gov proposals (e.g. proposal 316).
+			require.NoError(t, err, "%s must stay registered for gov proposal decode", typeURL)
+			continue
+		}
+		require.Error(t, err,
+			"%s must not be registered in the interface registry: a tx carrying it should fail to decode", typeURL)
 	}
 }
 

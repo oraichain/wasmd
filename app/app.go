@@ -157,6 +157,7 @@ import (
 	tokenfactorykeeper "github.com/CosmWasm/wasmd/x/tokenfactory/keeper"
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 
+	"github.com/CosmWasm/wasmd/app/evmlegacy"
 	ethermintlegacytypes "github.com/CosmWasm/wasmd/app/upgrades/v05011/types"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
@@ -919,6 +920,9 @@ func NewWasmApp(
 	enccodec.RegisterLegacyAminoCodec(legacyAmino)
 	enccodec.RegisterInterfaces(interfaceRegistry)
 	clocktypes.RegisterInterfaces(interfaceRegistry)
+	// Decode-only stubs for EVM msgs still present in historical gov proposals
+	// (e.g. proposal 316: /cosmos.evm.vm.v1.MsgUpdateParams). No msg service.
+	evmlegacy.RegisterInterfaces(interfaceRegistry)
 
 	// NOTE: upgrade module is required to be prioritized
 	app.ModuleManager.SetOrderPreBlockers(
