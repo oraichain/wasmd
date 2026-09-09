@@ -12,6 +12,7 @@ import (
 	v05012 "github.com/CosmWasm/wasmd/app/upgrades/v05012"
 	v05013 "github.com/CosmWasm/wasmd/app/upgrades/v05013"
 	v05014 "github.com/CosmWasm/wasmd/app/upgrades/v05014"
+	v05015 "github.com/CosmWasm/wasmd/app/upgrades/v05015"
 	v0502 "github.com/CosmWasm/wasmd/app/upgrades/v0502"
 	v0503 "github.com/CosmWasm/wasmd/app/upgrades/v0503"
 	v0504 "github.com/CosmWasm/wasmd/app/upgrades/v0504"
@@ -63,6 +64,7 @@ var Upgrades = []upgrades.Upgrade{
 	v05011.Upgrade,
 	v05012.Upgrade,
 	v05013.Upgrade,
+	v05015.Upgrade,
 }
 
 // Forks list of chain hard forks executed at a fixed height via BeginBlocker.
