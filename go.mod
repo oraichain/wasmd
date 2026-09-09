@@ -5,7 +5,7 @@ go 1.23.6
 toolchain go1.23.8
 
 require (
-	github.com/CosmWasm/wasmvm/v2 v2.1.3
+	github.com/CosmWasm/wasmvm/v2 v2.2.9-rc.2
 	github.com/CosmosContracts/juno/v18/x/clock v0.0.0-00010101000000-000000000000
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.13

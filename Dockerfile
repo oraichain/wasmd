@@ -5,7 +5,6 @@ ARG GO_VERSION="1.22"
 ARG RUNNER_IMAGE="alpine:3.18"
 ARG BUILD_TAGS="netgo,ledger,muslc"
 
-
 # --------------------------------------------------------
 # Builder
 # --------------------------------------------------------
@@ -20,22 +19,29 @@ RUN apk add --no-cache \
   ca-certificates \
   build-base \
   linux-headers \
-  binutils-gold
+  binutils-gold \
+  xz
 
 # Download go dependencies
 WORKDIR /oraichain
 ## debug only
 # COPY debug debug
 COPY go.mod go.sum ./
+# github.com/CosmWasm/wasmvm/v2 is pinned to a private security-fix version (no public
+# tag/release exists for it) — needs GOPRIVATE + git credentials for the private fork,
+# supplied at build time via --secret id=gitconfig,src=<path to a gitconfig with those creds>.
+ENV GOPRIVATE=github.com/CosmWasm/wasmvm
 RUN --mount=type=cache,target=/root/.cache/go-build \
   --mount=type=cache,target=/root/go/pkg/mod \
+  --mount=type=secret,id=gitconfig,target=/root/.gitconfig \
   go mod download
 
-# Cosmwasm - Download correct libwasmvm version
-ADD https://github.com/CosmWasm/wasmvm/releases/download/v2.1.3/libwasmvm_muslc.aarch64.a /lib/libwasmvm_muslc.aarch64.a
-ADD https://github.com/CosmWasm/wasmvm/releases/download/v2.1.3/libwasmvm_muslc.x86_64.a /lib/libwasmvm_muslc.x86_64.a
-RUN sha256sum /lib/libwasmvm_muslc.aarch64.a | grep faea4e15390e046d2ca8441c21a88dba56f9a0363f92c5d94015df0ac6da1f2d
-RUN sha256sum /lib/libwasmvm_muslc.x86_64.a | grep 8dab08434a5fe57a6fbbcb8041794bc3c31846d31f8ff5fb353ee74e0fcd3093
+# Cosmwasm - libwasmvm_muslc: the private fork ships the static lib as .xz inside the
+# Go module itself (no public GitHub release asset for this version to download+pin).
+# Integrity is covered by go.sum instead of a separate sha256 check.
+RUN --mount=type=cache,target=/root/go/pkg/mod \
+  ARCH="$(uname -m)" \
+  && unxz -c "$(go list -m -f '{{.Dir}}' github.com/CosmWasm/wasmvm/v2)/internal/api/libwasmvm_muslc.$ARCH.a.xz" > "/lib/libwasmvm_muslc.$ARCH.a"
 
 
 # Copy the remaining files
