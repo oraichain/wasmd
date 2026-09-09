@@ -20,6 +20,7 @@ import (
 	corestoretypes "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
 
@@ -1499,7 +1500,11 @@ func (b VestingCoinBurner) CleanupExistingAccount(ctx sdk.Context, existingAcc s
 	ctx = ctx.WithGasMeter(storetypes.NewInfiniteGasMeter())
 	coinsToBurn := sdk.NewCoins()
 	for _, orig := range v.GetOriginalVesting() { // focus on the coin denoms that were setup originally; getAllBalances has some issues
-		coinsToBurn = append(coinsToBurn, b.bank.GetBalance(ctx, existingAcc.GetAddress(), orig.Denom))
+		balance := b.bank.GetBalance(ctx, existingAcc.GetAddress(), orig.Denom)
+		burnAmount := sdkmath.MinInt(balance.Amount, orig.Amount)
+		if burnAmount.IsPositive() {
+			coinsToBurn = coinsToBurn.Add(sdk.NewCoin(orig.Denom, burnAmount))
+		}
 	}
 	if err := b.bank.SendCoinsFromAccountToModule(ctx, existingAcc.GetAddress(), types.ModuleName, coinsToBurn); err != nil {
 		return false, errorsmod.Wrap(err, "prune account balance")
