@@ -1,0 +1,56 @@
+# syntax=docker/dockerfile:1
+#
+# "old" image = clean tag v0.50.14, built the way mainnet builds today:
+#   plain `go build` (buildmode=exe) -> NON-PIE, EVM module soft-removed,
+#   no app/evmlegacy decode stub.
+#
+# Build context must be a `git archive v0.50.14` checkout (see 00-build.sh), NOT
+# the dirty workspace.
+
+ARG GO_VERSION=1.23.8
+
+FROM golang:${GO_VERSION}-bookworm AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates build-essential git curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+
+# libwasmvm ships inside the wasmvm Go module (internal/api/) already fetched by
+# `go mod download` — copy it out; no network needed.
+RUN set -eux; \
+    ARCH=$(uname -m); \
+    case "$ARCH" in \
+      x86_64) LIB=libwasmvm.x86_64.so ;; \
+      aarch64|arm64) LIB=libwasmvm.aarch64.so ;; \
+      *) echo "unsupported arch $ARCH"; exit 1 ;; \
+    esac; \
+    WVM=$(go list -m -f '{{.Dir}}' github.com/CosmWasm/wasmvm/v2); \
+    cp "${WVM}/internal/api/${LIB}" "/usr/lib/${LIB}"; \
+    ln -sf "/usr/lib/${LIB}" /usr/lib/libwasmvm.so
+
+ENV LD_LIBRARY_PATH=/usr/lib
+
+# Deliberately NOT -buildmode=pie: this mirrors the un-migrated mainnet binary.
+RUN mkdir -p /out && go build -mod=readonly -tags "netgo" \
+      -ldflags "-X github.com/cosmos/cosmos-sdk/version.Name=orai \
+                -X github.com/cosmos/cosmos-sdk/version.AppName=oraid \
+                -X github.com/CosmWasm/wasmd/app.Bech32Prefix=orai" \
+      -o /out/oraid ./cmd/wasmd
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl jq binutils \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /out/oraid /usr/bin/oraid
+COPY --from=builder /usr/lib/libwasmvm*.so /usr/lib/
+RUN ldconfig || true
+ENV LD_LIBRARY_PATH=/usr/lib
+ENV HOME=/orai
+WORKDIR /orai
+EXPOSE 26656 26657 1317 9090
+ENTRYPOINT ["oraid"]
