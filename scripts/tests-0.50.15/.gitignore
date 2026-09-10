@@ -1,0 +1,4 @@
+# tests-0.50.15 Docker test data / overrides
+data/
+docker-compose.override.yml
+*.log

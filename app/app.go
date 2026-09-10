@@ -157,6 +157,7 @@ import (
 	tokenfactorykeeper "github.com/CosmWasm/wasmd/x/tokenfactory/keeper"
 	tokenfactorytypes "github.com/CosmWasm/wasmd/x/tokenfactory/types"
 
+	"github.com/CosmWasm/wasmd/app/evmlegacy"
 	ethermintlegacytypes "github.com/CosmWasm/wasmd/app/upgrades/v05011/types"
 	feemarkettypes "github.com/cosmos/evm/x/feemarket/types"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
@@ -405,10 +406,12 @@ func NewWasmApp(
 		capabilitytypes.StoreKey, ibcexported.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		wasmtypes.StoreKey, icahosttypes.StoreKey,
 		icacontrollertypes.StoreKey, clocktypes.StoreKey, globalfeetypes.StoreKey, ibchookstypes.StoreKey, packetforwardtypes.StoreKey, tokenfactorytypes.StoreKey,
-		// Soft-removed EVM modules (evm, feemarket, erc20, precisebank): AppModules/keepers
-		// removed; StoreKeys stay mounted for Multistore compatibility with existing state.
-		// Do not delete without coordinated StoreUpgrades.Deleted.
-		evmtypes.StoreKey, feemarkettypes.StoreKey, erc20types.StoreKey, precisebanktypes.StoreKey,
+		// EVM modules (evm, feemarket, erc20, precisebank) were soft-removed in the
+		// v0.50.14 fork and their KV stores are pruned by the v0.50.15 upgrade
+		// (app/upgrades/v05015 StoreUpgrades.Deleted). They must NOT be mounted here
+		// from v0.50.15 on: a mounted store that is absent from CommitInfo makes
+		// rootmulti.loadVersion panic on every restart ("version of store evm
+		// mismatch root store's version").
 		txfeestypes.StoreKey,
 	)
 
@@ -919,6 +922,9 @@ func NewWasmApp(
 	enccodec.RegisterLegacyAminoCodec(legacyAmino)
 	enccodec.RegisterInterfaces(interfaceRegistry)
 	clocktypes.RegisterInterfaces(interfaceRegistry)
+	// Decode-only stubs for EVM msgs still present in historical gov proposals
+	// (e.g. proposal 316: /cosmos.evm.vm.v1.MsgUpdateParams). No msg service.
+	evmlegacy.RegisterInterfaces(interfaceRegistry)
 
 	// NOTE: upgrade module is required to be prioritized
 	app.ModuleManager.SetOrderPreBlockers(

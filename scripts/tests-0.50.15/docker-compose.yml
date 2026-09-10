@@ -1,0 +1,43 @@
+services:
+  node1:
+    image: ${NODE_IMAGE:-tests-0.50.15-new:local}
+    container_name: tests-0.50.15-node1
+    hostname: node1
+    volumes: [./data/node1:/orai/.oraid]
+    ports: ["26657:26657", "9090:9090"]
+    command: &startcmd
+      - start
+      - --home=/orai/.oraid
+      - --minimum-gas-prices=0.0025orai
+      - --rpc.laddr=tcp://0.0.0.0:26657
+      - --grpc.enable
+      - --grpc.address=0.0.0.0:9090
+    networks: { net: { ipv4_address: 172.28.0.11 } }
+    restart: "no"
+
+  node2:
+    image: ${NODE_IMAGE:-tests-0.50.15-new:local}
+    container_name: tests-0.50.15-node2
+    hostname: node2
+    volumes: [./data/node2:/orai/.oraid]
+    ports: ["26658:26657", "9091:9090"]
+    command: *startcmd
+    networks: { net: { ipv4_address: 172.28.0.12 } }
+    restart: "no"
+
+  node3:
+    image: ${NODE_IMAGE:-tests-0.50.15-new:local}
+    container_name: tests-0.50.15-node3
+    hostname: node3
+    volumes: [./data/node3:/orai/.oraid]
+    ports: ["26659:26657", "9092:9090"]
+    command: *startcmd
+    networks: { net: { ipv4_address: 172.28.0.13 } }
+    restart: "no"
+
+networks:
+  net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

@@ -1,0 +1,57 @@
+# syntax=docker/dockerfile:1
+#
+# "new" image = current workspace = v0.50.14 + app/evmlegacy decode-only stub
+# (evmlegacy.RegisterInterfaces) + the Makefile change that makes `-buildmode=pie`
+# the default.
+#
+# Built via `make build` on purpose, so the image proves the Makefile default
+# actually yields a PIE binary (readelf -> Type: DYN).
+#
+# Build context = repo root (the workspace, including .git for `git describe`).
+
+ARG GO_VERSION=1.23.8
+
+FROM golang:${GO_VERSION}-bookworm AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates build-essential git curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+
+RUN set -eux; \
+    ARCH=$(uname -m); \
+    case "$ARCH" in \
+      x86_64) LIB=libwasmvm.x86_64.so ;; \
+      aarch64|arm64) LIB=libwasmvm.aarch64.so ;; \
+      *) echo "unsupported arch $ARCH"; exit 1 ;; \
+    esac; \
+    WVM=$(go list -m -f '{{.Dir}}' github.com/CosmWasm/wasmvm/v2); \
+    cp "${WVM}/internal/api/${LIB}" "/usr/lib/${LIB}"; \
+    ln -sf "/usr/lib/${LIB}" /usr/lib/libwasmvm.so
+
+ENV LD_LIBRARY_PATH=/usr/lib
+
+# Use the project Makefile so BUILD_MODE=pie (its new default) is exercised.
+# LEDGER_ENABLED=false: drop the ledger cgo dep (needs USB C headers); irrelevant here.
+RUN make build LEDGER_ENABLED=false && mkdir -p /out && cp "$(go env GOPATH)/bin/oraid" /out/oraid
+
+# Fail the build early if the Makefile default ever stops producing a PIE.
+RUN readelf -h /out/oraid | grep -q 'Type:.*DYN' \
+    || { echo "ERROR: /out/oraid is not PIE (expected Type: DYN)"; readelf -h /out/oraid | grep Type:; exit 1; }
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl jq binutils \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /out/oraid /usr/bin/oraid
+COPY --from=builder /usr/lib/libwasmvm*.so /usr/lib/
+RUN ldconfig || true
+ENV LD_LIBRARY_PATH=/usr/lib
+ENV HOME=/orai
+WORKDIR /orai
+EXPOSE 26656 26657 1317 9090
+ENTRYPOINT ["oraid"]
