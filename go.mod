@@ -50,7 +50,7 @@ require (
 	cosmossdk.io/x/tx v0.13.7
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/CosmosContracts/juno/v18/x/globalfee v0.0.0-00010101000000-000000000000
-	github.com/btcsuite/btcd/btcec/v2 v2.3.4
+	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
 	github.com/cometbft/cometbft v0.38.17
 	github.com/cosmos/cosmos-db v1.1.1
 	github.com/cosmos/go-bip39 v1.0.0
@@ -281,6 +281,11 @@ replace (
 	// need this replace to pick up the store changes (Copy func) in our cosmos-sdk fork
 	cosmossdk.io/store => github.com/oraichain/cosmos-sdk/store v1.0.3-0.20250415032445-84a43f4d075c
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+
+	// Private security fix (embargo, see priv_wasmd_sec PR #6). The nominal
+	// require above (v2.2.9-rc.2) has no public release; this redirects the
+	// actual fetch to the private fork at the same version.
+	github.com/CosmWasm/wasmvm/v2 => github.com/CosmWasm/priv_wasmvm_sec/v2 v2.2.9-rc.2
 
 	github.com/CosmosContracts/juno/v18/x/clock => github.com/oraichain/juno/x/clock v0.0.0-20240911045127-feca1b18c597
 	github.com/CosmosContracts/juno/v18/x/globalfee => github.com/oraichain/juno/x/globalfee v0.0.0-20250312030216-ffe51b3d33e8
