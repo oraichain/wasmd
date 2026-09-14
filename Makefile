@@ -65,13 +65,18 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=orai \
 ifeq ($(WITH_CLEVELDB),yes)
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
 endif
-# Build the chain binary as a position-independent executable (PIE) by default so the
-# kernel can fully randomize its load address (ASLR). Override with `make build BUILD_MODE=exe`.
-BUILD_MODE ?= pie
-
+# Build the chain binary as a position-independent executable (PIE) so the kernel
+# can fully randomize its load address (ASLR) — but only when statically linked
+# (-static-pie; musl supports this reliably, unlike glibc's inconsistent support).
+# A PIE binary that dynamically loads libwasmvm.so has been reported to crash
+# intermittently (address-layout dependent), so the default dynamic build stays
+# non-PIE. Override explicitly if needed, e.g. `make build BUILD_MODE=pie`.
 ifeq ($(LINK_STATICALLY),true)
+  BUILD_MODE ?= pie
 	# -static-pie (not -static) so a statically linked binary is still a PIE.
 	ldflags += -linkmode=external -extldflags "-Wl,-z,muldefs -static-pie -lm"
+else
+  BUILD_MODE ?= exe
 endif
 ldflags += $(LDFLAGS)
 ldflags := $(strip $(ldflags))
