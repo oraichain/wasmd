@@ -1,56 +1,92 @@
 # syntax=docker/dockerfile:1
 #
-# "new" image = current workspace = v0.50.14 + app/evmlegacy decode-only stub
-# (evmlegacy.RegisterInterfaces) + the Makefile change that makes `-buildmode=pie`
-# the default.
+# "new" image = current workspace (whatever is checked out — treated as the
+# "v0.50.15" build for this test, no git tag involved) built the same way it will
+# actually be published: static + PIE.
 #
-# Built via `make build` on purpose, so the image proves the Makefile default
-# actually yields a PIE binary (readelf -> Type: DYN).
+# Static linking (LINK_STATICALLY=true, BUILD_TAGS=muslc) is required alongside
+# PIE here: a report indicates PIE + a *dynamically* loaded libwasmvm.so can crash
+# intermittently (address-layout dependent); a fully static-PIE binary has no
+# separate .so loaded at runtime, avoiding that class of issue. `make build`/
+# `make install` default to `-buildmode=pie` (Makefile BUILD_MODE=pie) and, with
+# LINK_STATICALLY=true, link `-static-pie` (not plain `-static`) — musl supports
+# static-PIE reliably (unlike glibc), which is why this uses an Alpine builder.
+#
+# go.mod replaces github.com/CosmWasm/wasmvm/v2 with the private security-fix
+# fork github.com/CosmWasm/priv_wasmvm_sec/v2 (embargoed, no public release for
+# this version) — fetched over SSH with the host's forwarded ssh-agent:
+#   docker buildx build --ssh default -f Dockerfile.new ...
+# (classic/fine-grained PATs and OAuth tokens are rejected by the org for this
+# repo; SSH is the only access path for an outside collaborator.)
 #
 # Build context = repo root (the workspace, including .git for `git describe`).
 
+# Pinned to match go.mod's `toolchain go1.23.8` exactly — the golang:1.22-alpine
+# base's GOTOOLCHAIN=local blocks the usual auto-download-newer-toolchain
+# mechanism, so `go mod download` fails with "go.mod requires go >= 1.23.6"
+# unless the base image already ships that version.
 ARG GO_VERSION=1.23.8
 
-FROM golang:${GO_VERSION}-bookworm AS builder
+FROM golang:${GO_VERSION}-alpine3.20 AS builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates build-essential git curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+  ca-certificates \
+  build-base \
+  linux-headers \
+  binutils-gold \
+  xz \
+  git \
+  openssh-client
 
 WORKDIR /src
 COPY go.mod go.sum ./
-RUN go mod download
+ENV GOPRIVATE=github.com/CosmWasm/wasmvm,github.com/CosmWasm/priv_wasmvm_sec
+ENV GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"
+# --mount=type=ssh only forwards the agent socket (so `ssh` can authenticate) — it
+# does NOT rewrite HTTPS module URLs to SSH. go.mod's `replace` sends Go to
+# https://github.com/CosmWasm/priv_wasmvm_sec; redirect that to SSH explicitly,
+# same as the host-side git config (this container has no access to ~/.gitconfig).
+RUN git config --global \
+  url."ssh://git@github.com/CosmWasm/priv_wasmvm_sec".insteadOf \
+  "https://github.com/CosmWasm/priv_wasmvm_sec"
+RUN --mount=type=cache,target=/root/.cache/go-build \
+  --mount=type=cache,target=/root/go/pkg/mod \
+  --mount=type=ssh \
+  go mod download
+
+# The private fork ships libwasmvm_muslc.<arch>.a compressed (.a.xz) inside the Go
+# module. The static build's linker looks for the plain .a via a -L flag that cgo
+# hardcodes to the module's own internal/api/ dir (${SRCDIR}-relative) — decompress
+# it there in place (module cache files are read-only; chmod first). Must be its
+# own RUN sharing the same cache mount as `go mod download` and `make build`, since
+# a cache mount's contents don't persist into the image layer between RUN steps.
+RUN --mount=type=cache,target=/root/go/pkg/mod \
+  set -eux; \
+  ARCH="$(uname -m)"; \
+  API_DIR="$(go list -m -f '{{.Dir}}' github.com/CosmWasm/wasmvm/v2)/internal/api"; \
+  chmod u+w "${API_DIR}"; \
+  unxz -k -f "${API_DIR}/libwasmvm_muslc.${ARCH}.a.xz"
+
 COPY . .
 
-RUN set -eux; \
-    ARCH=$(uname -m); \
-    case "$ARCH" in \
-      x86_64) LIB=libwasmvm.x86_64.so ;; \
-      aarch64|arm64) LIB=libwasmvm.aarch64.so ;; \
-      *) echo "unsupported arch $ARCH"; exit 1 ;; \
-    esac; \
-    WVM=$(go list -m -f '{{.Dir}}' github.com/CosmWasm/wasmvm/v2); \
-    cp "${WVM}/internal/api/${LIB}" "/usr/lib/${LIB}"; \
-    ln -sf "/usr/lib/${LIB}" /usr/lib/libwasmvm.so
-
-ENV LD_LIBRARY_PATH=/usr/lib
-
-# Use the project Makefile so BUILD_MODE=pie (its new default) is exercised.
+# Use the project Makefile so BUILD_MODE=pie (its default) is exercised, statically.
 # LEDGER_ENABLED=false: drop the ledger cgo dep (needs USB C headers); irrelevant here.
-RUN make build LEDGER_ENABLED=false && mkdir -p /out && cp "$(go env GOPATH)/bin/oraid" /out/oraid
+RUN --mount=type=cache,target=/root/.cache/go-build \
+  --mount=type=cache,target=/root/go/pkg/mod \
+  --mount=type=ssh \
+  LEDGER_ENABLED=false BUILD_TAGS=muslc LINK_STATICALLY=true make build \
+  && mkdir -p /out && cp "$(go env GOPATH)/bin/oraid" /out/oraid
 
-# Fail the build early if the Makefile default ever stops producing a PIE.
-RUN readelf -h /out/oraid | grep -q 'Type:.*DYN' \
-    || { echo "ERROR: /out/oraid is not PIE (expected Type: DYN)"; readelf -h /out/oraid | grep Type:; exit 1; }
+RUN echo "Ensuring binary is statically linked and PIE ..." \
+  && (file /out/oraid | grep -E "statically linked|static-pie linked") \
+  && readelf -h /out/oraid | grep -q 'Type:.*DYN' \
+  || { echo "ERROR: /out/oraid is not static-PIE"; file /out/oraid; readelf -h /out/oraid | grep Type:; exit 1; }
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl jq binutils \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /out/oraid /usr/bin/oraid
-COPY --from=builder /usr/lib/libwasmvm*.so /usr/lib/
-RUN ldconfig || true
-ENV LD_LIBRARY_PATH=/usr/lib
 ENV HOME=/orai
 WORKDIR /orai
 EXPOSE 26656 26657 1317 9090

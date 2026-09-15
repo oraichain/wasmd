@@ -30,6 +30,20 @@ for n in node2 node3; do
   wait_height "${n}" "$(( ${H_BEFORE:-0} + 1 ))" 40 || { warn "${n} did not resume"; FAILED=1; }
 done
 
+if [[ -f "${DATA_DIR}/contract.env" ]]; then
+  # shellcheck disable=SC1091
+  source "${DATA_DIR}/contract.env"
+  Q=$(compose exec -T node1 oraid query wasm contract-state smart "${CONTRACT_ADDR}" '{"verifier":{}}' \
+        --node tcp://127.0.0.1:26657 -o json 2>&1)
+  Q_VERIFIER=$(echo "${Q}" | jq -r '.data.verifier // .verifier // empty')
+  if [[ "${Q_VERIFIER}" == "${VERIFIER_ADDR}" ]]; then
+    ok "contract still queryable after cold restart: verifier=${Q_VERIFIER}"
+  else
+    warn "contract query broken after cold restart: got '${Q_VERIFIER}'"
+    FAILED=1
+  fi
+fi
+
 echo
 if [[ ${FAILED} -eq 0 ]]; then
   printf '\033[1;32mPASS\033[0m  all 3 nodes cold-restart cleanly on the NEW binary after the store deletion.\n'

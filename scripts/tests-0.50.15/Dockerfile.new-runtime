@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1
+#
+# Packages a pre-built linux/amd64 "new" binary (extracted on the host from a
+# `docker buildx build --platform linux/amd64 --ssh default` compile of
+# Dockerfile.new — static + PIE, using the current local checkout including the
+# private wasmvm security fix) into a minimal runtime image. Fully static, so no
+# libwasmvm*.so to copy. No Go toolchain, no network, no SSH needed here — the
+# binary is already compiled; this is a pure COPY.
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl jq binutils \
+    && rm -rf /var/lib/apt/lists/*
+COPY bin/new/oraid /usr/bin/oraid
+ENV HOME=/orai
+WORKDIR /orai
+EXPOSE 26656 26657 1317 9090
+ENTRYPOINT ["oraid"]
