@@ -135,10 +135,61 @@ ELF_NEW=$(image_elf_type "${IMAGE_NEW}")
 [[ "${ELF_NEW}" == *DYN* ]] && ok "NEW oraid is PIE (${ELF_NEW}) — Makefile BUILD_MODE=pie default" \
   || { warn "NEW oraid not PIE (${ELF_NEW})"; FAILED=1; }
 
+# Contract deployed pre-upgrade by 03b-deploy-contract.sh (optional step) — prove
+# query AND execute against it still work after the wasmvm bump + keeper changes.
+if [[ -f "${DATA_DIR}/contract.env" ]]; then
+  # shellcheck disable=SC1091
+  source "${DATA_DIR}/contract.env"
+  log "post-upgrade: re-check contract ${CONTRACT_ADDR} (deployed pre-upgrade)"
+
+  Q=$(compose exec -T node1 oraid query wasm contract-state smart "${CONTRACT_ADDR}" '{"verifier":{}}' \
+        --node tcp://127.0.0.1:26657 -o json 2>&1)
+  Q_VERIFIER=$(echo "${Q}" | jq -r '.data.verifier // .verifier // empty')
+  if [[ "${Q_VERIFIER}" == "${VERIFIER_ADDR}" ]]; then
+    ok "contract query {\"verifier\":{}} still correct post-upgrade: ${Q_VERIFIER}"
+  else
+    warn "contract query mismatch post-upgrade: got '${Q_VERIFIER}', want '${VERIFIER_ADDR}': $(echo "${Q}" | tail -c 200)"
+    FAILED=1
+  fi
+
+  # Snapshot right before releasing, not back in 03b: node2 (the beneficiary) is
+  # also one of the 3 validators and pays its own gas fees for the vote tx above,
+  # so its balance moves for reasons unrelated to the contract release.
+  BENEFICIARY_BAL_JUST_BEFORE=$(compose exec -T node1 oraid query bank balance "${BENEFICIARY_ADDR}" "${DENOM}" \
+                                   --node tcp://127.0.0.1:26657 -o json 2>&1 | jq -r '.balance.amount // "0"')
+
+  REL=$(compose exec -T node1 oraid tx wasm execute "${CONTRACT_ADDR}" '{"release":{}}' \
+          --from node1 --node tcp://127.0.0.1:26657 "${GAS[@]}" 2>&1)
+  REL_HASH=$(echo "${REL}" | grep -v 'gas estimate' | jq -r '.txhash // empty' 2>/dev/null || true)
+  REL_CODE=$(echo "${REL}" | grep -v 'gas estimate' | jq -r '.code // "?"' 2>/dev/null || true)
+  if [[ "${REL_CODE}" == "0" && -n "${REL_HASH}" ]]; then
+    for _ in $(seq 1 20); do
+      RT=$(compose exec -T node1 oraid query tx "${REL_HASH}" --node tcp://127.0.0.1:26657 -o json 2>/dev/null || true)
+      echo "${RT}" | jq -e '.height and .height != "0"' >/dev/null 2>&1 && break
+      sleep 1
+    done
+    BEN_BAL_AFTER=$(compose exec -T node1 oraid query bank balance "${BENEFICIARY_ADDR}" "${DENOM}" \
+                      --node tcp://127.0.0.1:26657 -o json 2>&1 | jq -r '.balance.amount // "0"')
+    EXPECTED=$(( BENEFICIARY_BAL_JUST_BEFORE + FUND_AMOUNT ))
+    if [[ "${BEN_BAL_AFTER}" == "${EXPECTED}" ]]; then
+      ok "contract execute {\"release\":{}} post-upgrade OK: beneficiary balance ${BENEFICIARY_BAL_JUST_BEFORE} -> ${BEN_BAL_AFTER}"
+    else
+      warn "post-release beneficiary balance ${BEN_BAL_AFTER} != expected ${EXPECTED}"
+      FAILED=1
+    fi
+  else
+    warn "contract execute {\"release\":{}} failed post-upgrade: code=${REL_CODE} $(echo "${REL}" | tail -c 200)"
+    FAILED=1
+  fi
+else
+  warn "no data/contract.env — skipping contract query/execute regression check (run 03b-deploy-contract.sh before 04 to include it)"
+fi
+
 echo
 if [[ ${FAILED} -eq 0 ]]; then
-  printf '\033[1;32mPASS\033[0m  3-validator gov upgrade %s applied at height %s; proposal %s now queryable on all nodes; binary is PIE.\n' \
-    "${UPGRADE_NAME}" "${UPGRADE_H}" "${PROPOSAL_ID}"
+  printf '\033[1;32mPASS\033[0m  3-validator gov upgrade %s applied at height %s; proposal %s now queryable; binary is PIE%s.\n' \
+    "${UPGRADE_NAME}" "${UPGRADE_H}" "${PROPOSAL_ID}" \
+    "$([[ -f "${DATA_DIR}/contract.env" ]] && echo '; contract still queryable/executable')"
 else
   printf '\033[1;31mFAIL\033[0m  see !! lines above.\n'
 fi

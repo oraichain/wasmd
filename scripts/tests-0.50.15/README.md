@@ -40,11 +40,13 @@ chmod +x scripts/*.sh
 | `01-init.sh` | 3-validator genesis (34/33/33), short gov periods, splice proposal 316 — with the **v0.50.13b** binary |
 | `02-seed-run.sh` | run all 3 **LIVE on v0.50.13b** for ~12 blocks; assert `query gov proposal 316` SUCCEEDS and the evm store is mounted. left running |
 | `03-pre-upgrade.sh` | **genuine hot binary swap** v0.50.13b → v0.50.14 (no proposal): stop the live chain, start v0.50.14 on the same state; assert it resumes past H, reports the **same `app_hash(H)`** across the swap, `query gov proposal 316` now FAILS, evm store still mounted. left running |
-| `04-gov-upgrade.sh` | submit `MsgSoftwareUpgrade` (`v0.50.15`, height H) → 3× vote → `PASSED` + plan scheduled → halt at H → swap all 3 to **new** → handler runs, evm stores pruned → `query gov proposal 316` works + PIE assert. left running |
-| `05-restart-check.sh` | **cold-restart** all 3 on the new binary — proves the store deletion + `app.go` unmount are in sync (a mounted-but-deleted store panics `loadVersion` on every reboot) |
+| `03b-deploy-contract.sh` | (optional) deploy the `hackatom` escrow contract on v0.50.14 — `verifier`=node1, `beneficiary`=node2; assert the `{"verifier":{}}` query is correct right after deploy. Writes `data/contract.env` so `04`/`05` can re-check the same contract after the upgrade |
+| `04-gov-upgrade.sh` | submit `MsgSoftwareUpgrade` (`v0.50.15`, height H) → 3× vote → `PASSED` + plan scheduled → halt at H → swap all 3 to **new** → handler runs, evm stores pruned → `query gov proposal 316` works + PIE assert. If `data/contract.env` exists: re-query the contract (still correct) and execute `{"release":{}}` (beneficiary balance increases by the escrowed amount) — the direct regression check for the instantiate/execute/query fixes + wasmvm bump in this patch. left running |
+| `05-restart-check.sh` | **cold-restart** all 3 on the new binary — proves the store deletion + `app.go` unmount are in sync (a mounted-but-deleted store panics `loadVersion` on every reboot); also re-queries the contract if `data/contract.env` exists |
 | `99-clean.sh` | tear down |
 
 `02` env: `BLOCKS_ON_SEED` (12) — how long v0.50.13b runs before the swap.
+`03b` env: `WASM_SRC` (defaults to `tests/interchaintest/bytecode/hackatom.wasm`), `FUND_AMOUNT` (5000000).
 
 ## Why both `StoreUpgrades.Deleted` and the `app.go` unmount
 
