@@ -412,6 +412,7 @@ func NewWasmApp(
 		// from v0.50.15 on: a mounted store that is absent from CommitInfo makes
 		// rootmulti.loadVersion panic on every restart ("version of store evm
 		// mismatch root store's version").
+		"evm", "feemarket", "erc20", "precisebank", // using for migration. Must remove in the next version
 		txfeestypes.StoreKey,
 	)
 
