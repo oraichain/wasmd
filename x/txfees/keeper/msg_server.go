@@ -2,6 +2,8 @@ package keeper
 
 import (
 	"context"
+	"maps"
+	"slices"
 
 	"cosmossdk.io/errors"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
@@ -219,8 +221,15 @@ func (k msgServer) assertBlacklistable(ctx sdk.Context, addr sdk.AccAddress) err
 	// A module account that has never been instantiated has no entry in the auth
 	// store, so GetAccount above returns nil for it. Match on the registered
 	// module permissions too.
-	for name, perm := range k.accKeeper.GetModulePermissions() {
-		if perm.GetAddress().Equals(addr) {
+	//
+	// Iterate over sorted names, never over the map directly: Go randomizes map
+	// range order, and this runs inside msg execution where every validator must
+	// take the same path. Two module names cannot derive the same address today
+	// (the address is a hash of the name), so the match is unique either way, but
+	// relying on that is relying on an invariant this package does not own.
+	perms := k.accKeeper.GetModulePermissions()
+	for _, name := range slices.Sorted(maps.Keys(perms)) {
+		if perms[name].GetAddress().Equals(addr) {
 			return errors.Wrapf(
 				types.ErrUnblacklistableAddress,
 				"%s is the %s module account", addr.String(), name,
