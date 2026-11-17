@@ -591,3 +591,108 @@ func (s *KeeperTestSuite) TestMsgAddBlacklistAllowsIBCEscrowAddress() {
 	s.Require().NoError(err)
 	s.Require().True(ok)
 }
+
+// TestBlacklistMsgsRejectEveryNonFoundationAuthority is the authority guard for all
+// three blacklist msgs. Every impostor must be rejected and leave state untouched,
+// and the positive control at the end proves the assertions are not vacuous.
+//
+// Together with the signer plumbing this pins "only FoundationGroupPolicyAddress
+// can action the blacklist msgs":
+//
+//   - All three msgs declare `option (cosmos.msg.v1.signer) = "authority"`, so a tx
+//     is only valid if msg.Authority itself signed it.
+//   - The policy account is an authtypes.ModuleCredential account, whose
+//     VerifySignature always returns false, so it can never sign a tx directly.
+//   - x/group doExecuteMsgs -> ensureMsgAuthZ requires every msg signer to equal the
+//     policy account, so a proposal cannot smuggle in a different authority.
+//   - x/gov SubmitProposal asserts the gov module account is the only signer of all
+//     proposal msgs, so gov cannot carry these msgs at all.
+//   - x/wasm handler_plugin requires the emitting contract to be the msg signer, so
+//     no CosmWasm contract can impersonate the policy.
+func (s *KeeperTestSuite) TestBlacklistMsgsRejectEveryNonFoundationAuthority() {
+	fund := sdk.NewCoins(sdk.NewInt64Coin("orai", 1_000_000))
+
+	impostors := []struct {
+		name      string
+		authority string
+	}{
+		{"x/gov module authority", s.feeKeeper.GetAuthority()},
+		{"mint module account", authtypes.NewModuleAddress(minttypes.ModuleName).String()},
+		{"ibc transfer module account", authtypes.NewModuleAddress(ibctransfertypes.ModuleName).String()},
+		{"empty authority", ""},
+		{"malformed bech32", "not-an-address"},
+		{"right bytes, wrong prefix", "cosmos1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsqx3ckr"},
+	}
+
+	for _, tc := range impostors {
+		s.SetupTest()
+		tc := tc
+
+		s.Run(tc.name, func() {
+			_, _, blacklisted := KeyTestPubAddr()
+			_, _, fresh := KeyTestPubAddr()
+
+			s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, blacklisted))
+			s.FundAccount(blacklisted, fund)
+
+			// AddBlacklist must not add anything.
+			_, err := s.msgServer.AddBlacklist(s.ctx, &types.MsgAddBlacklist{
+				Authority: tc.authority,
+				Address:   fresh.String(),
+			})
+			s.Require().Error(err)
+			ok, qErr := s.feeKeeper.IsBlacklisted(s.ctx, fresh)
+			s.Require().NoError(qErr)
+			s.Require().False(ok)
+
+			// RemoveBlacklist must not remove anything.
+			_, err = s.msgServer.RemoveBlacklist(s.ctx, &types.MsgRemoveBlacklist{
+				Authority: tc.authority,
+				Address:   blacklisted.String(),
+			})
+			s.Require().Error(err)
+			ok, qErr = s.feeKeeper.IsBlacklisted(s.ctx, blacklisted)
+			s.Require().NoError(qErr)
+			s.Require().True(ok)
+
+			// RemoveBlacklistAndRecover must move no funds.
+			_, err = s.msgServer.RemoveBlacklistAndRecover(s.ctx, &types.MsgRemoveBlacklistAndRecover{
+				Authority: tc.authority,
+				Address:   blacklisted.String(),
+				ToAddress: fresh.String(),
+			})
+			s.Require().Error(err)
+			ok, qErr = s.feeKeeper.IsBlacklisted(s.ctx, blacklisted)
+			s.Require().NoError(qErr)
+			s.Require().True(ok)
+			s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, blacklisted).Equal(fund))
+			s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, fresh).IsZero())
+		})
+	}
+
+	// Positive control: the real authority does succeed on the same setup, so the
+	// rejections above are attributable to the authority check and nothing else.
+	s.SetupTest()
+	s.Run("foundation policy authority succeeds", func() {
+		_, _, blacklisted := KeyTestPubAddr()
+		_, _, fresh := KeyTestPubAddr()
+
+		s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, blacklisted))
+		s.FundAccount(blacklisted, fund)
+
+		_, err := s.msgServer.AddBlacklist(s.ctx, &types.MsgAddBlacklist{
+			Authority: types.FoundationGroupPolicyAddress,
+			Address:   fresh.String(),
+		})
+		s.Require().NoError(err)
+		s.Require().NoError(s.feeKeeper.RemoveBlacklist(s.ctx, fresh))
+
+		res, err := s.msgServer.RemoveBlacklistAndRecover(s.ctx, &types.MsgRemoveBlacklistAndRecover{
+			Authority: types.FoundationGroupPolicyAddress,
+			Address:   blacklisted.String(),
+			ToAddress: fresh.String(),
+		})
+		s.Require().NoError(err)
+		s.Require().True(res.Amounts.Equal(fund))
+	})
+}
