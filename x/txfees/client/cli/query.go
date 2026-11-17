@@ -24,6 +24,8 @@ func GetQueryCmd() *cobra.Command {
 		GetParams(),
 		GetAllowedTokens(),
 		GetTokenExchangeRate(),
+		GetCheckBlacklist(),
+		GetBlacklistAddresses(),
 	)
 
 	return cmd
@@ -99,6 +101,62 @@ func GetTokenExchangeRate() *cobra.Command {
 			res, err := queryClient.TokenExchangeRate(cmd.Context(), &types.QueryTokenExchangeRateRequest{
 				Denom: args[0],
 			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// GetCheckBlacklist returns whether an address is blacklisted
+func GetCheckBlacklist() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "check-blacklist [address] [flags]",
+		Short: "Check whether an address is in the txfees blacklist",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.CheckBlacklist(cmd.Context(), &types.QueryCheckBlacklistRequest{
+				Address: args[0],
+			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// GetBlacklistAddresses returns all blacklisted addresses
+func GetBlacklistAddresses() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "blacklist [flags]",
+		Short: "List all addresses in the txfees blacklist",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.BlacklistAddresses(cmd.Context(), &types.QueryBlacklistAddressesRequest{})
 			if err != nil {
 				return err
 			}

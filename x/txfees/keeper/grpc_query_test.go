@@ -8,6 +8,36 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+func (s *KeeperTestSuite) TestQueryCheckBlacklist() {
+	_, _, addr := KeyTestPubAddr()
+
+	res, err := s.queryClient.CheckBlacklist(s.ctx, &types.QueryCheckBlacklistRequest{Address: addr.String()})
+	s.Require().NoError(err)
+	s.Require().False(res.Blacklisted)
+
+	s.feeKeeper.AddBlacklist(s.ctx, addr)
+
+	res, err = s.queryClient.CheckBlacklist(s.ctx, &types.QueryCheckBlacklistRequest{Address: addr.String()})
+	s.Require().NoError(err)
+	s.Require().True(res.Blacklisted)
+}
+
+func (s *KeeperTestSuite) TestQueryBlacklistAddresses() {
+	_, _, addr1 := KeyTestPubAddr()
+	_, _, addr2 := KeyTestPubAddr()
+
+	res, err := s.queryClient.BlacklistAddresses(s.ctx, &types.QueryBlacklistAddressesRequest{})
+	s.Require().NoError(err)
+	s.Require().Empty(res.Addresses)
+
+	s.feeKeeper.AddBlacklist(s.ctx, addr1)
+	s.feeKeeper.AddBlacklist(s.ctx, addr2)
+
+	res, err = s.queryClient.BlacklistAddresses(s.ctx, &types.QueryBlacklistAddressesRequest{})
+	s.Require().NoError(err)
+	s.Require().ElementsMatch([]string{addr1.String(), addr2.String()}, res.Addresses)
+}
+
 func (s *KeeperTestSuite) TestQueryAllowedTokens() {
 	testCases := []struct {
 		name     string

@@ -14,6 +14,23 @@ const (
 
 	// QuerierRoute defines the module's query routing key
 	QuerierRoute = ModuleName
+
+	// FoundationGroupPolicyAddress is the only account allowed to add/remove
+	// txfees blacklist entries via MsgAddBlacklist / MsgRemoveBlacklist /
+	// MsgRemoveBlacklistAndRecover.
+	//
+	// This MUST be the Oraichain Foundation x/group policy account address
+	// (not a CW3 contract and not an EOA). Members submit/vote/exec proposals
+	// through x/group; the group module authorizes msgs whose signer equals
+	// this policy address, then the txfees msg server checks the same value.
+	//
+	// Replace with the on-chain group policy address after
+	// MsgCreateGroupWithPolicy for the foundation group.
+	// Local testnet policy (group_id=1). Replace with mainnet foundation policy before release.
+	FoundationGroupPolicyAddress = "orai1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsp4a86q"
+
+	// FoundationAddress is an alias for FoundationGroupPolicyAddress.
+	FoundationAddress = FoundationGroupPolicyAddress
 )
 
 type (

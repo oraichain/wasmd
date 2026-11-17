@@ -61,3 +61,31 @@ func (k Keeper) TokenExchangeRate(ctx context.Context, req *types.QueryTokenExch
 		Rate:       rate,
 	}, nil
 }
+
+func (k Keeper) CheckBlacklist(ctx context.Context, req *types.QueryCheckBlacklistRequest) (*types.QueryCheckBlacklistResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	addr, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid address %s", req.Address)
+	}
+
+	blacklisted, err := k.IsBlacklisted(sdkCtx, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryCheckBlacklistResponse{Blacklisted: blacklisted}, nil
+}
+
+func (k Keeper) BlacklistAddresses(ctx context.Context, _ *types.QueryBlacklistAddressesRequest) (*types.QueryBlacklistAddressesResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	var addresses []string
+
+	k.IterateBlacklist(sdkCtx, func(addr sdk.AccAddress) (stop bool) {
+		addresses = append(addresses, addr.String())
+		return false
+	})
+
+	return &types.QueryBlacklistAddressesResponse{Addresses: addresses}, nil
+}

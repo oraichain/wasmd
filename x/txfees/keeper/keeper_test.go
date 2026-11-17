@@ -14,6 +14,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -30,6 +31,7 @@ type KeeperTestSuite struct {
 }
 
 func (s *KeeperTestSuite) SetupTest() {
+	app.SetSDKConfig()
 	s.app = app.Setup(s.T())
 	s.ctx = s.app.NewContextLegacy(true, cmtproto.Header{Height: 1, Time: time.Now()})
 
@@ -67,4 +69,9 @@ func KeyTestPubAddr() (cryptotypes.PrivKey, cryptotypes.PubKey, sdk.AccAddress) 
 	pub := key.PubKey()
 	addr := sdk.AccAddress(pub.Address())
 	return key, pub, addr
+}
+
+func (s *KeeperTestSuite) FundAccount(addr sdk.AccAddress, amounts sdk.Coins) {
+	s.Require().NoError(s.app.BankKeeper.MintCoins(s.ctx, minttypes.ModuleName, amounts))
+	s.Require().NoError(s.app.BankKeeper.SendCoinsFromModuleToAccount(s.ctx, minttypes.ModuleName, addr, amounts))
 }

@@ -1,0 +1,16 @@
+{
+  "group_policy_address": "orai1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsp4a86q",
+  "messages": [
+    {
+      "@type": "/cosmwasm.txfees.v1.MsgAddBlacklist",
+      "authority": "orai1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsp4a86q",
+      "address": "orai13v9vefkjgad9vp2zk8z6hf9evnqnhy303f02uz"
+    }
+  ],
+  "metadata": "",
+  "title": "Add txfees blacklist validator2",
+  "summary": "Blacklist validator2 via foundation group policy",
+  "proposers": [
+    "orai1msl85k8lhe646slkash4sl7yjyt3xzps7lgra2"
+  ]
+}

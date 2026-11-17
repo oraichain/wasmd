@@ -51,6 +51,12 @@ func (k Keeper) AddBlacklist(ctx sdk.Context, address sdk.AccAddress) {
 	store.Set(key, []byte(address))
 }
 
+func (k Keeper) RemoveBlacklist(ctx sdk.Context, address sdk.AccAddress) {
+	store := k.storeService.OpenKVStore(ctx)
+	key := types.GetBlacklistKey(address)
+	store.Delete(key)
+}
+
 func (k Keeper) IsBlacklisted(ctx sdk.Context, address sdk.AccAddress) (bool, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetBlacklistKey(address)
@@ -59,4 +65,17 @@ func (k Keeper) IsBlacklisted(ctx sdk.Context, address sdk.AccAddress) (bool, er
 		return false, err
 	}
 	return has, nil
+}
+
+func (k Keeper) IterateBlacklist(ctx sdk.Context, cb func(address sdk.AccAddress) (stop bool)) {
+	store := k.storeService.OpenKVStore(ctx)
+	iterator := storetypes.KVStorePrefixIterator(runtime.KVStoreAdapter(store), types.BlacklistKeyPrefix)
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		addr := sdk.AccAddress(iterator.Value())
+		if cb(addr) {
+			break
+		}
+	}
 }

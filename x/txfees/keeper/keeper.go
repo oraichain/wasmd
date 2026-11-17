@@ -15,6 +15,7 @@ type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService storetypes.KVStoreService
 	wk           *wasmkeeper.Keeper
+	bankKeeper   types.BankKeeper
 	// the address capable of executing a MsgUpdateParams message. Typically, this
 	// should be the x/gov module account.
 	authority string
@@ -24,12 +25,14 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
 	wk *wasmkeeper.Keeper,
+	bankKeeper types.BankKeeper,
 	authority string,
 ) Keeper {
 	return Keeper{
 		cdc:          cdc,
 		storeService: storeService,
 		wk:           wk,
+		bankKeeper:   bankKeeper,
 		authority:    authority,
 	}
 }

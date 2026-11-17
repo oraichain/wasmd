@@ -11,6 +11,9 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgUpdateParams{}, "txfees/UpdateParams", nil)
 	cdc.RegisterConcrete(&MsgAddFeeToken{}, "txfees/AddFeeToken", nil)
 	cdc.RegisterConcrete(&MsgRemoveFeeToken{}, "txfees/RemoveFeeToken", nil)
+	cdc.RegisterConcrete(&MsgAddBlacklist{}, "txfees/AddBlacklist", nil)
+	cdc.RegisterConcrete(&MsgRemoveBlacklist{}, "txfees/RemoveBlacklist", nil)
+	cdc.RegisterConcrete(&MsgRemoveBlacklistAndRecover{}, "txfees/RemoveBlacklistAndRecover", nil)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
@@ -18,6 +21,9 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgUpdateParams{},
 		&MsgAddFeeToken{},
 		&MsgRemoveFeeToken{},
+		&MsgAddBlacklist{},
+		&MsgRemoveBlacklist{},
+		&MsgRemoveBlacklistAndRecover{},
 	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
