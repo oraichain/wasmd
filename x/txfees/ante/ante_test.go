@@ -342,7 +342,7 @@ func (s *AnteTestSuite) TestBlacklistDecorator() {
 		{
 			name: "blacklisted signer rejected",
 			malleate: func() signing.Tx {
-				s.tfk.AddBlacklist(s.ctx, s.TestAccount.acc.GetAddress())
+				s.Require().NoError(s.tfk.AddBlacklist(s.ctx, s.TestAccount.acc.GetAddress()))
 				s.FundAccount(s.TestAccount.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
 				msg := testdata.NewTestMsg(s.TestAccount.acc.GetAddress())
 				s.Require().NoError(s.txBuilder.SetMsgs(msg))
@@ -393,7 +393,7 @@ func (s *AnteTestSuite) TestBlacklistDecorator() {
 			malleate: func() signing.Tx {
 				grantee := s.TestAccounts[0]
 				granter := s.TestAccounts[1]
-				s.tfk.AddBlacklist(s.ctx, granter.acc.GetAddress())
+				s.Require().NoError(s.tfk.AddBlacklist(s.ctx, granter.acc.GetAddress()))
 				s.FundAccount(grantee.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
 
 				inner := banktypes.NewMsgSend(
@@ -428,7 +428,7 @@ func (s *AnteTestSuite) TestBlacklistDecorator() {
 				s.ak.SetAccount(s.ctx, granterAcc)
 				granter := TestAccount{acc: granterAcc, priv: priv}
 
-				s.tfk.AddBlacklist(s.ctx, granter.acc.GetAddress())
+				s.Require().NoError(s.tfk.AddBlacklist(s.ctx, granter.acc.GetAddress()))
 				s.FundAccount(outerGrantee.acc.GetAddress(), sdk.NewCoins(sdk.NewCoin("orai", math.NewInt(100000))))
 
 				inner := banktypes.NewMsgSend(

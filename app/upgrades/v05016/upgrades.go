@@ -88,7 +88,9 @@ func addCompromisedBlacklist(ctx sdk.Context, ak *upgrades.AppKeepers) error {
 			continue
 		}
 
-		ak.TxFeesKeeper.AddBlacklist(ctx, addr)
+		if err := ak.TxFeesKeeper.AddBlacklist(ctx, addr); err != nil {
+			return fmt.Errorf("%s: add blacklist %s: %w", UpgradeName, raw, err)
+		}
 		added++
 		ctx.Logger().Info("txfees blacklist: added compromised address", "address", raw)
 	}

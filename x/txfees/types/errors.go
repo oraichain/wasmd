@@ -11,4 +11,5 @@ var (
 	ErrAddressNotBlacklisted      = errors.Register(ModuleName, 6, "address is not blacklisted")
 	ErrAddressAlreadyBlacklisted  = errors.Register(ModuleName, 7, "address is already blacklisted")
 	ErrRecoverFailed              = errors.Register(ModuleName, 8, "failed to recover assets from blacklisted address")
+	ErrUnblacklistableAddress     = errors.Register(ModuleName, 9, "address cannot be blacklisted")
 )

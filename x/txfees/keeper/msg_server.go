@@ -84,6 +84,10 @@ func (k msgServer) AddBlacklist(goCtx context.Context, msg *types.MsgAddBlacklis
 		return nil, errors.Wrapf(err, "invalid blacklist address %s", msg.Address)
 	}
 
+	if err := k.assertBlacklistable(ctx, addr); err != nil {
+		return nil, err
+	}
+
 	already, err := k.IsBlacklisted(ctx, addr)
 	if err != nil {
 		return nil, err
@@ -95,7 +99,9 @@ func (k msgServer) AddBlacklist(goCtx context.Context, msg *types.MsgAddBlacklis
 	// Intended execution path: x/group proposal whose policy account is
 	// FoundationGroupPolicyAddress, with this msg as proposal content. The group
 	// module ensures msg signers == policy account before routing here.
-	k.Keeper.AddBlacklist(ctx, addr)
+	if err := k.Keeper.AddBlacklist(ctx, addr); err != nil {
+		return nil, errors.Wrapf(err, "add blacklist %s", msg.Address)
+	}
 	return &types.MsgAddBlacklistResponse{}, nil
 }
 
@@ -122,7 +128,9 @@ func (k msgServer) RemoveBlacklist(goCtx context.Context, msg *types.MsgRemoveBl
 		return nil, errors.Wrapf(types.ErrAddressNotBlacklisted, "%s", msg.Address)
 	}
 
-	k.Keeper.RemoveBlacklist(ctx, addr)
+	if err := k.Keeper.RemoveBlacklist(ctx, addr); err != nil {
+		return nil, errors.Wrapf(err, "remove blacklist %s", msg.Address)
+	}
 	return &types.MsgRemoveBlacklistResponse{}, nil
 }
 
@@ -153,8 +161,20 @@ func (k msgServer) RemoveBlacklistAndRecover(goCtx context.Context, msg *types.M
 		return nil, errors.Wrapf(types.ErrAddressNotBlacklisted, "%s", msg.Address)
 	}
 
+	// Recovering into a blacklisted destination would re-freeze the funds the
+	// moment they land, with no in-module way back out.
+	toBlacklisted, err := k.IsBlacklisted(ctx, toAddr)
+	if err != nil {
+		return nil, err
+	}
+	if toBlacklisted {
+		return nil, errors.Wrapf(types.ErrAddressAlreadyBlacklisted, "recover destination %s", msg.ToAddress)
+	}
+
 	// Remove first so bank send-restriction no longer blocks outbound from fromAddr.
-	k.Keeper.RemoveBlacklist(ctx, fromAddr)
+	if err := k.Keeper.RemoveBlacklist(ctx, fromAddr); err != nil {
+		return nil, errors.Wrapf(err, "remove blacklist %s", msg.Address)
+	}
 
 	amounts := k.bankKeeper.SpendableCoins(ctx, fromAddr)
 	if !amounts.IsZero() {
@@ -164,6 +184,51 @@ func (k msgServer) RemoveBlacklistAndRecover(goCtx context.Context, msg *types.M
 	}
 
 	return &types.MsgRemoveBlacklistAndRecoverResponse{Amounts: amounts}, nil
+}
+
+// assertBlacklistable rejects addresses that must never be blacklisted.
+//
+//   - Module accounts: the bank send restriction in app.RegisterBankSendRestrictions
+//     applies to SendCoinsFromModuleTo* as well, so blacklisting e.g. fee_collector
+//     or bonded_tokens_pool makes the distribution/staking BeginBlocker error and
+//     panic every block — an unrecoverable halt, since no tx (not even
+//     MsgRemoveBlacklist) can be processed any more.
+//   - The foundation policy account itself: blacklisting it would freeze the only
+//     authority able to undo the entry.
+func (k msgServer) assertBlacklistable(ctx sdk.Context, addr sdk.AccAddress) error {
+	if types.IsBlacklistAuthority(addr.String()) {
+		return errors.Wrapf(
+			types.ErrUnblacklistableAddress,
+			"%s is the foundation x/group policy account", addr.String(),
+		)
+	}
+
+	if k.accKeeper == nil {
+		return nil
+	}
+
+	if acc := k.accKeeper.GetAccount(ctx, addr); acc != nil {
+		if _, isModule := acc.(sdk.ModuleAccountI); isModule {
+			return errors.Wrapf(
+				types.ErrUnblacklistableAddress,
+				"%s is a module account", addr.String(),
+			)
+		}
+	}
+
+	// A module account that has never been instantiated has no entry in the auth
+	// store, so GetAccount above returns nil for it. Match on the registered
+	// module permissions too.
+	for name, perm := range k.accKeeper.GetModulePermissions() {
+		if perm.GetAddress().Equals(addr) {
+			return errors.Wrapf(
+				types.ErrUnblacklistableAddress,
+				"%s is the %s module account", addr.String(), name,
+			)
+		}
+	}
+
+	return nil
 }
 
 func assertBlacklistAuthority(authority string) error {

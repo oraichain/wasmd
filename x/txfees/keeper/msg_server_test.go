@@ -1,8 +1,12 @@
 package keeper_test
 
 import (
+	v05014 "github.com/CosmWasm/wasmd/app/upgrades/v05014"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 )
 
 func (s *KeeperTestSuite) TestUpdateParams() {
@@ -230,7 +234,7 @@ func (s *KeeperTestSuite) TestMsgAddBlacklist() {
 		{
 			name: "add blacklist error already blacklisted",
 			malleate: func() {
-				s.feeKeeper.AddBlacklist(s.ctx, target)
+				s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, target))
 			},
 			msg: &types.MsgAddBlacklist{
 				Authority: types.FoundationGroupPolicyAddress,
@@ -245,6 +249,34 @@ func (s *KeeperTestSuite) TestMsgAddBlacklist() {
 			msg: &types.MsgAddBlacklist{
 				Authority: types.FoundationGroupPolicyAddress,
 				Address:   "not-an-address",
+			},
+			expErr: true,
+			assert: func() {},
+		},
+		{
+			// Blacklisting a module account would make the bank send restriction
+			// fail every BeginBlocker transfer out of it and halt the chain.
+			name:     "add blacklist error module account",
+			malleate: func() {},
+			msg: &types.MsgAddBlacklist{
+				Authority: types.FoundationGroupPolicyAddress,
+				Address:   authtypes.NewModuleAddress(minttypes.ModuleName).String(),
+			},
+			expErr: true,
+			assert: func() {
+				ok, err := s.feeKeeper.IsBlacklisted(s.ctx, authtypes.NewModuleAddress(minttypes.ModuleName))
+				s.Require().NoError(err)
+				s.Require().False(ok)
+			},
+		},
+		{
+			// Blacklisting the authority itself would freeze the only account
+			// able to undo the entry.
+			name:     "add blacklist error foundation policy account",
+			malleate: func() {},
+			msg: &types.MsgAddBlacklist{
+				Authority: types.FoundationGroupPolicyAddress,
+				Address:   types.FoundationGroupPolicyAddress,
 			},
 			expErr: true,
 			assert: func() {},
@@ -280,7 +312,7 @@ func (s *KeeperTestSuite) TestMsgRemoveBlacklist() {
 		{
 			name: "remove blacklist successfully",
 			malleate: func() {
-				s.feeKeeper.AddBlacklist(s.ctx, target)
+				s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, target))
 			},
 			msg: &types.MsgRemoveBlacklist{
 				Authority: types.FoundationGroupPolicyAddress,
@@ -346,7 +378,7 @@ func (s *KeeperTestSuite) TestMsgRemoveBlacklistAndRecover() {
 		{
 			name: "remove blacklist and recover balances successfully",
 			malleate: func() {
-				s.feeKeeper.AddBlacklist(s.ctx, from)
+				s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, from))
 				s.FundAccount(from, fund)
 			},
 			msg: &types.MsgRemoveBlacklistAndRecover{
@@ -367,7 +399,7 @@ func (s *KeeperTestSuite) TestMsgRemoveBlacklistAndRecover() {
 		{
 			name: "remove blacklist with zero balance succeeds",
 			malleate: func() {
-				s.feeKeeper.AddBlacklist(s.ctx, from)
+				s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, from))
 			},
 			msg: &types.MsgRemoveBlacklistAndRecover{
 				Authority: types.FoundationGroupPolicyAddress,
@@ -415,6 +447,28 @@ func (s *KeeperTestSuite) TestMsgRemoveBlacklistAndRecover() {
 			expErr: true,
 			assert: func(res *types.MsgRemoveBlacklistAndRecoverResponse) {},
 		},
+		{
+			// Recovering into a blacklisted destination would re-freeze the funds.
+			name: "error destination is blacklisted",
+			malleate: func() {
+				s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, from))
+				s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, to))
+				s.FundAccount(from, fund)
+			},
+			msg: &types.MsgRemoveBlacklistAndRecover{
+				Authority: types.FoundationGroupPolicyAddress,
+				Address:   from.String(),
+				ToAddress: to.String(),
+			},
+			expErr: true,
+			assert: func(res *types.MsgRemoveBlacklistAndRecoverResponse) {
+				// from must stay blacklisted and keep its balance
+				ok, err := s.feeKeeper.IsBlacklisted(s.ctx, from)
+				s.Require().NoError(err)
+				s.Require().True(ok)
+				s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, from).Equal(fund))
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -431,4 +485,109 @@ func (s *KeeperTestSuite) TestMsgRemoveBlacklistAndRecover() {
 			tc.assert(res)
 		})
 	}
+}
+
+// TestMsgRemoveBlacklistAndRecoverAboveForkHeight exercises the one invariant the
+// table-driven test above cannot: RegisterBankSendRestrictions is a no-op at or
+// below v05014.ForkHeight, and the suite's default context sits at height 1. Run
+// above the fork height so the send restriction is live and the "remove blacklist
+// before sweeping" ordering in RemoveBlacklistAndRecover is actually required.
+func (s *KeeperTestSuite) TestMsgRemoveBlacklistAndRecoverAboveForkHeight() {
+	_, _, from := KeyTestPubAddr()
+	_, _, to := KeyTestPubAddr()
+	fund := sdk.NewCoins(sdk.NewInt64Coin("orai", 1_000_000))
+
+	s.ctx = s.ctx.WithBlockHeight(v05014.ForkHeight + 1)
+
+	s.FundAccount(from, fund)
+	s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, from))
+
+	// Sanity: while blacklisted, the bank send restriction blocks outbound sends.
+	// Run on a cache context the way baseapp runs a msg: this SDK fork applies
+	// subUnlockedCoins before sendRestriction.apply, so the rejected send leaves
+	// the sender debited in the context it ran on and only the discard restores it.
+	cacheCtx, _ := s.ctx.CacheContext()
+	err := s.app.BankKeeper.SendCoins(cacheCtx, from, to, fund)
+	s.Require().Error(err)
+	s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, from).Equal(fund))
+
+	res, err := s.msgServer.RemoveBlacklistAndRecover(s.ctx, &types.MsgRemoveBlacklistAndRecover{
+		Authority: types.FoundationGroupPolicyAddress,
+		Address:   from.String(),
+		ToAddress: to.String(),
+	})
+	s.Require().NoError(err)
+	s.Require().True(res.Amounts.Equal(fund))
+	s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, from).IsZero())
+	s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, to).Equal(fund))
+
+	ok, err := s.feeKeeper.IsBlacklisted(s.ctx, from)
+	s.Require().NoError(err)
+	s.Require().False(ok)
+}
+
+// TestMsgAddBlacklistRejectsEveryModuleAccount pins the chain-halt guard across the
+// whole module-account set, including modules whose account has not been
+// instantiated in the auth store yet (GetAccount returns nil for those, so the
+// registered module permissions are the only thing that catches them).
+func (s *KeeperTestSuite) TestMsgAddBlacklistRejectsEveryModuleAccount() {
+	perms := s.app.AccountKeeper.GetModulePermissions()
+	s.Require().NotEmpty(perms)
+
+	for name, perm := range perms {
+		addr := perm.GetAddress()
+
+		_, err := s.msgServer.AddBlacklist(s.ctx, &types.MsgAddBlacklist{
+			Authority: types.FoundationGroupPolicyAddress,
+			Address:   addr.String(),
+		})
+		s.Require().ErrorIs(err, types.ErrUnblacklistableAddress, "module %s", name)
+
+		ok, err := s.feeKeeper.IsBlacklisted(s.ctx, addr)
+		s.Require().NoError(err)
+		s.Require().False(ok, "module %s", name)
+	}
+}
+
+// TestMsgAddBlacklistAllowsIBCEscrowAddress pins the other side of the
+// module-account guard: an IBC transfer escrow address MUST stay blacklistable,
+// because freezing a channel's escrow is one of the responses to an active
+// exploit.
+//
+// An escrow address is not a module account: it is the ADR-028 hash of
+// "<version>\x00<port>/<channel>" (ibctransfertypes.GetEscrowAddress), it is
+// absent from the auth module permissions, and the bank module instantiates it
+// as a plain BaseAccount the first time coins land on it. Both arms of
+// assertBlacklistable must therefore miss it.
+func (s *KeeperTestSuite) TestMsgAddBlacklistAllowsIBCEscrowAddress() {
+	escrow := ibctransfertypes.GetEscrowAddress(ibctransfertypes.PortID, "channel-0")
+
+	// Blacklistable before the account exists in the auth store...
+	_, err := s.msgServer.AddBlacklist(s.ctx, &types.MsgAddBlacklist{
+		Authority: types.FoundationGroupPolicyAddress,
+		Address:   escrow.String(),
+	})
+	s.Require().NoError(err)
+
+	ok, err := s.feeKeeper.IsBlacklisted(s.ctx, escrow)
+	s.Require().NoError(err)
+	s.Require().True(ok)
+
+	// ...and still blacklistable once bank has instantiated it as a BaseAccount.
+	s.Require().NoError(s.feeKeeper.RemoveBlacklist(s.ctx, escrow))
+	s.FundAccount(escrow, sdk.NewCoins(sdk.NewInt64Coin("orai", 1_000_000)))
+
+	acc := s.app.AccountKeeper.GetAccount(s.ctx, escrow)
+	s.Require().NotNil(acc)
+	s.Require().NotImplements((*sdk.ModuleAccountI)(nil), acc)
+
+	_, err = s.msgServer.AddBlacklist(s.ctx, &types.MsgAddBlacklist{
+		Authority: types.FoundationGroupPolicyAddress,
+		Address:   escrow.String(),
+	})
+	s.Require().NoError(err)
+
+	ok, err = s.feeKeeper.IsBlacklisted(s.ctx, escrow)
+	s.Require().NoError(err)
+	s.Require().True(ok)
 }

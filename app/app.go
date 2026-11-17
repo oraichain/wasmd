@@ -791,6 +791,7 @@ func NewWasmApp(
 		runtime.NewKVStoreService(keys[txfeestypes.StoreKey]),
 		&app.WasmKeeper,
 		app.BankKeeper,
+		app.AccountKeeper,
 		AuthorityAddr,
 	)
 	RegisterBankSendRestrictions(app.BankKeeper, app.TxFeesKeeper)

@@ -45,16 +45,21 @@ func (k Keeper) IterateAllowedTokenList(ctx sdk.Context, cb func(denom string) (
 }
 
 // Blacklist store
-func (k Keeper) AddBlacklist(ctx sdk.Context, address sdk.AccAddress) {
+
+// AddBlacklist writes address into the blacklist. The store error is returned
+// rather than discarded: callers (msg server, upgrade handlers) must not report
+// success for a write that never landed.
+func (k Keeper) AddBlacklist(ctx sdk.Context, address sdk.AccAddress) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetBlacklistKey(address)
-	store.Set(key, []byte(address))
+	return store.Set(key, []byte(address))
 }
 
-func (k Keeper) RemoveBlacklist(ctx sdk.Context, address sdk.AccAddress) {
+// RemoveBlacklist deletes address from the blacklist, returning the store error.
+func (k Keeper) RemoveBlacklist(ctx sdk.Context, address sdk.AccAddress) error {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetBlacklistKey(address)
-	store.Delete(key)
+	return store.Delete(key)
 }
 
 func (k Keeper) IsBlacklisted(ctx sdk.Context, address sdk.AccAddress) (bool, error) {

@@ -156,7 +156,14 @@ func GetBlacklistAddresses() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			res, err := queryClient.BlacklistAddresses(cmd.Context(), &types.QueryBlacklistAddressesRequest{})
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			res, err := queryClient.BlacklistAddresses(cmd.Context(), &types.QueryBlacklistAddressesRequest{
+				Pagination: pageReq,
+			})
 			if err != nil {
 				return err
 			}
@@ -165,6 +172,7 @@ func GetBlacklistAddresses() *cobra.Command {
 		},
 	}
 
+	flags.AddPaginationFlagsToCmd(cmd, "blacklist")
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd

@@ -37,12 +37,12 @@ func (s *KeeperTestSuite) TestStoreBlacklist() {
 	s.Require().NoError(err)
 	s.Require().False(ok)
 
-	s.feeKeeper.AddBlacklist(s.ctx, addr)
+	s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, addr))
 	ok, err = s.feeKeeper.IsBlacklisted(s.ctx, addr)
 	s.Require().NoError(err)
 	s.Require().True(ok)
 
-	s.feeKeeper.RemoveBlacklist(s.ctx, addr)
+	s.Require().NoError(s.feeKeeper.RemoveBlacklist(s.ctx, addr))
 	ok, err = s.feeKeeper.IsBlacklisted(s.ctx, addr)
 	s.Require().NoError(err)
 	s.Require().False(ok)

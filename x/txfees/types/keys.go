@@ -24,9 +24,25 @@ const (
 	// through x/group; the group module authorizes msgs whose signer equals
 	// this policy address, then the txfees msg server checks the same value.
 	//
-	// Replace with the on-chain group policy address after
-	// MsgCreateGroupWithPolicy for the foundation group.
-	// Local testnet policy (group_id=1). Replace with mainnet foundation policy before release.
+	// DO NOT CHANGE. Verified against Oraichain mainnet live state on
+	// 2026-11-17 (chain-id Oraichain, queried at height 130470210):
+	//
+	//	group_id             1          (the only group on chain)
+	//	metadata             "Foundation Operator"
+	//	decision_policy      ThresholdDecisionPolicy, threshold 4
+	//	members              6, weight 1 each (total_weight 6) -> 4-of-6
+	//	voting_period        24h
+	//	min_execution_period 0s
+	//	admin                this policy address itself (self-governed)
+	//	created_at           2026-11-17T04:34:24Z
+	//
+	// The address is derived from the x/group policy account sequence
+	// (keeper.groupPolicySeq -> authtypes.NewModuleCredential), which is
+	// monotonic and never reset, so sequence 1 is permanently consumed by this
+	// policy and the address cannot be claimed by anyone else.
+	//
+	// Because admin is the policy itself, the decision policy can only be
+	// changed by a 4-of-6 proposal, and x/gov cannot override this authority.
 	FoundationGroupPolicyAddress = "orai1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsp4a86q"
 
 	// FoundationAddress is an alias for FoundationGroupPolicyAddress.

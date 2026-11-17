@@ -6,6 +6,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 )
 
 func (s *KeeperTestSuite) TestQueryCheckBlacklist() {
@@ -15,7 +16,7 @@ func (s *KeeperTestSuite) TestQueryCheckBlacklist() {
 	s.Require().NoError(err)
 	s.Require().False(res.Blacklisted)
 
-	s.feeKeeper.AddBlacklist(s.ctx, addr)
+	s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, addr))
 
 	res, err = s.queryClient.CheckBlacklist(s.ctx, &types.QueryCheckBlacklistRequest{Address: addr.String()})
 	s.Require().NoError(err)
@@ -30,12 +31,44 @@ func (s *KeeperTestSuite) TestQueryBlacklistAddresses() {
 	s.Require().NoError(err)
 	s.Require().Empty(res.Addresses)
 
-	s.feeKeeper.AddBlacklist(s.ctx, addr1)
-	s.feeKeeper.AddBlacklist(s.ctx, addr2)
+	s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, addr1))
+	s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, addr2))
 
 	res, err = s.queryClient.BlacklistAddresses(s.ctx, &types.QueryBlacklistAddressesRequest{})
 	s.Require().NoError(err)
 	s.Require().ElementsMatch([]string{addr1.String(), addr2.String()}, res.Addresses)
+}
+
+// TestQueryBlacklistAddressesPagination pins the bound on this query: it is
+// exposed over gRPC/REST with no gas meter, so it must page instead of
+// iterating the whole prefix into one response.
+func (s *KeeperTestSuite) TestQueryBlacklistAddressesPagination() {
+	var all []string
+	for i := 0; i < 5; i++ {
+		_, _, addr := KeyTestPubAddr()
+		s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, addr))
+		all = append(all, addr.String())
+	}
+
+	var paged []string
+	var nextKey []byte
+	for page := 0; page < 5; page++ {
+		res, err := s.queryClient.BlacklistAddresses(s.ctx, &types.QueryBlacklistAddressesRequest{
+			Pagination: &query.PageRequest{Key: nextKey, Limit: 2},
+		})
+		s.Require().NoError(err)
+		s.Require().LessOrEqual(len(res.Addresses), 2)
+		paged = append(paged, res.Addresses...)
+
+		s.Require().NotNil(res.Pagination)
+		nextKey = res.Pagination.NextKey
+		if len(nextKey) == 0 {
+			break
+		}
+	}
+
+	s.Require().Empty(nextKey)
+	s.Require().ElementsMatch(all, paged)
 }
 
 func (s *KeeperTestSuite) TestQueryAllowedTokens() {

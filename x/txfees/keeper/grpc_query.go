@@ -4,9 +4,14 @@ import (
 	"context"
 
 	errors "cosmossdk.io/errors"
+	"cosmossdk.io/store/prefix"
 	"github.com/CosmWasm/wasmd/x/txfees/types"
 
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ types.QueryServer = Keeper{}
@@ -78,14 +83,28 @@ func (k Keeper) CheckBlacklist(ctx context.Context, req *types.QueryCheckBlackli
 	return &types.QueryCheckBlacklistResponse{Blacklisted: blacklisted}, nil
 }
 
-func (k Keeper) BlacklistAddresses(ctx context.Context, _ *types.QueryBlacklistAddressesRequest) (*types.QueryBlacklistAddressesResponse, error) {
+// BlacklistAddresses returns a paginated page of the blacklist. This query is
+// exposed over gRPC and REST with no gas meter bounding it, so it must never
+// iterate the whole prefix into one unbounded response.
+func (k Keeper) BlacklistAddresses(ctx context.Context, req *types.QueryBlacklistAddressesRequest) (*types.QueryBlacklistAddressesResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	blacklistStore := prefix.NewStore(
+		runtime.KVStoreAdapter(k.storeService.OpenKVStore(sdkCtx)),
+		types.BlacklistKeyPrefix,
+	)
+
 	var addresses []string
-
-	k.IterateBlacklist(sdkCtx, func(addr sdk.AccAddress) (stop bool) {
-		addresses = append(addresses, addr.String())
-		return false
+	pageRes, err := query.Paginate(blacklistStore, req.Pagination, func(_, value []byte) error {
+		addresses = append(addresses, sdk.AccAddress(value).String())
+		return nil
 	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
-	return &types.QueryBlacklistAddressesResponse{Addresses: addresses}, nil
+	return &types.QueryBlacklistAddressesResponse{Addresses: addresses, Pagination: pageRes}, nil
 }
