@@ -696,3 +696,104 @@ func (s *KeeperTestSuite) TestBlacklistMsgsRejectEveryNonFoundationAuthority() {
 		s.Require().True(res.Amounts.Equal(fund))
 	})
 }
+
+// eventsOfType returns the attributes of every event of the given type, as a
+// map per event.
+func eventsOfType(events sdk.Events, eventType string) []map[string]string {
+	var out []map[string]string
+	for _, ev := range events {
+		if ev.Type != eventType {
+			continue
+		}
+		attrs := make(map[string]string, len(ev.Attributes))
+		for _, attr := range ev.Attributes {
+			attrs[attr.Key] = attr.Value
+		}
+		out = append(out, attrs)
+	}
+	return out
+}
+
+// TestBlacklistMsgsEmitEvents pins the audit trail: every blacklist state
+// transition must be reconstructable from block results alone, without
+// replaying state or diffing the store.
+func (s *KeeperTestSuite) TestBlacklistMsgsEmitEvents() {
+	_, _, addr := KeyTestPubAddr()
+
+	// --- add ---
+	addCtx := s.ctx.WithEventManager(sdk.NewEventManager())
+	_, err := s.msgServer.AddBlacklist(addCtx, &types.MsgAddBlacklist{
+		Authority: types.FoundationGroupPolicyAddress,
+		Address:   addr.String(),
+	})
+	s.Require().NoError(err)
+
+	added := eventsOfType(addCtx.EventManager().Events(), types.EventTypeAddBlacklist)
+	s.Require().Len(added, 1)
+	s.Require().Equal(addr.String(), added[0][types.AttributeKeyAddress])
+	s.Require().Equal(types.FoundationGroupPolicyAddress, added[0][types.AttributeKeyAuthority])
+
+	// --- remove ---
+	rmCtx := s.ctx.WithEventManager(sdk.NewEventManager())
+	_, err = s.msgServer.RemoveBlacklist(rmCtx, &types.MsgRemoveBlacklist{
+		Authority: types.FoundationGroupPolicyAddress,
+		Address:   addr.String(),
+	})
+	s.Require().NoError(err)
+
+	removed := eventsOfType(rmCtx.EventManager().Events(), types.EventTypeRemoveBlacklist)
+	s.Require().Len(removed, 1)
+	s.Require().Equal(addr.String(), removed[0][types.AttributeKeyAddress])
+	s.Require().Equal(types.FoundationGroupPolicyAddress, removed[0][types.AttributeKeyAuthority])
+
+	// --- recover ---
+	_, _, to := KeyTestPubAddr()
+	fund := sdk.NewCoins(sdk.NewInt64Coin("orai", 1_000_000))
+	s.FundAccount(addr, fund)
+	s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, addr))
+
+	recCtx := s.ctx.WithEventManager(sdk.NewEventManager())
+	_, err = s.msgServer.RemoveBlacklistAndRecover(recCtx, &types.MsgRemoveBlacklistAndRecover{
+		Authority: types.FoundationGroupPolicyAddress,
+		Address:   addr.String(),
+		ToAddress: to.String(),
+	})
+	s.Require().NoError(err)
+
+	recovered := eventsOfType(recCtx.EventManager().Events(), types.EventTypeRecoverBlacklist)
+	s.Require().Len(recovered, 1)
+	s.Require().Equal(addr.String(), recovered[0][types.AttributeKeyAddress])
+	s.Require().Equal(to.String(), recovered[0][types.AttributeKeyToAddress])
+	s.Require().Equal(fund.String(), recovered[0][types.AttributeKeyAmounts])
+	s.Require().Equal(types.FoundationGroupPolicyAddress, recovered[0][types.AttributeKeyAuthority])
+
+	// Recover also unfreezes, so a monitor watching only remove_blacklist must
+	// still see this account leave the blacklist.
+	alsoRemoved := eventsOfType(recCtx.EventManager().Events(), types.EventTypeRemoveBlacklist)
+	s.Require().Len(alsoRemoved, 1)
+	s.Require().Equal(addr.String(), alsoRemoved[0][types.AttributeKeyAddress])
+}
+
+// TestBlacklistMsgsEmitNoEventsOnFailure pins that a rejected msg leaves no
+// audit trail behind, so events cannot be mistaken for applied state.
+func (s *KeeperTestSuite) TestBlacklistMsgsEmitNoEventsOnFailure() {
+	_, _, addr := KeyTestPubAddr()
+	_, _, impostor := KeyTestPubAddr()
+
+	failCtx := s.ctx.WithEventManager(sdk.NewEventManager())
+	_, err := s.msgServer.AddBlacklist(failCtx, &types.MsgAddBlacklist{
+		Authority: impostor.String(),
+		Address:   addr.String(),
+	})
+	s.Require().Error(err)
+	s.Require().Empty(eventsOfType(failCtx.EventManager().Events(), types.EventTypeAddBlacklist))
+
+	// Removing an address that is not blacklisted must not emit either.
+	failCtx = s.ctx.WithEventManager(sdk.NewEventManager())
+	_, err = s.msgServer.RemoveBlacklist(failCtx, &types.MsgRemoveBlacklist{
+		Authority: types.FoundationGroupPolicyAddress,
+		Address:   addr.String(),
+	})
+	s.Require().Error(err)
+	s.Require().Empty(eventsOfType(failCtx.EventManager().Events(), types.EventTypeRemoveBlacklist))
+}

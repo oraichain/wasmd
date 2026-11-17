@@ -104,6 +104,13 @@ func (k msgServer) AddBlacklist(goCtx context.Context, msg *types.MsgAddBlacklis
 	if err := k.Keeper.AddBlacklist(ctx, addr); err != nil {
 		return nil, errors.Wrapf(err, "add blacklist %s", msg.Address)
 	}
+
+	ctx.EventManager().EmitEvent(sdk.NewEvent(
+		types.EventTypeAddBlacklist,
+		sdk.NewAttribute(types.AttributeKeyAddress, msg.Address),
+		sdk.NewAttribute(types.AttributeKeyAuthority, msg.Authority),
+	))
+
 	return &types.MsgAddBlacklistResponse{}, nil
 }
 
@@ -133,6 +140,13 @@ func (k msgServer) RemoveBlacklist(goCtx context.Context, msg *types.MsgRemoveBl
 	if err := k.Keeper.RemoveBlacklist(ctx, addr); err != nil {
 		return nil, errors.Wrapf(err, "remove blacklist %s", msg.Address)
 	}
+
+	ctx.EventManager().EmitEvent(sdk.NewEvent(
+		types.EventTypeRemoveBlacklist,
+		sdk.NewAttribute(types.AttributeKeyAddress, msg.Address),
+		sdk.NewAttribute(types.AttributeKeyAuthority, msg.Authority),
+	))
+
 	return &types.MsgRemoveBlacklistResponse{}, nil
 }
 
@@ -185,6 +199,21 @@ func (k msgServer) RemoveBlacklistAndRecover(goCtx context.Context, msg *types.M
 		}
 	}
 
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeRemoveBlacklist,
+			sdk.NewAttribute(types.AttributeKeyAddress, msg.Address),
+			sdk.NewAttribute(types.AttributeKeyAuthority, msg.Authority),
+		),
+		sdk.NewEvent(
+			types.EventTypeRecoverBlacklist,
+			sdk.NewAttribute(types.AttributeKeyAddress, msg.Address),
+			sdk.NewAttribute(types.AttributeKeyToAddress, msg.ToAddress),
+			sdk.NewAttribute(types.AttributeKeyAmounts, amounts.String()),
+			sdk.NewAttribute(types.AttributeKeyAuthority, msg.Authority),
+		),
+	})
+
 	return &types.MsgRemoveBlacklistAndRecoverResponse{Amounts: amounts}, nil
 }
 
@@ -203,10 +232,6 @@ func (k msgServer) assertBlacklistable(ctx sdk.Context, addr sdk.AccAddress) err
 			types.ErrUnblacklistableAddress,
 			"%s is the foundation x/group policy account", addr.String(),
 		)
-	}
-
-	if k.accKeeper == nil {
-		return nil
 	}
 
 	if acc := k.accKeeper.GetAccount(ctx, addr); acc != nil {

@@ -30,6 +30,13 @@ func NewKeeper(
 	accKeeper types.AccountKeeper,
 	authority string,
 ) Keeper {
+	// accKeeper backs assertBlacklistable. A nil one would silently turn the
+	// module-account guard off and make e.g. fee_collector blacklistable, which
+	// halts the chain unrecoverably. Refuse to wire that up at all.
+	if accKeeper == nil {
+		panic("txfees keeper: nil AccountKeeper")
+	}
+
 	return Keeper{
 		cdc:          cdc,
 		storeService: storeService,
