@@ -463,10 +463,10 @@ type oraiswapAssetInfo struct {
 }
 
 type oraiswapPairInstantiateMsg struct {
-	TokenCodeID uint64              `json:"token_code_id"`
-	OracleAddr  string              `json:"oracle_addr"`
+	TokenCodeID uint64               `json:"token_code_id"`
+	OracleAddr  string               `json:"oracle_addr"`
 	AssetInfos  [2]oraiswapAssetInfo `json:"asset_infos"`
-	Admin       string              `json:"admin"`
+	Admin       string               `json:"admin"`
 }
 
 type oraiswapSwapMsg struct {
@@ -563,7 +563,7 @@ func (s *UpgradeTestSuite) oraiswapSwap(pair, trader sdk.AccAddress, denom, amou
 }
 
 func (s *UpgradeTestSuite) TestPausePoolsEnablesWhitelist() {
-	admin := sdk.AccAddress("oraiswap-admin-addr01") // 20 bytes
+	admin := sdk.AccAddress("oraiswap-admin-addr01")  // 20 bytes
 	trader := sdk.AccAddress("oraiswap-trader-addr1") // 20 bytes
 	pair := s.deployOraiswapPair(admin)
 
@@ -591,7 +591,7 @@ func (s *UpgradeTestSuite) TestPausePoolsEnablesWhitelist() {
 }
 
 func (s *UpgradeTestSuite) TestPausePoolsPanicsOnWrongAdmin() {
-	admin := sdk.AccAddress("oraiswap-admin-addr02") // 20 bytes
+	admin := sdk.AccAddress("oraiswap-admin-addr02")      // 20 bytes
 	wrongAdmin := sdk.AccAddress("oraiswap-wrong-admin1") // 20 bytes
 	pair := s.deployOraiswapPair(admin)
 
@@ -694,7 +694,7 @@ func (s *UpgradeTestSuite) TestPausePoolV3PausesContract() {
 }
 
 func (s *UpgradeTestSuite) TestPausePoolV3PanicsOnWrongAdmin() {
-	admin := sdk.AccAddress("oraiswap-v3-admin-ad2") // 20 bytes
+	admin := sdk.AccAddress("oraiswap-v3-admin-ad2")      // 20 bytes
 	wrongAdmin := sdk.AccAddress("oraiswap-v3-wrong-adm") // 20 bytes
 	pool := s.deployOraiswapV3(admin)
 

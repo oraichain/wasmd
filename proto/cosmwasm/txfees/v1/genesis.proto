@@ -10,4 +10,10 @@ option go_package = "github.com/CosmWasm/wasmd/x/txfees/types";
 message GenesisState {
   // params defines the paramaters of the module.
   Params params = 1 [ (gogoproto.nullable) = false ];
+
+  // blacklist_addresses are the bech32 accounts frozen by the txfees blacklist.
+  // Exported and re-imported so a state export / chain restart preserves the
+  // freeze; without this an export silently unfreezes every blacklisted
+  // account.
+  repeated string blacklist_addresses = 2;
 }

@@ -29,3 +29,21 @@ func (s *KeeperTestSuite) TestStoreAllowedToken() {
 		s.Require().NoError(err)
 	}
 }
+
+func (s *KeeperTestSuite) TestStoreBlacklist() {
+	_, _, addr := KeyTestPubAddr()
+
+	ok, err := s.feeKeeper.IsBlacklisted(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().False(ok)
+
+	s.Require().NoError(s.feeKeeper.AddBlacklist(s.ctx, addr))
+	ok, err = s.feeKeeper.IsBlacklisted(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().True(ok)
+
+	s.Require().NoError(s.feeKeeper.RemoveBlacklist(s.ctx, addr))
+	ok, err = s.feeKeeper.IsBlacklisted(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().False(ok)
+}

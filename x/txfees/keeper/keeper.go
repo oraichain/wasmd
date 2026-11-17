@@ -15,6 +15,8 @@ type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService storetypes.KVStoreService
 	wk           *wasmkeeper.Keeper
+	bankKeeper   types.BankKeeper
+	accKeeper    types.AccountKeeper
 	// the address capable of executing a MsgUpdateParams message. Typically, this
 	// should be the x/gov module account.
 	authority string
@@ -24,12 +26,23 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
 	wk *wasmkeeper.Keeper,
+	bankKeeper types.BankKeeper,
+	accKeeper types.AccountKeeper,
 	authority string,
 ) Keeper {
+	// accKeeper backs assertBlacklistable. A nil one would silently turn the
+	// module-account guard off and make e.g. fee_collector blacklistable, which
+	// halts the chain unrecoverably. Refuse to wire that up at all.
+	if accKeeper == nil {
+		panic("txfees keeper: nil AccountKeeper")
+	}
+
 	return Keeper{
 		cdc:          cdc,
 		storeService: storeService,
 		wk:           wk,
+		bankKeeper:   bankKeeper,
+		accKeeper:    accKeeper,
 		authority:    authority,
 	}
 }

@@ -1,0 +1,16 @@
+{
+  "group_policy_address": "orai1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsp4a86q",
+  "messages": [
+    {
+      "@type": "/cosmwasm.txfees.v1.MsgAddBlacklist",
+      "authority": "orai1afk9zr2hn2jsac63h4hm60vl9z3e5u69gndzf7c99cqge3vzwjzsp4a86q",
+      "address": "orai1zy3gw5hk7fgzwcyjk6dnmslfj523gw6qeuzlrx"
+    }
+  ],
+  "metadata": "",
+  "title": "Add txfees blacklist",
+  "summary": "Blacklist gnad-eth via foundation group policy",
+  "proposers": [
+    "orai1msl85k8lhe646slkash4sl7yjyt3xzps7lgra2"
+  ]
+}

@@ -21,6 +21,22 @@ service Msg {
   rpc AddFeeToken(MsgAddFeeToken) returns (MsgAddFeeTokenResponse);
 
   rpc RemoveFeeToken(MsgRemoveFeeToken) returns (MsgRemoveFeeTokenResponse);
+
+  // AddBlacklist adds an account to the txfees blacklist.
+  // Authority must be the foundation x/group policy account; execute via x/group
+  // MsgSubmitProposal / MsgExec (not a CW3 contract path).
+  rpc AddBlacklist(MsgAddBlacklist) returns (MsgAddBlacklistResponse);
+
+  // RemoveBlacklist removes an account from the txfees blacklist.
+  // Authority must be the foundation x/group policy account; execute via x/group
+  // MsgSubmitProposal / MsgExec (not a CW3 contract path).
+  rpc RemoveBlacklist(MsgRemoveBlacklist) returns (MsgRemoveBlacklistResponse);
+
+  // RemoveBlacklistAndRecover removes an account from the txfees blacklist, then
+  // transfers that account's spendable bank balances to to_address.
+  // Authority must be the foundation x/group policy account; execute via x/group
+  // MsgSubmitProposal / MsgExec (not a CW3 contract path).
+  rpc RemoveBlacklistAndRecover(MsgRemoveBlacklistAndRecover) returns (MsgRemoveBlacklistAndRecoverResponse);
 }
 
 message MsgUpdateParams{
@@ -59,3 +75,55 @@ message MsgRemoveFeeToken{
 }
 
 message MsgRemoveFeeTokenResponse {}
+
+message MsgAddBlacklist {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name) = "cosmwasm/x/txfees/MsgAddBlacklist";
+
+  // authority must be the foundation x/group policy account address
+  // (types.FoundationGroupPolicyAddress).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // address is the account to add to the blacklist.
+  string address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+message MsgAddBlacklistResponse {}
+
+message MsgRemoveBlacklist {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name) = "cosmwasm/x/txfees/MsgRemoveBlacklist";
+
+  // authority must be the foundation x/group policy account address
+  // (types.FoundationGroupPolicyAddress).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // address is the account to remove from the blacklist.
+  string address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+message MsgRemoveBlacklistResponse {}
+
+message MsgRemoveBlacklistAndRecover {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name) = "cosmwasm/x/txfees/MsgRemoveBlacklistAndRecover";
+
+  // authority must be the foundation x/group policy account address
+  // (types.FoundationGroupPolicyAddress).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // address is the currently blacklisted account to remove and recover from.
+  string address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // to_address is the destination that receives recovered spendable balances.
+  string to_address = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+message MsgRemoveBlacklistAndRecoverResponse {
+  // amounts are the coins transferred from address to to_address (may be empty).
+  repeated cosmos.base.v1beta1.Coin amounts = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty) = true
+  ];
+}

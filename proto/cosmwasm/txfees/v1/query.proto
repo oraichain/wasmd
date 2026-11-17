@@ -26,6 +26,16 @@ service Query {
     option (google.api.http).get = "/cosmwasm/txfees/v1/token_exchange_rate/by_denom";
   }
 
+  // CheckBlacklist returns whether the given address is in the txfees blacklist.
+  rpc CheckBlacklist(QueryCheckBlacklistRequest) returns (QueryCheckBlacklistResponse) {
+    option (google.api.http).get = "/cosmwasm/txfees/v1/blacklist/{address}";
+  }
+
+  // BlacklistAddresses returns all addresses currently in the txfees blacklist.
+  rpc BlacklistAddresses(QueryBlacklistAddressesRequest) returns (QueryBlacklistAddressesResponse) {
+    option (google.api.http).get = "/cosmwasm/txfees/v1/blacklist";
+  }
+
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -58,4 +68,24 @@ message QueryTokenExchangeRateResponse {
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
+}
+
+message QueryCheckBlacklistRequest {
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+message QueryCheckBlacklistResponse {
+  bool blacklisted = 1;
+}
+
+message QueryBlacklistAddressesRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryBlacklistAddressesResponse {
+  repeated string addresses = 1;
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
