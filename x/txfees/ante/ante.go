@@ -235,7 +235,7 @@ func DeductFees(bankKeeper BankKeeper, ctx sdk.Context, accAddress sdk.AccAddres
 	}
 
 	if err := bankKeeper.SendCoinsFromAccountToModule(ctx, accAddress, authtypes.FeeCollectorName, fees); err != nil {
-		return errors.Wrapf(errorstypes.ErrInsufficientFunds, err.Error())
+		return errors.Wrapf(errorstypes.ErrInsufficientFunds, "%s", err)
 	}
 
 	return nil
