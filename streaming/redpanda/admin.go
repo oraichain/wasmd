@@ -2,7 +2,6 @@ package redpanda
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -54,7 +53,7 @@ func (a *Admin) CreateTopic(topic string) error {
 
 	for _, ctr := range res {
 		if ctr.Err != nil {
-			return errors.Errorf(fmt.Sprintf("unable to create topic %s: %s", ctr.Topic, ctr.Err))
+			return errors.Errorf("unable to create topic %s: %s", ctr.Topic, ctr.Err)
 		} else {
 			hclog.Default().Info("created topic %s", ctr.Topic)
 		}
